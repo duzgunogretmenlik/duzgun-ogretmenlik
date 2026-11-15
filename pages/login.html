@@ -6,7 +6,7 @@
   <title>Öğretmen Girişi - DüzgünÖğretmenlik</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css?v=20261115_3" />
+  <link rel="stylesheet" href="../assets/css/style.css?v=20261115_4" />
   <style>
     .login-wrapper {
       min-height: calc(100vh - 64px);
@@ -190,20 +190,7 @@
         </button>
       </form>
 
-      <!-- İLK KURULUM BİLGİ KUTUSU (Yalnızca varsayılan şifre değişene kadar görünür) -->
-      <div id="firstTimeHint" class="hint-box" style="display:none;">
-        <div style="font-weight:900; margin-bottom:6px;">💡 İlk Giriş Bilgileri (Varsayılan Öğretmen)</div>
-        <div style="line-height:1.6;">
-          Kullanıcı Adı / E-posta: <code style="background:#fff; padding:2px 6px; border-radius:4px; font-weight:800;">ogretmen</code><br />
-          Şifre: <code style="background:#fff; padding:2px 6px; border-radius:4px; font-weight:800;">123456</code>
-        </div>
-        <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-          <button type="button" class="btn btn-outline btn-sm" style="border-color:#0D9488; color:#0F766E; background:#fff;" onclick="fillDefaultCredentials()">
-            ✨ Bilgileri Doldur
-          </button>
-          <span style="font-size:0.78rem; opacity:0.85;">Yeni bir öğretmen hesabıyla da <strong>Kayıt Ol</strong> sekmesinden başlayabilirsiniz.</span>
-        </div>
-      </div>
+      <div id="firstTimeHint" class="hint-box" style="display:none;"></div>
 
       <!-- ŞİFRE KURTARMA / SIFIRLAMA ALANI -->
       <div id="forgotBox" class="forgot-box">
@@ -308,7 +295,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../assets/js/app.js?v=20261115_3"></script>
+<script src="../assets/js/app.js?v=20261115_4"></script>
 <script>
   function getRedirectTarget() {
     const raw = new URLSearchParams(window.location.search).get('redirect');
@@ -339,11 +326,13 @@
 
   function updateForgotQuestion() {
     const uname = (document.getElementById('forgotUsername')?.value || '').trim();
-    const user = uname ? AuthStore.findUserByUsername(uname) : AuthStore.getAccount();
+    const user = uname ? AuthStore.findUserByUsername(uname) : null;
     const qEl = document.getElementById('forgotQuestionText');
     if (!qEl) return;
-    if (!user) {
-      qEl.textContent = '⚠️ Bu kullanıcı adına ait hesap bulunamadı.';
+    if (!uname) {
+      qEl.textContent = '💡 Güvenlik sorusunu görmek için kullanıcı adınızı yazın.';
+    } else if (!user) {
+      qEl.textContent = '⚠️ Bu kullanıcı adına ait yerel hesap bulunamadı.';
     } else {
       qEl.textContent = '❓ ' + (user.securityQuestion || 'Güvenlik sorusu tanımlanmamış.');
     }
@@ -355,15 +344,6 @@
       return;
     }
 
-    const users = AuthStore.getUsers();
-    const primary = users[0];
-    if (primary && primary.isDefaultPassword) {
-      document.getElementById('firstTimeHint').style.display = 'block';
-    }
-    const forgotUserInput = document.getElementById('forgotUsername');
-    if (forgotUserInput && primary) {
-      forgotUserInput.value = primary.username;
-    }
     updateForgotQuestion();
 
     const mode = new URLSearchParams(window.location.search).get('mode');
@@ -396,13 +376,6 @@
     if (uEl && (!uEl.dataset.manual || !uEl.value.trim())) {
       uEl.value = email ? email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '_') : '';
     }
-  }
-
-  function fillDefaultCredentials() {
-    document.getElementById('loginEmail').value = 'ogretmen';
-    document.getElementById('loginUsername').value = 'ogretmen';
-    document.getElementById('loginPassword').value = '123456';
-    document.getElementById('loginPassword').focus();
   }
 
   function showLoginError(msg) {

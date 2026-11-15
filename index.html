@@ -6,7 +6,7 @@
   <title>DüzgünÖğretmenlik - Öğretmen Paneli</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261115_3" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20261115_4" />
   <style>
     .hero-small {
       background: linear-gradient(135deg, var(--primary) 0%, #0D9488 100%);
@@ -369,7 +369,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/js/app.js?v=20261115_3"></script>
+<script src="assets/js/app.js?v=20261115_4"></script>
 <script>
   let currentFilter = 'all';
   let currentGradeFilter = 'all';
@@ -693,16 +693,14 @@
     const heading = document.getElementById('activitiesHeading');
     const subheading = document.getElementById('activitiesSubheading');
 
-    if (isTeacher) {
-      const isAdminUser = AuthStore.isAdmin();
+    if (isTeacher && acc) {
+      const isAdminUser = AuthStore.isAdmin(acc);
       const pendingShareCount = (isAdminUser && typeof SharedActivityStore !== 'undefined') ? SharedActivityStore.getPendingCount() : 0;
-      heroTitle.textContent = `👋 Hoş Geldiniz, ${acc.displayName}!`;
+      heroTitle.textContent = `👋 Hoş Geldiniz, ${acc.displayName || acc.email || 'Öğretmenimiz'}!`;
       heroSubtitle.textContent = isAdminUser
         ? 'Yönetici Öğretmen Paneli açık — etkinliklerinizi yönetebilir ve paylaşılan öğretmen içeriklerini onaylayabilirsiniz.'
         : 'Öğretmen Paneli açık — etkinliklerinizi oluşturabilir, düzenleyebilir ve onaylı paylaşım havuzuna gönderebilirsiniz.';
-      const passWarnBtn = acc.isDefaultPassword
-        ? `<button type="button" class="btn btn-sm" style="background:#FEF3C7; color:#92400E; font-weight:800;" onclick="AuthStore.openAccountModal()">⚙️ Şifrenizi Değiştirin (Önerilen)</button>`
-        : `<span style="background:rgba(255,255,255,0.18); padding:6px 14px; border-radius:50px; font-size:0.85rem; font-weight:800;">${isAdminUser ? '🛡️ Yönetici Yetkisi Aktif' : '🔓 Öğretmen Yetkisi Aktif'}</span>`;
+      const passWarnBtn = `<span style="background:rgba(255,255,255,0.18); padding:6px 14px; border-radius:50px; font-size:0.85rem; font-weight:800;">${isAdminUser ? '🛡️ Yönetici Yetkisi Aktif' : '🔓 Öğretmen Yetkisi Aktif'}</span>`;
       const pendingBtn = pendingShareCount > 0
         ? `<a href="pages/paylasimlar.html?tab=admin" class="btn btn-sm" style="background:#FEF3C7; color:#92400E; font-weight:900;">⏳ ${pendingShareCount} Paylaşım Onayınızı Bekliyor</a>`
         : '';

@@ -59,11 +59,10 @@ const AuthStore = {
   ACCOUNT_KEY: 'teacher_account',
   USERS_KEY: 'teacher_users',
   SESSION_KEY: 'duzgunogretmenlik_auth',
-  ADMIN_EMAILS: ['ogretmen@duzgunogretmenlik.com', 'sametdzgn16@gmail.com'],
+  ADMIN_SUPABASE_UID: 'ebebc725-e02a-4fc2-aacb-b3de413dbfa0',
 
-  _isPrimaryAdminEmail(email) {
-    const clean = String(email || '').trim().toLowerCase();
-    return !!clean && this.ADMIN_EMAILS.includes(clean);
+  _isAdminUid(uid) {
+    return String(uid || '').trim().toLowerCase() === this.ADMIN_SUPABASE_UID;
   },
 
   hash(str) {
@@ -88,116 +87,81 @@ const AuthStore = {
     return this._isInPagesDir() ? inPages : inRoot;
   },
 
-  _defaultPrimaryUser() {
-    return {
-      id: 'u_primary',
-      username: 'ogretmen',
-      email: 'ogretmen@duzgunogretmenlik.com',
-      adminEmails: [...this.ADMIN_EMAILS],
-      passwordHash: this.hash('123456'),
-      displayName: 'Türkçe Öğretmeni',
-      securityQuestion: 'En sevdiğiniz Türk şairi veya ilk görev okulunuz?',
-      securityAnswerHash: this.hash('mehmet akif'),
-      isDefaultPassword: true,
-      isPrimary: true,
-      createdAt: '2026-01-01T00:00:00.000Z'
-    };
-  },
-
   getUsers() {
     let users = DB.get(this.USERS_KEY);
-    if (!Array.isArray(users) || users.length === 0) {
-      const legacy = DB.get(this.ACCOUNT_KEY);
-      let primary;
-      if (legacy && typeof legacy === 'object' && legacy.username && legacy.passwordHash) {
-        primary = {
-          ...this._defaultPrimaryUser(),
-          ...legacy,
-          id: 'u_primary',
-          isPrimary: true,
-          adminEmails: [...this.ADMIN_EMAILS]
-        };
-      } else {
-        primary = this._defaultPrimaryUser();
-      }
-      users = [primary];
-      DB.set(this.USERS_KEY, users);
-      DB.set(this.ACCOUNT_KEY, primary);
-    } else if (!users.some(u => u && u.id === 'u_primary')) {
-      // Tarayıcıda başka öğretmenler kayıtlı olsa bile Türkçe Öğretmeni (yönetici) profilini her zaman koru
-      const legacy = DB.get(this.ACCOUNT_KEY);
-      const primary = (legacy && typeof legacy === 'object' && legacy.username && legacy.passwordHash)
-        ? {
-            ...this._defaultPrimaryUser(),
-            ...legacy,
-            id: 'u_primary',
-            isPrimary: true,
-            adminEmails: [...this.ADMIN_EMAILS]
-          }
-        : this._defaultPrimaryUser();
-      users.unshift(primary);
-      DB.set(this.USERS_KEY, users);
-      DB.set(this.ACCOUNT_KEY, primary);
+    if (!Array.isArray(users)) {
+      users = [];
     }
-    // Yalnızca birincil hesap (u_primary) yönetici yetkisine sahip olabilir
-    return users.map(u => {
-      const isPrimary = !!(u && u.id === 'u_primary');
-      return {
-        ...u,
-        isPrimary,
-        ...(isPrimary ? { adminEmails: Array.isArray(u.adminEmails) && u.adminEmails.length ? u.adminEmails : [...this.ADMIN_EMAILS] } : {})
-      };
-    });
+    // Sabit varsayılan yönetici/öğretmen profillerini yerel depolamadan temizle
+    const filtered = users.filter(u =>
+      u &&
+      typeof u === 'object' &&
+      u.id !== 'u_primary' &&
+      u.isDefaultPassword !== true
+    );
+    if (filtered.length !== users.length) {
+      DB.set(this.USERS_KEY, filtered);
+    }
+    try {
+      const legacy = DB.get(this.ACCOUNT_KEY);
+      if (legacy && typeof legacy === 'object' && (legacy.id === 'u_primary' || legacy.isDefaultPassword === true)) {
+        localStorage.removeItem('duzgunogretmenlik_' + this.ACCOUNT_KEY);
+        localStorage.removeItem('dugrunogretmenlik_' + this.ACCOUNT_KEY);
+      }
+    } catch (e) {}
+    return filtered.map(u => ({
+      ...u,
+      isPrimary: this._isAdminUid(u.supabaseUid || u.id)
+    }));
   },
 
   saveUsers(users) {
-    const clean = (Array.isArray(users) ? users : []).map(u => ({
-      ...u,
-      isPrimary: !!(u && u.id === 'u_primary')
-    }));
+    const clean = (Array.isArray(users) ? users : [])
+      .filter(u => u && typeof u === 'object' && u.id !== 'u_primary' && u.isDefaultPassword !== true)
+      .map(u => ({
+        ...u,
+        isPrimary: this._isAdminUid(u.supabaseUid || u.id)
+      }));
     DB.set(this.USERS_KEY, clean);
-    const primary = clean.find(u => u.id === 'u_primary');
-    if (primary) DB.set(this.ACCOUNT_KEY, primary);
     return clean;
   },
 
   isAdmin(user) {
-    const u = user || this.getCurrentUser();
-    if (!u) return false;
-    return u.id === 'u_primary' && u.isPrimary === true;
+    const supaUser = (typeof SupabaseService !== 'undefined' && SupabaseService.getSupabaseUser)
+      ? SupabaseService.getSupabaseUser()
+      : null;
+    if (user) {
+      const uid = user.supabaseUid
+        || (supaUser && supaUser.email && user.email && String(supaUser.email).toLowerCase() === String(user.email).toLowerCase() ? supaUser.id : '')
+        || user.id;
+      return this._isAdminUid(uid);
+    }
+    const cur = this.getCurrentUser();
+    const activeUid = (cur && cur.supabaseUid) || (supaUser && supaUser.id) || (cur && cur.id) || '';
+    return this._isAdminUid(activeUid);
   },
 
   findUserByUsername(username) {
     const clean = String(username || '').trim().toLowerCase();
     if (!clean) return null;
-    const users = this.getUsers();
-    if (this._isPrimaryAdminEmail(clean)) {
-      return users.find(u => u.id === 'u_primary') || null;
-    }
-    return users.find(u =>
+    return this.getUsers().find(u =>
       String(u.username || '').trim().toLowerCase() === clean ||
-      (u.email && String(u.email || '').trim().toLowerCase() === clean) ||
-      (Array.isArray(u.adminEmails) && u.adminEmails.some(em => String(em || '').trim().toLowerCase() === clean))
+      (u.email && String(u.email || '').trim().toLowerCase() === clean)
     ) || null;
   },
 
   findUserByEmail(email) {
     const clean = String(email || '').trim().toLowerCase();
     if (!clean) return null;
-    const users = this.getUsers();
-    if (this._isPrimaryAdminEmail(clean)) {
-      return users.find(u => u.id === 'u_primary') || null;
-    }
-    return users.find(u =>
+    return this.getUsers().find(u =>
       (u.email && String(u.email || '').trim().toLowerCase() === clean) ||
-      String(u.username || '').trim().toLowerCase() === clean ||
-      (Array.isArray(u.adminEmails) && u.adminEmails.some(em => String(em || '').trim().toLowerCase() === clean))
+      String(u.username || '').trim().toLowerCase() === clean
     ) || null;
   },
 
   findUserById(id) {
     if (!id) return null;
-    return this.getUsers().find(u => u.id === id) || null;
+    return this.getUsers().find(u => u.id === id || (u.supabaseUid && u.supabaseUid === id)) || null;
   },
 
   _getActiveToken() {
@@ -212,12 +176,37 @@ const AuthStore = {
 
   getCurrentUser() {
     const token = this._getActiveToken();
-    if (!token) return null;
-    return this.getUsers().find(u => this._expectedToken(u) === token) || null;
+    const users = this.getUsers();
+    if (token) {
+      const matched = users.find(u => this._expectedToken(u) === token);
+      if (matched) return matched;
+    }
+    const supaUser = (typeof SupabaseService !== 'undefined' && SupabaseService.getSupabaseUser)
+      ? SupabaseService.getSupabaseUser()
+      : null;
+    if (supaUser && supaUser.id) {
+      const cleanEmail = String(supaUser.email || '').trim().toLowerCase();
+      const existing = users.find(u =>
+        (u.supabaseUid && u.supabaseUid === supaUser.id) ||
+        (cleanEmail && u.email && String(u.email).trim().toLowerCase() === cleanEmail)
+      );
+      if (existing) {
+        if (existing.supabaseUid !== supaUser.id) {
+          existing.supabaseUid = supaUser.id;
+          existing.isPrimary = this._isAdminUid(supaUser.id);
+          this.saveUsers(users);
+        }
+        return existing;
+      }
+      const sess = SupabaseService.getAuthSession();
+      const rem = !!localStorage.getItem(SupabaseService.SESSION_STORAGE_KEY);
+      return this.syncSupabaseUser(supaUser, sess, rem);
+    }
+    return null;
   },
 
   getAccount() {
-    return this.getCurrentUser() || this.getUsers()[0];
+    return this.getCurrentUser() || this.getUsers()[0] || null;
   },
 
   saveAccount(acc) {
@@ -234,7 +223,8 @@ const AuthStore = {
   },
 
   _expectedToken(acc) {
-    const a = acc || this.getAccount();
+    const a = acc || this.getCurrentUser() || this.getAccount();
+    if (!a) return '';
     return `${String(a.username || '').toLowerCase()}:${a.passwordHash}`;
   },
 
@@ -316,37 +306,29 @@ const AuthStore = {
   syncSupabaseUser(supaUser, session, remember = true, rawPassword = '') {
     if (!supaUser || !supaUser.email) return null;
     const cleanEmail = String(supaUser.email).trim().toLowerCase();
-    const isAdminEmail = this._isPrimaryAdminEmail(cleanEmail);
+    const isAdminUid = this._isAdminUid(supaUser.id);
     const users = this.getUsers();
-    let existing = isAdminEmail
-      ? (users.find(u => u && u.id === 'u_primary') || this._defaultPrimaryUser())
-      : users.find(u =>
-          (u.supabaseUid && u.supabaseUid === supaUser.id) ||
-          (u.email && String(u.email).trim().toLowerCase() === cleanEmail) ||
-          String(u.username || '').trim().toLowerCase() === cleanEmail
-        );
+    let existing = users.find(u =>
+      (u.supabaseUid && u.supabaseUid === supaUser.id) ||
+      (u.email && String(u.email).trim().toLowerCase() === cleanEmail) ||
+      String(u.username || '').trim().toLowerCase() === cleanEmail
+    );
 
     const metaName = String(supaUser.user_metadata?.display_name || supaUser.user_metadata?.full_name || '').trim();
     const lowerMeta = metaName.toLocaleLowerCase('tr-TR');
-    const safeDisplay = (metaName && lowerMeta !== 'türkçe öğretmeni' && lowerMeta !== 'turkce ogretmeni')
-      ? metaName
+    const safeDisplay = (isAdminUid || (metaName && lowerMeta !== 'türkçe öğretmeni' && lowerMeta !== 'turkce ogretmeni'))
+      ? (metaName || cleanEmail.split('@')[0])
       : cleanEmail.split('@')[0];
 
     if (existing) {
       existing.email = cleanEmail;
       existing.supabaseUid = supaUser.id;
-      if (isAdminEmail) {
-        existing.id = 'u_primary';
-        existing.isPrimary = true;
-        existing.displayName = existing.displayName || 'Türkçe Öğretmeni';
-        existing.adminEmails = [...this.ADMIN_EMAILS];
-      } else if (metaName && !existing.isPrimary) {
-        existing.displayName = safeDisplay;
-      }
+      existing.isPrimary = isAdminUid;
+      if (metaName) existing.displayName = safeDisplay;
       if (rawPassword) existing.passwordHash = this.hash(rawPassword);
     } else {
       existing = {
-        id: 'sb_' + String(supaUser.id || generateId()),
+        id: isAdminUid ? supaUser.id : ('sb_' + String(supaUser.id || generateId())),
         supabaseUid: supaUser.id,
         username: String(supaUser.user_metadata?.username || cleanEmail).trim(),
         email: cleanEmail,
@@ -355,7 +337,7 @@ const AuthStore = {
         securityQuestion: 'E-posta ile kayıt olunan hesap',
         securityAnswerHash: this.hash(cleanEmail),
         isDefaultPassword: false,
-        isPrimary: false,
+        isPrimary: isAdminUid,
         createdAt: supaUser.created_at || new Date().toISOString()
       };
       users.push(existing);
@@ -376,22 +358,12 @@ const AuthStore = {
       return { ok: false, error: 'Lütfen e-posta adresinizi ve şifrenizi girin.' };
     }
 
-    // Birincil yerel yönetici veya "@" içermeyen kullanıcı adı girişi
+    // "@" içermeyen yerel kullanıcı adı girişi
     if (!cleanInput.includes('@')) {
       return this.login(cleanInput, rawPass, remember);
     }
 
     const cleanEmail = cleanInput.toLowerCase();
-    // Birincil yönetici hesabı e-posta ile de giriş yapabilsin
-    const primaryUser = this.findUserById('u_primary');
-    if (
-      primaryUser &&
-      (String(primaryUser.email || '').toLowerCase() === cleanEmail || this._isPrimaryAdminEmail(cleanEmail)) &&
-      this.hash(rawPass) === primaryUser.passwordHash
-    ) {
-      this._saveSessionToken(this._expectedToken(primaryUser), remember);
-      return { ok: true, account: primaryUser };
-    }
 
     let supaRes = null;
     if (typeof SupabaseService !== 'undefined') {
@@ -800,9 +772,7 @@ const AuthStore = {
       document.body.appendChild(modal);
     }
 
-    document.getElementById('accAlertArea').innerHTML = acc.isDefaultPassword
-      ? `<div style="background:#FEF3C7; border:1px solid #F59E0B; color:#92400E; padding:10px 14px; border-radius:10px; font-size:0.85rem; font-weight:700; margin-bottom:14px;">⚠️ Şu anda varsayılan şifreyi (<code>123456</code>) kullanıyorsunuz. Siteyi herkese açmadan önce mutlaka yeni bir şifre belirleyin.</div>`
-      : '';
+    document.getElementById('accAlertArea').innerHTML = '';
     document.getElementById('accDisplayName').value = acc.displayName || '';
     document.getElementById('accUsername').value = acc.username || '';
     document.getElementById('accCurrentPassword').value = '';
@@ -936,9 +906,9 @@ const ActivityStore = {
         changed = true;
         continue;
       }
-      if (!item.ownerId) {
-        item.ownerId = 'u_primary';
-        if (!item.ownerName) item.ownerName = 'Türkçe Öğretmeni';
+      if (!item.ownerId || item.ownerId === ('u_' + 'primary')) {
+        item.ownerId = (typeof AuthStore !== 'undefined' && AuthStore.ADMIN_SUPABASE_UID) ? AuthStore.ADMIN_SUPABASE_UID : 'owner_admin';
+        if (!item.ownerName) item.ownerName = 'Yönetici Öğretmen';
         item.isSeed = false;
         changed = true;
       }
@@ -961,6 +931,7 @@ const ActivityStore = {
     }
 
     const uid = currentUser.id;
+    const isAdminUser = !!(typeof AuthStore !== 'undefined' && AuthStore.isAdmin && AuthStore.isAdmin(currentUser));
     const overrides = DB.get(this._seedOverridesKey(uid)) || {};
     const hiddenArr = DB.get(this._hiddenSeedsKey(uid)) || [];
     const hiddenSet = new Set(Array.isArray(hiddenArr) ? hiddenArr : []);
@@ -970,7 +941,7 @@ const ActivityStore = {
       .map(s => (overrides[s.id] ? { ...s, ...overrides[s.id], isSeed: true } : s));
 
     const myCustom = this.getCustomActivitiesRaw()
-      .filter(a => a.ownerId === uid)
+      .filter(a => a.ownerId === uid || (currentUser.supabaseUid && a.ownerId === currentUser.supabaseUid) || (isAdminUser && a.ownerId === AuthStore.ADMIN_SUPABASE_UID))
       .map(a => ({ ...a, isSeed: false }));
 
     return [...myCustom, ...scopedSeeds];
@@ -1056,10 +1027,13 @@ const ActivityStore = {
         if (typeof SupabaseService !== 'undefined') SupabaseService._lastSavedActivity = list[idx];
         return list[idx];
       }
+      const fallbackOwnerId = (currentUser && (currentUser.supabaseUid || currentUser.id))
+        || ((typeof AuthStore !== 'undefined' && AuthStore.ADMIN_SUPABASE_UID) ? AuthStore.ADMIN_SUPABASE_UID : 'owner_admin');
+      const fallbackOwnerName = (currentUser && (currentUser.displayName || currentUser.email)) || 'Öğretmen';
       const updated = {
         ...activity,
-        ownerId: existing.ownerId || (currentUser ? currentUser.id : 'u_primary'),
-        ownerName: existing.ownerName || (currentUser ? currentUser.displayName : 'Türkçe Öğretmeni'),
+        ownerId: existing.ownerId || fallbackOwnerId,
+        ownerName: existing.ownerName || fallbackOwnerName,
         isSeed: false
       };
       list[idx] = updated;
@@ -1068,10 +1042,13 @@ const ActivityStore = {
       return updated;
     }
 
+    const fallbackOwnerId = (currentUser && (currentUser.supabaseUid || currentUser.id))
+      || ((typeof AuthStore !== 'undefined' && AuthStore.ADMIN_SUPABASE_UID) ? AuthStore.ADMIN_SUPABASE_UID : 'owner_admin');
+    const fallbackOwnerName = (currentUser && (currentUser.displayName || currentUser.email)) || 'Öğretmen';
     const toSave = {
       ...activity,
-      ownerId: activity.ownerId || (currentUser ? currentUser.id : 'u_primary'),
-      ownerName: activity.ownerName || (currentUser ? currentUser.displayName : 'Türkçe Öğretmeni'),
+      ownerId: activity.ownerId || fallbackOwnerId,
+      ownerName: activity.ownerName || fallbackOwnerName,
       isSeed: false
     };
     list.unshift(toSave);
@@ -1217,8 +1194,8 @@ const ActivityStore = {
       grade: grade || '5',
       theme: theme || 'Genel Türkçe',
       code: generateCode(),
-      ownerId: currentUser ? currentUser.id : 'u_primary',
-      ownerName: currentUser ? currentUser.displayName : 'Türkçe Öğretmeni',
+      ownerId: currentUser ? (currentUser.supabaseUid || currentUser.id) : ((typeof AuthStore !== 'undefined' && AuthStore.ADMIN_SUPABASE_UID) ? AuthStore.ADMIN_SUPABASE_UID : 'owner_admin'),
+      ownerName: currentUser ? (currentUser.displayName || currentUser.email) : 'Öğretmen',
       isSeed: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1646,7 +1623,7 @@ const StudentStore = {
 
   _key(base) {
     const u = (typeof AuthStore !== 'undefined' && AuthStore.getCurrentUser) ? AuthStore.getCurrentUser() : null;
-    if (!u || u.isPrimary || u.id === 'u_primary') return base;
+    if (!u || (typeof AuthStore !== 'undefined' && AuthStore.isAdmin && AuthStore.isAdmin(u))) return base;
     return `${base}_${u.id}`;
   },
 
@@ -1697,7 +1674,7 @@ const StudentStore = {
     const storageKey = this._key(this.STORAGE_KEY);
     const seededKey = this._key(this.SEEDED_KEY);
     const currentUser = (typeof AuthStore !== 'undefined' && AuthStore.getCurrentUser) ? AuthStore.getCurrentUser() : null;
-    const isPrimaryUser = !currentUser || currentUser.isPrimary || currentUser.id === 'u_primary';
+    const isPrimaryUser = !currentUser || (typeof AuthStore !== 'undefined' && AuthStore.isAdmin && AuthStore.isAdmin(currentUser));
     let list = DB.get(storageKey);
     const seeded = DB.get(seededKey);
     if (!Array.isArray(list)) {
@@ -3745,6 +3722,8 @@ const SupabaseService = {
     try {
       const client = this.getClient();
       if (!client || !client.auth) return;
+      const wasLoggedIn = (typeof AuthStore !== 'undefined' && AuthStore.isLoggedIn) ? AuthStore.isLoggedIn() : false;
+      const wasAdmin = (typeof AuthStore !== 'undefined' && AuthStore.isAdmin) ? AuthStore.isAdmin() : false;
       const { data } = await client.auth.getSession();
       const session = data?.session || null;
       if (session && session.user) {
@@ -3753,6 +3732,14 @@ const SupabaseService = {
           AuthStore.syncSupabaseUser(session.user, session, true);
           if (typeof AuthStore.syncNavbarAndRoleUI === 'function') {
             AuthStore.syncNavbarAndRoleUI();
+          }
+          const nowLoggedIn = AuthStore.isLoggedIn();
+          const nowAdmin = AuthStore.isAdmin();
+          if (typeof window.renderRoleUI === 'function') {
+            window.renderRoleUI();
+          }
+          if ((wasLoggedIn !== nowLoggedIn || wasAdmin !== nowAdmin) && typeof window.initPage === 'function') {
+            window.initPage();
           }
         }
       }
