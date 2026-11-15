@@ -912,7 +912,9 @@ const ActivityStore = {
         item.isSeed = false;
         changed = true;
       }
-      customOnly.push(item);
+      const upgradedItem = typeof _upgradeActivityUrlsToHttps === 'function' ? _upgradeActivityUrlsToHttps(item) : item;
+      if (JSON.stringify(upgradedItem) !== JSON.stringify(item)) changed = true;
+      customOnly.push(upgradedItem);
     }
 
     if (changed || !migratedFlag) {
@@ -993,6 +995,9 @@ const ActivityStore = {
   save(activity) {
     if (!activity) return null;
     if (activity.isSharedPreview) return activity;
+    if (typeof _upgradeActivityUrlsToHttps === 'function') {
+      activity = _upgradeActivityUrlsToHttps(activity);
+    }
     const currentUser = (typeof AuthStore !== 'undefined' && AuthStore.getCurrentUser) ? AuthStore.getCurrentUser() : null;
 
     if (this.isSeedActivity(activity)) {
@@ -1880,12 +1885,43 @@ function typeColor(type) {
   return colors[type] || '#6C63FF';
 }
 
-// ---- HTML KAÇIŞ YARDIMCISI ----
+// ---- HTML KAÇIŞ YARDIMCISI VE HTTPS DÖNÜŞTÜRÜCÜ ----
 function escHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function ensureHttpsUrl(url) {
+  if (typeof url !== 'string') return url;
+  const trimmed = url.trim();
+  if (!trimmed || /^(?:data|blob|mailto|tel):/i.test(trimmed)) return url;
+  if (/^http:\/\/(?!localhost\b|127\.0\.0\.1\b)/i.test(trimmed)) {
+    return trimmed.replace(/^http:\/\//i, 'https://');
+  }
+  return url;
+}
+
+function _upgradeActivityUrlsToHttps(value) {
+  if (typeof value === 'string') {
+    if (!value || /^(?:data|blob|mailto|tel):/i.test(value)) return value;
+    if (/^http:\/\/(?!localhost\b|127\.0\.0\.1\b)/i.test(value)) {
+      return value.replace(/^http:\/\//i, 'https://');
+    }
+    return value.replace(/\bhttp:\/\/(?!localhost\b|127\.0\.0\.1\b)/gi, 'https://');
+  }
+  if (Array.isArray(value)) {
+    return value.map(item => _upgradeActivityUrlsToHttps(item));
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    Object.keys(value).forEach(k => {
+      out[k] = _upgradeActivityUrlsToHttps(value[k]);
+    });
+    return out;
+  }
+  return value;
 }
 
 // ============================================================
@@ -2276,7 +2312,7 @@ function openLightbox(imgSrc) {
     });
     document.body.appendChild(modal);
   }
-  document.getElementById('globalLightboxImg').src = imgSrc;
+  document.getElementById('globalLightboxImg').src = ensureHttpsUrl(imgSrc);
   modal.classList.add('active');
 }
 
@@ -4100,7 +4136,7 @@ const SupabaseService = {
     parsed.theme = parsed.theme || row.tema || row.theme || 'Genel Türkçe';
     parsed.code = parsed.code || row.kod || row.code || generateCode();
     parsed.isSeed = false;
-    return parsed;
+    return typeof _upgradeActivityUrlsToHttps === 'function' ? _upgradeActivityUrlsToHttps(parsed) : parsed;
   },
 
   cacheEtkinlik(id, activityObj) {
