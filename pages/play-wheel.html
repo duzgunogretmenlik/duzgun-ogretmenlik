@@ -56,6 +56,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/app.js"></script>
 <script>
   let activity = null;
@@ -80,6 +81,8 @@
       const all = ActivityStore.getAll();
       activity = all.find(a => a.code === code.toUpperCase() && a.type === 'wheel');
     }
+
+    if (!activity && typeof SupabaseService !== 'undefined' && SupabaseService.isPendingEtkinlikLoad()) return;
 
     document.getElementById('loadingScreen').classList.add('hidden');
 

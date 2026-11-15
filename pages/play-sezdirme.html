@@ -213,6 +213,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/app.js"></script>
 <script>
   let activity = null;
@@ -230,6 +231,10 @@
     const id = new URLSearchParams(location.search).get('id');
     activity = id ? ActivityStore.getById(id) : null;
     if (!activity || activity.type !== 'sezdirme') {
+      if (typeof SupabaseService !== 'undefined' && SupabaseService.isPendingEtkinlikLoad()) {
+        document.getElementById('startScreen').innerHTML = `<div class="card text-center" style="padding:40px;"><div style="font-size:2.5rem;">⏳</div><h3>Etkinlik Supabase'den yükleniyor...</h3></div>`;
+        return;
+      }
       document.getElementById('startScreen').innerHTML = `<div class="card text-center" style="padding:40px;"><div style="font-size:3rem;">🔍</div><h2>Sezdirme dersi bulunamadı</h2><p style="color:var(--text-muted); margin:10px 0 20px;">Ders silinmiş olabilir.</p><a href="../index.html" class="btn btn-primary">Panele Dön</a></div>`;
       return;
     }

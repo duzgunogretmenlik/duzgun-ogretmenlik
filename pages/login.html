@@ -160,10 +160,11 @@
 
     <!-- GİRİŞ YAP PANELİ -->
     <div id="loginPanel">
-      <form onsubmit="handleLogin(event)">
+      <form onsubmit="handleLogin(event)" novalidate>
         <div class="form-group">
-          <label class="form-label" for="loginUsername">Kullanıcı Adı</label>
-          <input type="text" class="form-control" id="loginUsername" placeholder="Kullanıcı adınız..." autocomplete="username" required />
+          <label class="form-label" for="loginEmail">E-posta Adresi <span style="font-size:0.78rem; color:var(--text-muted);">(veya yönetici kullanıcı adı)</span></label>
+          <input type="email" class="form-control" id="loginEmail" placeholder="ornek@eposta.com" autocomplete="email" required oninput="syncLoginEmailInput()" />
+          <input type="hidden" id="loginUsername" value="" />
         </div>
 
         <div class="form-group">
@@ -184,8 +185,8 @@
           </button>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
-          🔐 Öğretmen Paneline Giriş Yap
+        <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
+          🔐 E-posta ile Giriş Yap
         </button>
       </form>
 
@@ -193,7 +194,7 @@
       <div id="firstTimeHint" class="hint-box" style="display:none;">
         <div style="font-weight:900; margin-bottom:6px;">💡 İlk Giriş Bilgileri (Varsayılan Öğretmen)</div>
         <div style="line-height:1.6;">
-          Kullanıcı Adı: <code style="background:#fff; padding:2px 6px; border-radius:4px; font-weight:800;">ogretmen</code><br />
+          Kullanıcı Adı / E-posta: <code style="background:#fff; padding:2px 6px; border-radius:4px; font-weight:800;">ogretmen</code><br />
           Şifre: <code style="background:#fff; padding:2px 6px; border-radius:4px; font-weight:800;">123456</code>
         </div>
         <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
@@ -206,7 +207,15 @@
 
       <!-- ŞİFRE KURTARMA / SIFIRLAMA ALANI -->
       <div id="forgotBox" class="forgot-box">
-        <h3 style="font-size:1rem; font-weight:900; color:var(--text); margin-bottom:8px;">🔑 Güvenlik Sorusu ile Şifre Sıfırlama</h3>
+        <h3 style="font-size:1rem; font-weight:900; color:var(--text); margin-bottom:8px;">🔑 Şifre Sıfırlama</h3>
+        <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px 12px; margin-bottom:14px;">
+          <div style="font-size:0.82rem; font-weight:800; color:#1E40AF; margin-bottom:6px;">📧 E-posta ile Sıfırlama Bağlantısı (Supabase)</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="email" class="form-control" id="forgotResetEmail" placeholder="Kayıtlı e-posta adresiniz..." style="flex:1; min-width:180px;" />
+            <button type="button" class="btn btn-primary btn-sm" onclick="handleSupabasePasswordReset()">Bağlantı Gönder</button>
+          </div>
+        </div>
+        <div style="font-size:0.85rem; font-weight:800; color:var(--text-muted); margin-bottom:8px;">Veya Yerel Güvenlik Sorusu ile Sıfırla:</div>
         <div class="form-group">
           <label class="form-label" for="forgotUsername">Kullanıcı Adı</label>
           <input type="text" class="form-control" id="forgotUsername" placeholder="Şifresini sıfırlayacağınız kullanıcı adı..." oninput="updateForgotQuestion()" />
@@ -232,22 +241,22 @@
 
     <!-- KAYIT OL PANELİ -->
     <div id="registerPanel" style="display:none;">
-      <form onsubmit="handleRegister(event)">
+      <form onsubmit="handleRegister(event)" novalidate>
         <div class="form-group">
           <label class="form-label" for="regDisplayName">Ad Soyad / Görünen Ad <span style="color:var(--danger)">*</span></label>
           <input type="text" class="form-control" id="regDisplayName" placeholder="Örn: Zeynep Öğretmen" required />
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="regUsername">Kullanıcı Adı <span style="color:var(--danger)">*</span></label>
-          <input type="text" class="form-control" id="regUsername" placeholder="Boşluksuz, en az 3 karakter (Örn: zeynep_trk)" autocomplete="username" required />
+          <label class="form-label" for="regEmail">E-posta Adresi <span style="color:var(--danger)">*</span></label>
+          <input type="email" class="form-control" id="regEmail" placeholder="ornek@eposta.com" autocomplete="email" required oninput="syncRegEmailToUsername()" />
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div class="form-group">
             <label class="form-label" for="regPassword">Şifre <span style="color:var(--danger)">*</span></label>
             <div class="pass-input-wrap">
-              <input type="password" class="form-control" id="regPassword" placeholder="En az 4 karakter" autocomplete="new-password" required />
+              <input type="password" class="form-control" id="regPassword" placeholder="En az 6 karakter" autocomplete="new-password" required />
               <button type="button" class="toggle-pass-btn" onclick="togglePassVisibility('regPassword', this)" title="Şifreyi Göster/Gizle">👁️</button>
             </div>
           </div>
@@ -260,36 +269,45 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="regSecurityQuestion">Güvenlik Sorusu (Şifre sıfırlama için)</label>
-          <input type="text" class="form-control" id="regSecurityQuestion" value="En sevdiğiniz Türk şairi veya ilk görev okulunuz?" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="regSecurityAnswer">Güvenlik Yanıtı <span style="color:var(--danger)">*</span></label>
-          <input type="text" class="form-control" id="regSecurityAnswer" placeholder="Unutmayacağınız bir yanıt..." required />
-        </div>
+        <details style="margin-bottom:14px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 12px;">
+          <summary style="cursor:pointer; font-size:0.82rem; font-weight:800; color:var(--text-muted);">⚙️ İsteğe Bağlı Profil &amp; Kurtarma Ayarları</summary>
+          <div style="margin-top:10px;">
+            <div class="form-group">
+              <label class="form-label" for="regUsername">Kullanıcı Adı (Otomatik doldurulur)</label>
+              <input type="text" class="form-control" id="regUsername" placeholder="E-postadan otomatik oluşur" autocomplete="username" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="regSecurityQuestion">Güvenlik Sorusu (Şifre sıfırlama için)</label>
+              <input type="text" class="form-control" id="regSecurityQuestion" value="En sevdiğiniz Türk şairi veya ilk görev okulunuz?" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="regSecurityAnswer">Güvenlik Yanıtı (İsteğe bağlı)</label>
+              <input type="text" class="form-control" id="regSecurityAnswer" placeholder="İsteğe bağlı kurtarma yanıtı..." />
+            </div>
+          </div>
+        </details>
 
         <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; font-weight:700; cursor:pointer; color:var(--text); margin-bottom:16px;">
           <input type="checkbox" id="regRememberMe" checked style="width:16px; height:16px; accent-color:var(--primary);" />
           Kayıt sonrası oturumumu bu cihazda açık tut
         </label>
 
-        <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
-          ✨ Öğretmen Hesabı Oluştur ve Başla
+        <button type="submit" id="registerSubmitBtn" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
+          ✨ E-posta ile Hesap Oluştur
         </button>
       </form>
 
       <div class="hint-box" style="margin-top:16px;">
-        <strong>📚 Hesabınızla Neler Ayrı Tutulur?</strong>
+        <strong>☁️ Bulut Eşitleme ve Güvenli Kayıt</strong>
         <div style="margin-top:4px; line-height:1.55;">
-          Site içindeki tüm <strong>hazır Türkçe derslerini</strong> kullanabilir; bunlara ek olarak <strong>kendi oluşturduğunuz dersleri</strong> ve <strong>kendi Sınıfım listenizi</strong> diğer öğretmenlerden tamamen bağımsız yönetebilirsiniz.
+          Standart E-posta ve Şifrenizle hesabınız oluşturulur; tasarladığınız etkinlikleri <strong>Kaydet ve Paylaş</strong> ile buluta kaydedip <code>?etkinlik=ID</code> linkiyle öğrencilerinizle paylaşabilirsiniz.
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/app.js"></script>
 <script>
   function getRedirectTarget() {
@@ -366,7 +384,22 @@
     }
   }
 
+  function syncLoginEmailInput() {
+    const emailEl = document.getElementById('loginEmail');
+    const userEl = document.getElementById('loginUsername');
+    if (emailEl && userEl) userEl.value = emailEl.value;
+  }
+
+  function syncRegEmailToUsername() {
+    const email = (document.getElementById('regEmail')?.value || '').trim();
+    const uEl = document.getElementById('regUsername');
+    if (uEl && (!uEl.dataset.manual || !uEl.value.trim())) {
+      uEl.value = email ? email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '_') : '';
+    }
+  }
+
   function fillDefaultCredentials() {
+    document.getElementById('loginEmail').value = 'ogretmen';
     document.getElementById('loginUsername').value = 'ogretmen';
     document.getElementById('loginPassword').value = '123456';
     document.getElementById('loginPassword').focus();
@@ -388,35 +421,69 @@
     ok.style.display = 'block';
   }
 
-  function handleLogin(event) {
+  async function handleLogin(event) {
     event.preventDefault();
-    const username = document.getElementById('loginUsername').value;
+    const emailOrUser = (document.getElementById('loginEmail')?.value || document.getElementById('loginUsername')?.value || '').trim();
     const password = document.getElementById('loginPassword').value;
     const remember = document.getElementById('rememberMe').checked;
+    const btn = document.getElementById('loginSubmitBtn');
 
-    const res = AuthStore.login(username, password, remember);
-    if (!res.ok) {
-      showLoginError(res.error);
-      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+    if (!emailOrUser || !password) {
+      showLoginError('Lütfen e-posta adresinizi ve şifrenizi girin.');
       return;
     }
 
-    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
-    showLoginSuccess(`Hoş geldiniz, ${res.account.displayName}! Panele yönlendiriliyorsunuz...`);
-    setTimeout(() => {
-      window.location.href = getRedirectTarget();
-    }, 350);
+    const origLabel = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Giriş yapılıyor...';
+    }
+
+    try {
+      const res = await AuthStore.loginWithEmail(emailOrUser, password, remember);
+      if (!res.ok) {
+        showLoginError(res.error);
+        if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+        return;
+      }
+
+      if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+      const extraNote = res.warning ? ` (${res.warning})` : '';
+      showLoginSuccess(`Hoş geldiniz, ${res.account.displayName}!${extraNote} Panele yönlendiriliyorsunuz...`);
+      setTimeout(() => {
+        window.location.href = getRedirectTarget();
+      }, 350);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origLabel || '🔐 E-posta ile Giriş Yap';
+      }
+    }
   }
 
-  function handleRegister(event) {
+  async function handleRegister(event) {
     event.preventDefault();
     const displayName = document.getElementById('regDisplayName').value;
-    const username = document.getElementById('regUsername').value;
+    const email = (document.getElementById('regEmail')?.value || '').trim();
+    const username = (document.getElementById('regUsername')?.value || '').trim();
     const password = document.getElementById('regPassword').value;
     const passwordConfirm = document.getElementById('regPasswordConfirm').value;
     const securityQuestion = document.getElementById('regSecurityQuestion').value;
     const securityAnswer = document.getElementById('regSecurityAnswer').value;
     const remember = document.getElementById('regRememberMe').checked;
+    const btn = document.getElementById('registerSubmitBtn');
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showLoginError('Lütfen geçerli bir e-posta adresi girin (örn: ad@okul.com).');
+      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+      return;
+    }
+
+    if (password.length < 6) {
+      showLoginError('Şifre en az 6 karakter olmalıdır.');
+      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+      return;
+    }
 
     if (password !== passwordConfirm) {
       showLoginError('Şifre ve tekrarı birbiriyle eşleşmiyor!');
@@ -424,21 +491,51 @@
       return;
     }
 
-    const res = AuthStore.register(
-      { displayName, username, password, securityQuestion, securityAnswer },
-      remember
-    );
-    if (!res.ok) {
-      showLoginError(res.error);
-      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
-      return;
+    const origLabel = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Hesap oluşturuluyor...';
     }
 
-    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
-    showLoginSuccess(`Hesabınız oluşturuldu, hoş geldiniz ${res.account.displayName}! Panele yönlendiriliyorsunuz...`);
-    setTimeout(() => {
-      window.location.href = getRedirectTarget();
-    }, 450);
+    try {
+      const res = await AuthStore.registerWithEmail(
+        { email, displayName, username, password, securityQuestion, securityAnswer },
+        remember
+      );
+      if (!res.ok) {
+        showLoginError(res.error);
+        if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+        return;
+      }
+
+      if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+      const confirmNote = res.needsEmailConfirmation
+        ? ' (Doğrulama e-postası gönderildi; hesabınızla hemen kullanmaya başlayabilirsiniz.)'
+        : '';
+      showLoginSuccess(`Hesabınız oluşturuldu, hoş geldiniz ${res.account.displayName}!${confirmNote}`);
+      setTimeout(() => {
+        window.location.href = getRedirectTarget();
+      }, 550);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origLabel || '✨ E-posta ile Hesap Oluştur';
+      }
+    }
+  }
+
+  async function handleSupabasePasswordReset() {
+    const email = (document.getElementById('forgotResetEmail')?.value || document.getElementById('loginEmail')?.value || '').trim();
+    if (!email || !email.includes('@')) {
+      showLoginError('Lütfen kayıtlı e-posta adresinizi yazın.');
+      return;
+    }
+    const res = await SupabaseService.resetPasswordForEmail(email);
+    if (!res.ok) {
+      showLoginError(res.error || 'Sıfırlama e-postası gönderilemedi.');
+      return;
+    }
+    showLoginSuccess(`${email} adresine şifre sıfırlama bağlantısı gönderildi. Lütfen gelen kutunuzu kontrol edin.`);
   }
 
   function toggleForgotBox() {
@@ -446,7 +543,9 @@
     const willOpen = box.style.display !== 'block';
     box.style.display = willOpen ? 'block' : 'none';
     if (willOpen) {
-      const loginU = (document.getElementById('loginUsername')?.value || '').trim();
+      const loginU = (document.getElementById('loginEmail')?.value || document.getElementById('loginUsername')?.value || '').trim();
+      const resetEmailEl = document.getElementById('forgotResetEmail');
+      if (resetEmailEl && loginU.includes('@')) resetEmailEl.value = loginU;
       const forgotU = document.getElementById('forgotUsername');
       if (forgotU && loginU) forgotU.value = loginU;
       updateForgotQuestion();

@@ -150,6 +150,7 @@
   <div class="navbar-actions">
     <span style="font-size:0.85rem; color:var(--text-muted);" id="saveStatus">✅ Kaydedildi</span>
     <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <button type="button" id="saveAndShareBtn" class="btn btn-primary" style="background:linear-gradient(135deg,#059669 0%,#0D9488 100%); border:none; font-weight:800;" onclick="SupabaseService.handleEditorSaveAndShare()">🚀 Kaydet ve Paylaş</button>
     <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Önizle</a>
   </div>
 </nav>
@@ -230,6 +231,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/app.js"></script>
 <script>
   let activity = null;

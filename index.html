@@ -368,6 +368,7 @@
   <strong>📚 DüzgünÖğretmenlik</strong> — Kendi Etkinlik Platformunuz
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/app.js"></script>
 <script>
   let currentFilter = 'all';
@@ -628,7 +629,8 @@
         <div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;">🕐 ${timeAgo(a.updatedAt)}</div>
         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
           ${isTeacher ? `<a href="${editUrl}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;">✏️ Düzenle</a>` : ''}
-          ${isTeacher && !ActivityStore.isSeedActivity(a) ? `<button type="button" class="btn btn-outline btn-sm" style="flex:1;justify-content:center; border-color:#0D9488; color:#0F766E;" onclick="shareFromDashboard('${a.id}')">📤 Paylaş</button>` : ''}
+          ${isTeacher ? `<button type="button" class="btn btn-outline btn-sm" style="flex:1;justify-content:center; border-color:#059669; color:#047857;" onclick="saveAndShareFromDashboard('${a.id}')">🚀 Kaydet &amp; Link</button>` : ''}
+          ${isTeacher && !ActivityStore.isSeedActivity(a) ? `<button type="button" class="btn btn-outline btn-sm" style="flex:1;justify-content:center; border-color:#0D9488; color:#0F766E;" onclick="shareFromDashboard('${a.id}')">📤 Havuz</button>` : ''}
           <a href="${playUrl}" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;" target="_blank">${isTeacher ? '▶️ Başlat' : '▶️ Etkinliği Başlat'}</a>
         </div>
       </div>
@@ -732,6 +734,17 @@
   function shareFromDashboard(activityId) {
     if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
     window.location.href = `pages/paylasimlar.html?share=${encodeURIComponent(activityId)}`;
+  }
+
+  async function saveAndShareFromDashboard(activityId) {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    const act = ActivityStore.getById(activityId);
+    if (!act) {
+      showToast('Etkinlik bulunamadı.', 'error');
+      return;
+    }
+    showToast('Supabase etkinlikler tablosuna kaydediliyor...', 'info');
+    await SupabaseService.saveAndShareActivity(act);
   }
 
   function quickJoinFromHero() {

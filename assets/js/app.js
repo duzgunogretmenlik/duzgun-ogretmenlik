@@ -2,6 +2,26 @@
 // DüzgünÖğretmenlik - Ana JavaScript Modülü
 // ============================================================
 
+// ---- SUPABASE YAPILANDIRMASI VE URL (?etkinlik=ID) UYUMLULUK KÖPRÜSÜ ----
+const SUPABASE_CONFIG = {
+  RAW_URL: 'https://andkfcqviwyyfbsxaqok.supabase.co/rest/v1/',
+  URL: 'https://andkfcqviwyyfbsxaqok.supabase.co',
+  KEY: 'sb_publishable_JJfo32_NV_vChwJU3lGl0w_BE_x-7iD',
+  TABLE: 'etkinlikler'
+};
+
+(function patchEtkinlikUrlParam() {
+  if (typeof URLSearchParams === 'undefined') return;
+  const origGet = URLSearchParams.prototype.get;
+  URLSearchParams.prototype.get = function(name) {
+    const val = origGet.call(this, name);
+    if ((val === null || val === '') && name === 'id') {
+      return origGet.call(this, 'etkinlik');
+    }
+    return val;
+  };
+})();
+
 // ---- YEREL VERİTABANI (Bellek Korumalı & Hata Toleranslı) ----
 const DB = {
   _mem: {},
@@ -39,6 +59,12 @@ const AuthStore = {
   ACCOUNT_KEY: 'teacher_account',
   USERS_KEY: 'teacher_users',
   SESSION_KEY: 'duzgunogretmenlik_auth',
+  ADMIN_EMAILS: ['ogretmen@duzgunogretmenlik.com', 'sametdzgn16@gmail.com'],
+
+  _isPrimaryAdminEmail(email) {
+    const clean = String(email || '').trim().toLowerCase();
+    return !!clean && this.ADMIN_EMAILS.includes(clean);
+  },
 
   hash(str) {
     const s = String(str || '');
@@ -66,6 +92,8 @@ const AuthStore = {
     return {
       id: 'u_primary',
       username: 'ogretmen',
+      email: 'ogretmen@duzgunogretmenlik.com',
+      adminEmails: [...this.ADMIN_EMAILS],
       passwordHash: this.hash('123456'),
       displayName: 'Türkçe Öğretmeni',
       securityQuestion: 'En sevdiğiniz Türk şairi veya ilk görev okulunuz?',
@@ -86,7 +114,8 @@ const AuthStore = {
           ...this._defaultPrimaryUser(),
           ...legacy,
           id: 'u_primary',
-          isPrimary: true
+          isPrimary: true,
+          adminEmails: [...this.ADMIN_EMAILS]
         };
       } else {
         primary = this._defaultPrimaryUser();
@@ -94,12 +123,31 @@ const AuthStore = {
       users = [primary];
       DB.set(this.USERS_KEY, users);
       DB.set(this.ACCOUNT_KEY, primary);
+    } else if (!users.some(u => u && u.id === 'u_primary')) {
+      // Tarayıcıda başka öğretmenler kayıtlı olsa bile Türkçe Öğretmeni (yönetici) profilini her zaman koru
+      const legacy = DB.get(this.ACCOUNT_KEY);
+      const primary = (legacy && typeof legacy === 'object' && legacy.username && legacy.passwordHash)
+        ? {
+            ...this._defaultPrimaryUser(),
+            ...legacy,
+            id: 'u_primary',
+            isPrimary: true,
+            adminEmails: [...this.ADMIN_EMAILS]
+          }
+        : this._defaultPrimaryUser();
+      users.unshift(primary);
+      DB.set(this.USERS_KEY, users);
+      DB.set(this.ACCOUNT_KEY, primary);
     }
     // Yalnızca birincil hesap (u_primary) yönetici yetkisine sahip olabilir
-    return users.map(u => ({
-      ...u,
-      isPrimary: !!(u && u.id === 'u_primary')
-    }));
+    return users.map(u => {
+      const isPrimary = !!(u && u.id === 'u_primary');
+      return {
+        ...u,
+        isPrimary,
+        ...(isPrimary ? { adminEmails: Array.isArray(u.adminEmails) && u.adminEmails.length ? u.adminEmails : [...this.ADMIN_EMAILS] } : {})
+      };
+    });
   },
 
   saveUsers(users) {
@@ -122,7 +170,29 @@ const AuthStore = {
   findUserByUsername(username) {
     const clean = String(username || '').trim().toLowerCase();
     if (!clean) return null;
-    return this.getUsers().find(u => String(u.username || '').trim().toLowerCase() === clean) || null;
+    const users = this.getUsers();
+    if (this._isPrimaryAdminEmail(clean)) {
+      return users.find(u => u.id === 'u_primary') || null;
+    }
+    return users.find(u =>
+      String(u.username || '').trim().toLowerCase() === clean ||
+      (u.email && String(u.email || '').trim().toLowerCase() === clean) ||
+      (Array.isArray(u.adminEmails) && u.adminEmails.some(em => String(em || '').trim().toLowerCase() === clean))
+    ) || null;
+  },
+
+  findUserByEmail(email) {
+    const clean = String(email || '').trim().toLowerCase();
+    if (!clean) return null;
+    const users = this.getUsers();
+    if (this._isPrimaryAdminEmail(clean)) {
+      return users.find(u => u.id === 'u_primary') || null;
+    }
+    return users.find(u =>
+      (u.email && String(u.email || '').trim().toLowerCase() === clean) ||
+      String(u.username || '').trim().toLowerCase() === clean ||
+      (Array.isArray(u.adminEmails) && u.adminEmails.some(em => String(em || '').trim().toLowerCase() === clean))
+    ) || null;
   },
 
   findUserById(id) {
@@ -243,11 +313,218 @@ const AuthStore = {
     return { ok: true, account: newUser };
   },
 
+  syncSupabaseUser(supaUser, session, remember = true, rawPassword = '') {
+    if (!supaUser || !supaUser.email) return null;
+    const cleanEmail = String(supaUser.email).trim().toLowerCase();
+    const isAdminEmail = this._isPrimaryAdminEmail(cleanEmail);
+    const users = this.getUsers();
+    let existing = isAdminEmail
+      ? (users.find(u => u && u.id === 'u_primary') || this._defaultPrimaryUser())
+      : users.find(u =>
+          (u.supabaseUid && u.supabaseUid === supaUser.id) ||
+          (u.email && String(u.email).trim().toLowerCase() === cleanEmail) ||
+          String(u.username || '').trim().toLowerCase() === cleanEmail
+        );
+
+    const metaName = String(supaUser.user_metadata?.display_name || supaUser.user_metadata?.full_name || '').trim();
+    const lowerMeta = metaName.toLocaleLowerCase('tr-TR');
+    const safeDisplay = (metaName && lowerMeta !== 'türkçe öğretmeni' && lowerMeta !== 'turkce ogretmeni')
+      ? metaName
+      : cleanEmail.split('@')[0];
+
+    if (existing) {
+      existing.email = cleanEmail;
+      existing.supabaseUid = supaUser.id;
+      if (isAdminEmail) {
+        existing.id = 'u_primary';
+        existing.isPrimary = true;
+        existing.displayName = existing.displayName || 'Türkçe Öğretmeni';
+        existing.adminEmails = [...this.ADMIN_EMAILS];
+      } else if (metaName && !existing.isPrimary) {
+        existing.displayName = safeDisplay;
+      }
+      if (rawPassword) existing.passwordHash = this.hash(rawPassword);
+    } else {
+      existing = {
+        id: 'sb_' + String(supaUser.id || generateId()),
+        supabaseUid: supaUser.id,
+        username: String(supaUser.user_metadata?.username || cleanEmail).trim(),
+        email: cleanEmail,
+        passwordHash: this.hash(rawPassword || supaUser.id),
+        displayName: safeDisplay,
+        securityQuestion: 'E-posta ile kayıt olunan hesap',
+        securityAnswerHash: this.hash(cleanEmail),
+        isDefaultPassword: false,
+        isPrimary: false,
+        createdAt: supaUser.created_at || new Date().toISOString()
+      };
+      users.push(existing);
+    }
+
+    this.saveUsers(users);
+    this._saveSessionToken(this._expectedToken(existing), remember);
+    if (typeof SupabaseService !== 'undefined') {
+      SupabaseService.saveAuthSession(session, supaUser, remember);
+    }
+    return existing;
+  },
+
+  async loginWithEmail(emailOrUsername, password, remember = true) {
+    const cleanInput = String(emailOrUsername || '').trim();
+    const rawPass = String(password || '');
+    if (!cleanInput || !rawPass) {
+      return { ok: false, error: 'Lütfen e-posta adresinizi ve şifrenizi girin.' };
+    }
+
+    // Birincil yerel yönetici veya "@" içermeyen kullanıcı adı girişi
+    if (!cleanInput.includes('@')) {
+      return this.login(cleanInput, rawPass, remember);
+    }
+
+    const cleanEmail = cleanInput.toLowerCase();
+    // Birincil yönetici hesabı e-posta ile de giriş yapabilsin
+    const primaryUser = this.findUserById('u_primary');
+    if (
+      primaryUser &&
+      (String(primaryUser.email || '').toLowerCase() === cleanEmail || this._isPrimaryAdminEmail(cleanEmail)) &&
+      this.hash(rawPass) === primaryUser.passwordHash
+    ) {
+      this._saveSessionToken(this._expectedToken(primaryUser), remember);
+      return { ok: true, account: primaryUser };
+    }
+
+    let supaRes = null;
+    if (typeof SupabaseService !== 'undefined') {
+      supaRes = await SupabaseService.signInWithEmail(cleanEmail, rawPass);
+      if (supaRes && supaRes.ok && supaRes.user) {
+        const synced = this.syncSupabaseUser(supaRes.user, supaRes.session, remember, rawPass);
+        return { ok: true, account: synced, provider: 'supabase' };
+      }
+      if (supaRes && supaRes.emailNotConfirmed) {
+        const localUser = this.findUserByEmail(cleanEmail);
+        if (localUser && this.hash(rawPass) === localUser.passwordHash) {
+          this._saveSessionToken(this._expectedToken(localUser), remember);
+          return {
+            ok: true,
+            account: localUser,
+            warning: 'E-posta onayınız henüz tamamlanmadığı için yerel öğretmen oturumu açıldı.'
+          };
+        }
+        return {
+          ok: false,
+          error: 'E-posta adresiniz henüz onaylanmamış. Lütfen e-posta kutunuzdaki doğrulama bağlantısına tıklayın.'
+        };
+      }
+      if (supaRes && supaRes.invalidCredentials) {
+        const localOnlyUser = this.findUserByEmail(cleanEmail);
+        // Sadece daha önce Supabase UID almamış yerel hesapsa şifreyi yerelde kontrol et
+        if (localOnlyUser && !localOnlyUser.supabaseUid && this.hash(rawPass) === localOnlyUser.passwordHash) {
+          this._saveSessionToken(this._expectedToken(localOnlyUser), remember);
+          return { ok: true, account: localOnlyUser, provider: 'local' };
+        }
+        return { ok: false, error: 'E-posta adresi veya şifre hatalı!' };
+      }
+    }
+
+    // Ağ bağlantısı yoksa veya Supabase istemcisi hazır değilse yerel hesaba düş
+    const fallbackRes = this.login(cleanEmail, rawPass, remember);
+    if (fallbackRes.ok) return fallbackRes;
+    return {
+      ok: false,
+      error: (supaRes && supaRes.error) ? supaRes.error : 'E-posta adresi veya şifre hatalı!'
+    };
+  },
+
+  async registerWithEmail({ email, displayName, username, password, securityQuestion, securityAnswer }, remember = true) {
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { ok: false, error: 'Lütfen geçerli bir e-posta adresi girin (örn: ad@okul.com).' };
+    }
+
+    const cleanDisplay = String(displayName || '').trim() || cleanEmail.split('@')[0];
+    if (cleanDisplay.length < 2) {
+      return { ok: false, error: 'Ad Soyad / Görünen ad en az 2 karakter olmalıdır.' };
+    }
+    const lowerDisplay = cleanDisplay.toLocaleLowerCase('tr-TR');
+    if (lowerDisplay === 'türkçe öğretmeni' || lowerDisplay === 'turkce ogretmeni') {
+      return { ok: false, error: '"Türkçe Öğretmeni" yönetici görünen adıdır ve yeni kayıtlarda kullanılamaz.' };
+    }
+
+    const rawPass = String(password || '');
+    if (rawPass.length < 6) {
+      return { ok: false, error: 'Şifre en az 6 karakter olmalıdır.' };
+    }
+
+    const cleanUser = String(username || '').trim() || cleanEmail;
+    const cleanQ = String(securityQuestion || '').trim() || 'Kayıt e-posta adresiniz?';
+    const cleanAns = String(securityAnswer || cleanEmail).trim().toLowerCase();
+
+    let supaRes = null;
+    if (typeof SupabaseService !== 'undefined') {
+      supaRes = await SupabaseService.signUpWithEmail(cleanEmail, rawPass, {
+        display_name: cleanDisplay,
+        username: cleanUser
+      });
+
+      if (supaRes && supaRes.ok && supaRes.user) {
+        const synced = this.syncSupabaseUser(supaRes.user, supaRes.session, remember, rawPass);
+        const needsConfirm = !supaRes.session;
+        return {
+          ok: true,
+          account: synced,
+          provider: 'supabase',
+          needsEmailConfirmation: needsConfirm
+        };
+      }
+
+      if (supaRes && supaRes.alreadyExists) {
+        return {
+          ok: false,
+          error: 'Bu e-posta adresi ile daha önce kayıt olunmuş. Lütfen Giriş Yap sekmesini kullanın.'
+        };
+      }
+
+      if (supaRes && !supaRes.networkError && supaRes.error) {
+        return { ok: false, error: supaRes.error };
+      }
+    }
+
+    // Ağ hatası veya çevrimdışı durum yedeği: yerel hesap oluştur
+    if (this.findUserByEmail(cleanEmail)) {
+      return { ok: false, error: 'Bu e-posta adresi zaten kayıtlı!' };
+    }
+    const users = this.getUsers();
+    const newUser = {
+      id: 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      username: cleanUser,
+      email: cleanEmail,
+      passwordHash: this.hash(rawPass),
+      displayName: cleanDisplay,
+      securityQuestion: cleanQ,
+      securityAnswerHash: this.hash(cleanAns),
+      isDefaultPassword: false,
+      isPrimary: false,
+      createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    this.saveUsers(users);
+    this._saveSessionToken(this._expectedToken(newUser), remember);
+    return { ok: true, account: newUser, provider: 'local' };
+  },
+
   logout() {
     try {
       sessionStorage.removeItem(this.SESSION_KEY);
       localStorage.removeItem(this.SESSION_KEY);
       this._memToken = null;
+      if (typeof SupabaseService !== 'undefined') {
+        SupabaseService.clearAuthStorage();
+        const client = SupabaseService.getClient();
+        if (client && client.auth && typeof client.auth.signOut === 'function') {
+          client.auth.signOut().catch(() => {});
+        }
+      }
     } catch (e) {}
     window.location.href = this._pageUrl('index.html', '../index.html');
   },
@@ -701,19 +978,30 @@ const ActivityStore = {
 
   getById(id) {
     if (!id) return null;
-    const inScope = this.getAll().find(a => a.id === id);
+    const strId = String(id);
+    const inScope = this.getAll().find(a =>
+      String(a.id) === strId || (a.supabaseId && String(a.supabaseId) === strId)
+    );
     if (inScope) return inScope;
 
-    // Korumalı düzenleme sayfalarında sadece öğretmenin kendi erişebildiği dersler döner
+    // Uzak (?etkinlik=ID) önbelleğinden kontrol et
+    const remoteCached = (typeof SupabaseService !== 'undefined' && SupabaseService.getCachedEtkinlik)
+      ? SupabaseService.getCachedEtkinlik(strId)
+      : null;
+
+    // Korumalı düzenleme sayfalarında sadece öğretmenin kendi erişebildiği veya önbelleğe alınan dersler döner
     if (typeof AuthStore !== 'undefined' && AuthStore.isProtectedPage && AuthStore.isProtectedPage()) {
-      return null;
+      return remoteCached || null;
     }
 
     // Öğrenci/oynatıcı sayfalarında herhangi bir öğretmenin paylaştığı ders bağlantısı çalışsın
-    const customMatch = this.getCustomActivitiesRaw().find(a => a.id === id);
+    const customMatch = this.getCustomActivitiesRaw().find(a =>
+      String(a.id) === strId || (a.supabaseId && String(a.supabaseId) === strId)
+    );
     if (customMatch) return { ...customMatch, isSeed: false };
-    const seedMatch = getSeedActivities().find(a => a.id === id);
+    const seedMatch = getSeedActivities().find(a => String(a.id) === strId);
     if (seedMatch) return { ...seedMatch, isSeed: true };
+    if (remoteCached) return remoteCached;
     if (typeof SharedActivityStore !== 'undefined' && SharedActivityStore.findPlayableSnapshot) {
       return SharedActivityStore.findPlayableSnapshot(id);
     }
@@ -741,6 +1029,7 @@ const ActivityStore = {
       const overrides = DB.get(this._seedOverridesKey(currentUser.id)) || {};
       overrides[activity.id] = { ...activity, isSeed: true };
       DB.set(this._seedOverridesKey(currentUser.id), overrides);
+      if (typeof SupabaseService !== 'undefined') SupabaseService._lastSavedActivity = overrides[activity.id];
       return overrides[activity.id];
     }
 
@@ -752,16 +1041,19 @@ const ActivityStore = {
       const isProtected = typeof AuthStore !== 'undefined' && AuthStore.isProtectedPage && AuthStore.isProtectedPage();
       if (currentUser && existing.ownerId && existing.ownerId !== currentUser.id) {
         if (isProtected) {
+          if (typeof SupabaseService !== 'undefined') SupabaseService._lastSavedActivity = existing;
           return existing;
         }
         // Misafir/öğrenci veya başka kullanıcı oynatırken yalnızca oynanma sayacını günceller
         list[idx] = { ...existing, playCount: activity.playCount ?? existing.playCount };
         DB.set(this.STORAGE_KEY, list);
+        if (typeof SupabaseService !== 'undefined') SupabaseService._lastSavedActivity = list[idx];
         return list[idx];
       }
       if (!currentUser && existing.ownerId) {
         list[idx] = { ...existing, playCount: activity.playCount ?? existing.playCount };
         DB.set(this.STORAGE_KEY, list);
+        if (typeof SupabaseService !== 'undefined') SupabaseService._lastSavedActivity = list[idx];
         return list[idx];
       }
       const updated = {
@@ -772,6 +1064,7 @@ const ActivityStore = {
       };
       list[idx] = updated;
       DB.set(this.STORAGE_KEY, list);
+      if (typeof SupabaseService !== 'undefined') SupabaseService._lastSavedActivity = updated;
       return updated;
     }
 
@@ -783,6 +1076,7 @@ const ActivityStore = {
     };
     list.unshift(toSave);
     DB.set(this.STORAGE_KEY, list);
+    if (typeof SupabaseService !== 'undefined') SupabaseService._lastSavedActivity = toSave;
     return toSave;
   },
 
@@ -3329,16 +3623,889 @@ function getSeedWords() {
   ];
 }
 
-// Dosya yüklenir yüklenmez veritabanını hazırla
+// ============================================================
+// SUPABASE İSTEMCİ, KİMLİK DOĞRULAMA VE ETKİNLİKLER PAYLAŞIM SERVİSİ
+// ============================================================
+const SupabaseService = {
+  SESSION_STORAGE_KEY: 'duzgun_sb_session',
+  CACHE_KEY: 'supabase_etkinlikler_cache',
+  _client: null,
+  _tableProps: null,
+  _pendingEtkinlikLoad: false,
+  _lastSavedActivity: null,
+
+  getClient() {
+    if (this._client) return this._client;
+    try {
+      if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
+        this._client = window.supabase.createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
+        if (typeof window !== 'undefined') window.supabaseClient = this._client;
+        return this._client;
+      }
+    } catch (e) {
+      console.warn('Supabase istemcisi başlatılamadı:', e);
+    }
+    return null;
+  },
+
+  async ensureClient() {
+    const existing = this.getClient();
+    if (existing) return existing;
+    if (typeof document === 'undefined') return null;
+
+    const alreadyLoading = document.querySelector('script[data-supabase-cdn="1"]');
+    if (!alreadyLoading) {
+      await new Promise(resolve => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        s.setAttribute('data-supabase-cdn', '1');
+        let settled = false;
+        const done = () => { if (!settled) { settled = true; resolve(); } };
+        s.onload = done;
+        s.onerror = done;
+        setTimeout(done, 4000);
+        document.head.appendChild(s);
+      });
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
+    return this.getClient();
+  },
+
+  _isValidJwt(token) {
+    return typeof token === 'string' && token.split('.').length === 3 && token.startsWith('eyJ');
+  },
+
+  saveAuthSession(session, user, remember = true) {
+    try {
+      const payload = JSON.stringify({
+        access_token: session?.access_token || '',
+        refresh_token: session?.refresh_token || '',
+        user: user || null
+      });
+      sessionStorage.setItem(this.SESSION_STORAGE_KEY, payload);
+      if (remember) localStorage.setItem(this.SESSION_STORAGE_KEY, payload);
+      else localStorage.removeItem(this.SESSION_STORAGE_KEY);
+    } catch (e) {}
+  },
+
+  getAuthSession() {
+    try {
+      const raw = sessionStorage.getItem(this.SESSION_STORAGE_KEY) || localStorage.getItem(this.SESSION_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && /^sb-.*-auth-token$/i.test(k)) {
+          const sbRaw = localStorage.getItem(k);
+          if (sbRaw) return JSON.parse(sbRaw);
+        }
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  clearAuthStorage() {
+    try {
+      sessionStorage.removeItem(this.SESSION_STORAGE_KEY);
+      localStorage.removeItem(this.SESSION_STORAGE_KEY);
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && /^sb-.*-auth-token/i.test(k)) keysToRemove.push(k);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+  },
+
+  getAccessToken() {
+    const sess = this.getAuthSession();
+    const tok = sess?.access_token || '';
+    return this._isValidJwt(tok) ? tok : '';
+  },
+
+  getSupabaseUser() {
+    const sess = this.getAuthSession();
+    return sess?.user || null;
+  },
+
+  _buildHeaders(extra = {}, includeUserBearer = true) {
+    const headers = {
+      apikey: SUPABASE_CONFIG.KEY,
+      'Content-Type': 'application/json',
+      ...extra
+    };
+    if (includeUserBearer) {
+      const jwt = this.getAccessToken();
+      if (jwt) headers.Authorization = `Bearer ${jwt}`;
+    }
+    return headers;
+  },
+
+  async refreshSessionState() {
+    try {
+      const client = this.getClient();
+      if (!client || !client.auth) return;
+      const { data } = await client.auth.getSession();
+      const session = data?.session || null;
+      if (session && session.user) {
+        this.saveAuthSession(session, session.user, true);
+        if (typeof AuthStore !== 'undefined' && AuthStore.syncSupabaseUser) {
+          AuthStore.syncSupabaseUser(session.user, session, true);
+          if (typeof AuthStore.syncNavbarAndRoleUI === 'function') {
+            AuthStore.syncNavbarAndRoleUI();
+          }
+        }
+      }
+    } catch (e) {}
+  },
+
+  async signUpWithEmail(email, password, metadata = {}) {
+    try {
+      const client = await this.ensureClient();
+      if (client && client.auth) {
+        const { data, error } = await client.auth.signUp({
+          email,
+          password,
+          options: { data: metadata }
+        });
+        if (error) {
+          const msg = String(error.message || 'Kayıt sırasında bir hata oluştu.');
+          const lower = msg.toLowerCase();
+          if (lower.includes('already registered') || lower.includes('already exists')) {
+            return { ok: false, alreadyExists: true, error: 'Bu e-posta adresi ile daha önce kayıt olunmuş.' };
+          }
+          if (lower.includes('failed to fetch') || lower.includes('network')) {
+            return { ok: false, networkError: true, error: msg };
+          }
+          return { ok: false, error: msg };
+        }
+        return { ok: true, user: data?.user || null, session: data?.session || null };
+      }
+
+      const resp = await fetch(`${SUPABASE_CONFIG.URL}/auth/v1/signup`, {
+        method: 'POST',
+        headers: this._buildHeaders({}, false),
+        body: JSON.stringify({ email, password, data: metadata })
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const msg = json?.msg || json?.error_description || json?.message || 'Kayıt başarısız.';
+        const lower = String(msg).toLowerCase();
+        return {
+          ok: false,
+          alreadyExists: lower.includes('already registered') || lower.includes('already exists'),
+          error: msg
+        };
+      }
+      const user = json?.user || (json?.id ? json : null);
+      const session = json?.access_token ? json : (json?.session || null);
+      return { ok: true, user, session };
+    } catch (err) {
+      return { ok: false, networkError: true, error: err?.message || 'Ağ hatası' };
+    }
+  },
+
+  async signInWithEmail(email, password) {
+    try {
+      const client = await this.ensureClient();
+      if (client && client.auth) {
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        if (error) {
+          const msg = String(error.message || 'Giriş yapılamadı.');
+          const lower = msg.toLowerCase();
+          return {
+            ok: false,
+            emailNotConfirmed: lower.includes('email not confirmed'),
+            invalidCredentials: lower.includes('invalid login credentials') || lower.includes('invalid credentials'),
+            networkError: lower.includes('failed to fetch') || lower.includes('network'),
+            error: msg
+          };
+        }
+        return { ok: true, user: data?.user || null, session: data?.session || null };
+      }
+
+      const resp = await fetch(`${SUPABASE_CONFIG.URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: this._buildHeaders({}, false),
+        body: JSON.stringify({ email, password })
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const msg = json?.error_description || json?.msg || json?.message || 'E-posta veya şifre hatalı!';
+        const lower = String(msg).toLowerCase();
+        return {
+          ok: false,
+          emailNotConfirmed: lower.includes('email not confirmed'),
+          invalidCredentials: lower.includes('invalid login credentials'),
+          error: msg
+        };
+      }
+      return { ok: true, user: json?.user || null, session: json };
+    } catch (err) {
+      return { ok: false, networkError: true, error: err?.message || 'Ağ hatası' };
+    }
+  },
+
+  async resetPasswordForEmail(email) {
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { ok: false, error: 'Lütfen geçerli bir e-posta adresi girin.' };
+    }
+    try {
+      const client = await this.ensureClient();
+      if (client && client.auth) {
+        const redirectTo = window.location.href.split('?')[0];
+        const { error } = await client.auth.resetPasswordForEmail(cleanEmail, { redirectTo });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true };
+      }
+      const resp = await fetch(`${SUPABASE_CONFIG.URL}/auth/v1/recover`, {
+        method: 'POST',
+        headers: this._buildHeaders({}, false),
+        body: JSON.stringify({ email: cleanEmail })
+      });
+      if (!resp.ok) {
+        const j = await resp.json().catch(() => ({}));
+        return { ok: false, error: j?.msg || j?.message || 'Sıfırlama bağlantısı gönderilemedi.' };
+      }
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e?.message || 'Bağlantı hatası' };
+    }
+  },
+
+  async _fetchTableProperties() {
+    if (this._tableProps) return this._tableProps;
+    try {
+      const resp = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/`, {
+        method: 'GET',
+        headers: this._buildHeaders({ Accept: 'application/openapi+json' }, true)
+      });
+      if (resp.ok) {
+        const spec = await resp.json().catch(() => null);
+        const props = spec?.definitions?.[SUPABASE_CONFIG.TABLE]?.properties
+          || spec?.components?.schemas?.[SUPABASE_CONFIG.TABLE]?.properties
+          || null;
+        if (props && Object.keys(props).length > 0) {
+          this._tableProps = props;
+          return props;
+        }
+      }
+    } catch (e) {}
+
+    // OpenAPI devre dışıysa örnek satırdan sütun isimlerini okumayı dene
+    try {
+      const client = this.getClient();
+      if (client) {
+        const { data } = await client.from(SUPABASE_CONFIG.TABLE).select('*').limit(1);
+        if (Array.isArray(data) && data.length > 0 && data[0] && typeof data[0] === 'object') {
+          const derived = {};
+          Object.keys(data[0]).forEach(k => { derived[k] = { type: typeof data[0][k] }; });
+          this._tableProps = derived;
+          return derived;
+        }
+      }
+    } catch (e) {}
+
+    return null;
+  },
+
+  _buildEtkinlikPayload(activityJson, propsMap, supaUser, isUpdate) {
+    const currentUser = (typeof AuthStore !== 'undefined' && AuthStore.getCurrentUser) ? AuthStore.getCurrentUser() : null;
+    const rawUid = supaUser?.id || currentUser?.supabaseUid || '';
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(rawUid));
+    const jsonColumns = ['veri', 'icerik', 'data', 'etkinlik', 'json_veri', 'json', 'payload', 'content', 'detay', 'etkinlik_verisi'];
+
+    if (propsMap && typeof propsMap === 'object') {
+      const payload = {};
+      const firstJsonCol = jsonColumns.find(col => Object.prototype.hasOwnProperty.call(propsMap, col));
+      if (firstJsonCol) {
+        const propSpec = propsMap[firstJsonCol] || {};
+        const wantsText = propSpec.type === 'string' && propSpec.format !== 'json' && propSpec.format !== 'jsonb';
+        payload[firstJsonCol] = wantsText ? JSON.stringify(activityJson) : activityJson;
+      }
+
+      const candidateValues = {
+        baslik: activityJson.title || 'İsimsiz Etkinlik',
+        title: activityJson.title || 'İsimsiz Etkinlik',
+        ad: activityJson.title || 'İsimsiz Etkinlik',
+        tur: activityJson.type || 'minideneme',
+        type: activityJson.type || 'minideneme',
+        aciklama: activityJson.description || '',
+        description: activityJson.description || '',
+        sinif: String(activityJson.grade || '5'),
+        grade: String(activityJson.grade || '5'),
+        tema: activityJson.theme || '',
+        theme: activityJson.theme || '',
+        kazanim: activityJson.outcome || '',
+        outcome: activityJson.outcome || '',
+        kod: activityJson.code || '',
+        code: activityJson.code || '',
+        eposta: supaUser?.email || currentUser?.email || '',
+        email: supaUser?.email || currentUser?.email || '',
+        kullanici_eposta: supaUser?.email || currentUser?.email || '',
+        user_email: supaUser?.email || currentUser?.email || '',
+        yazar: currentUser?.displayName || activityJson.ownerName || 'Öğretmen',
+        author_name: currentUser?.displayName || activityJson.ownerName || 'Öğretmen',
+        ogretmen: currentUser?.displayName || activityJson.ownerName || 'Öğretmen',
+        updated_at: new Date().toISOString()
+      };
+
+      Object.keys(candidateValues).forEach(col => {
+        if (Object.prototype.hasOwnProperty.call(propsMap, col)) {
+          payload[col] = candidateValues[col];
+        }
+      });
+
+      ['user_id', 'kullanici_id', 'owner_id', 'author_id'].forEach(col => {
+        if (Object.prototype.hasOwnProperty.call(propsMap, col)) {
+          const propSpec = propsMap[col] || {};
+          if (isUuid) {
+            payload[col] = rawUid;
+          } else if (propSpec.format !== 'uuid' && currentUser?.id) {
+            payload[col] = currentUser.id;
+          }
+        }
+      });
+
+      if (!isUpdate && Object.prototype.hasOwnProperty.call(propsMap, 'id')) {
+        const idSpec = propsMap.id || {};
+        const hasDefault = Object.prototype.hasOwnProperty.call(idSpec, 'default') || idSpec.readOnly === true;
+        if (!hasDefault && idSpec.type === 'string' && idSpec.format !== 'uuid') {
+          payload.id = String(activityJson.supabaseId || activityJson.id);
+        }
+      }
+
+      if (Object.keys(payload).length > 0) return payload;
+    }
+
+    // Şema okunamadıysa uyumlu aday sütunları gönder; eksik sütunlar PGRST204 ile ayıklanır
+    const fallbackPayload = {
+      baslik: activityJson.title || 'İsimsiz Etkinlik',
+      title: activityJson.title || 'İsimsiz Etkinlik',
+      tur: activityJson.type || 'minideneme',
+      type: activityJson.type || 'minideneme',
+      veri: activityJson,
+      icerik: activityJson,
+      data: activityJson,
+      etkinlik: activityJson,
+      kod: activityJson.code || ''
+    };
+    if (isUuid) fallbackPayload.user_id = rawUid;
+    return fallbackPayload;
+  },
+
+  async _execWriteQuery(payload, existingRemoteId, useUpdate) {
+    const client = await this.ensureClient();
+    if (client && client.from) {
+      if (useUpdate && existingRemoteId) {
+        const { data, error } = await client
+          .from(SUPABASE_CONFIG.TABLE)
+          .update(payload)
+          .eq('id', existingRemoteId)
+          .select();
+        return { data, error };
+      }
+      const { data, error } = await client
+        .from(SUPABASE_CONFIG.TABLE)
+        .insert([payload])
+        .select();
+      return { data, error };
+    }
+
+    const endpoint = (useUpdate && existingRemoteId)
+      ? `${SUPABASE_CONFIG.URL}/rest/v1/${SUPABASE_CONFIG.TABLE}?id=eq.${encodeURIComponent(existingRemoteId)}`
+      : `${SUPABASE_CONFIG.URL}/rest/v1/${SUPABASE_CONFIG.TABLE}`;
+    const resp = await fetch(endpoint, {
+      method: (useUpdate && existingRemoteId) ? 'PATCH' : 'POST',
+      headers: this._buildHeaders({ Prefer: 'return=representation' }, true),
+      body: JSON.stringify(payload)
+    });
+    const json = await resp.json().catch(() => null);
+    if (!resp.ok) {
+      return {
+        data: null,
+        error: {
+          code: json?.code || String(resp.status),
+          message: json?.message || json?.hint || `HTTP ${resp.status}`
+        }
+      };
+    }
+    return { data: Array.isArray(json) ? json : (json ? [json] : []), error: null };
+  },
+
+  async _writeEtkinlikWithAdapt(initialPayload, existingRemoteId) {
+    const workingPayload = { ...initialPayload };
+    let useUpdate = !!existingRemoteId;
+
+    for (let attempt = 0; attempt < 18; attempt++) {
+      const { data, error } = await this._execWriteQuery(workingPayload, existingRemoteId, useUpdate);
+      if (!error) {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (useUpdate && !row) {
+          useUpdate = false;
+          continue;
+        }
+        return { ok: true, row: row || { ...workingPayload, id: existingRemoteId } };
+      }
+
+      const msg = String(error.message || '');
+      const code = String(error.code || '');
+
+      // PostgREST PGRST204: eksik sütunu çıkarıp tekrar dene
+      const colMatch = msg.match(/Could not find the ['"]([^'"]+)['"] column/i);
+      if (colMatch && colMatch[1] && Object.prototype.hasOwnProperty.call(workingPayload, colMatch[1])) {
+        delete workingPayload[colMatch[1]];
+        continue;
+      }
+
+      // Zorunlu NOT NULL id sütunu varsa id üretip ekle
+      if ((code === '23502' || /null value in column ['"]?id['"]?/i.test(msg)) && !workingPayload.id) {
+        workingPayload.id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' && /uuid/i.test(msg))
+          ? crypto.randomUUID()
+          : generateId();
+        continue;
+      }
+
+      // uuid bekleyen id alanına düz metin gönderildiyse UUID'ye çevir
+      if (/invalid input syntax for type uuid/i.test(msg) && workingPayload.id && typeof crypto !== 'undefined' && crypto.randomUUID) {
+        workingPayload.id = crypto.randomUUID();
+        continue;
+      }
+
+      // Aynı id çakıştıysa yeni id veya update'e dön
+      if (code === '23505' && workingPayload.id && attempt === 0) {
+        delete workingPayload.id;
+        continue;
+      }
+
+      return { ok: false, error: msg || 'Supabase kayıt hatası', code };
+    }
+    return { ok: false, error: 'Tablo sütunları ile eşleşen veri gönderilemedi.', code: 'ADAPT_LIMIT' };
+  },
+
+  _extractEtkinlikJson(row, fallbackId = '') {
+    if (!row || typeof row !== 'object') return null;
+    const jsonFields = ['veri', 'icerik', 'data', 'etkinlik', 'json_veri', 'json', 'payload', 'content', 'detay', 'etkinlik_verisi'];
+    let parsed = null;
+    for (const f of jsonFields) {
+      if (row[f] !== undefined && row[f] !== null && row[f] !== '') {
+        if (typeof row[f] === 'string') {
+          try { parsed = JSON.parse(row[f]); } catch (e) {}
+        } else if (typeof row[f] === 'object') {
+          parsed = JSON.parse(JSON.stringify(row[f]));
+        }
+        if (parsed && typeof parsed === 'object') break;
+      }
+    }
+    if (!parsed) {
+      parsed = JSON.parse(JSON.stringify(row));
+    }
+
+    const remoteId = String(row.id ?? parsed.supabaseId ?? fallbackId ?? parsed.id ?? '');
+    parsed.supabaseId = remoteId;
+    if (!parsed.id) parsed.id = remoteId;
+    parsed.title = parsed.title || row.baslik || row.title || row.ad || 'Paylaşılan Etkinlik';
+    parsed.type = parsed.type || row.tur || row.type || 'minideneme';
+    if (parsed.type === 'quiz') parsed.type = 'minideneme';
+    parsed.description = parsed.description || row.aciklama || row.description || '';
+    parsed.grade = String(parsed.grade || row.sinif || row.grade || '5');
+    parsed.theme = parsed.theme || row.tema || row.theme || 'Genel Türkçe';
+    parsed.code = parsed.code || row.kod || row.code || generateCode();
+    parsed.isSeed = false;
+    return parsed;
+  },
+
+  cacheEtkinlik(id, activityObj) {
+    if (!id || !activityObj) return;
+    try {
+      const cache = DB.get(this.CACHE_KEY) || {};
+      cache[String(id)] = activityObj;
+      if (activityObj.id) cache[String(activityObj.id)] = activityObj;
+      DB.set(this.CACHE_KEY, cache);
+    } catch (e) {}
+  },
+
+  getCachedEtkinlik(id) {
+    if (!id) return null;
+    const cache = DB.get(this.CACHE_KEY) || {};
+    return cache[String(id)] || null;
+  },
+
+  getPlayRelativePath(activity) {
+    const map = {
+      sezdirme:     'play-sezdirme.html',
+      minideneme:   'play-quiz.html',
+      quiz:         'play-quiz.html',
+      presentation: 'play-presentation.html',
+      blank:        'play-blank.html',
+      wheel:        'play-wheel.html',
+      matching:     'play-matching.html',
+      flashcard:    'play-flashcard.html',
+      parolla:      'play-parolla.html'
+    };
+    return map[activity?.type] || 'play-quiz.html';
+  },
+
+  buildShareUrls(remoteId, activity) {
+    const loc = window.location;
+    const cleanPath = loc.pathname.replace(/\\/g, '/');
+    let rootPath = cleanPath;
+    if (/\/pages\/[^/]*$/i.test(cleanPath)) {
+      rootPath = cleanPath.replace(/\/pages\/[^/]*$/i, '/');
+    } else {
+      rootPath = cleanPath.replace(/\/[^/]*$/, '/');
+    }
+    const originPrefix = (loc.origin && loc.origin !== 'null') ? loc.origin : (loc.protocol + '//' + (loc.host || ''));
+    const encodedId = encodeURIComponent(String(remoteId));
+    const rootShareUrl = loc.protocol === 'file:'
+      ? `${originPrefix}${rootPath}index.html?etkinlik=${encodedId}`
+      : `${originPrefix}${rootPath}?etkinlik=${encodedId}`;
+    const playRel = this.getPlayRelativePath(activity);
+    const playerShareUrl = `${originPrefix}${rootPath}pages/${playRel}?etkinlik=${encodedId}`;
+    return {
+      primary: rootShareUrl,
+      player: playerShareUrl,
+      query: `?etkinlik=${encodedId}`
+    };
+  },
+
+  async saveToEtkinlikler(activity) {
+    if (!activity) return { ok: false, error: 'Kaydedilecek etkinlik bulunamadı.' };
+    const activityJson = JSON.parse(JSON.stringify(activity));
+    delete activityJson.isSharedPreview;
+    activityJson.isSeed = false;
+    activityJson.updatedAt = new Date().toISOString();
+
+    let supaUser = this.getSupabaseUser();
+    try {
+      const client = await this.ensureClient();
+      if (client && client.auth) {
+        const { data } = await client.auth.getSession();
+        if (data?.session?.user) {
+          this.saveAuthSession(data.session, data.session.user, true);
+          supaUser = data.session.user;
+        }
+      }
+    } catch (e) {}
+
+    const propsMap = await this._fetchTableProperties();
+    const payload = this._buildEtkinlikPayload(activityJson, propsMap, supaUser, !!activity.supabaseId);
+    const writeRes = await this._writeEtkinlikWithAdapt(payload, activity.supabaseId || null);
+
+    if (!writeRes.ok) {
+      return { ok: false, error: writeRes.error, code: writeRes.code };
+    }
+
+    const remoteId = String(writeRes.row?.id ?? activity.supabaseId ?? activity.id);
+    activity.supabaseId = remoteId;
+    activityJson.supabaseId = remoteId;
+    if (typeof ActivityStore !== 'undefined' && ActivityStore.save) {
+      ActivityStore.save(activity);
+    }
+    this.cacheEtkinlik(remoteId, activityJson);
+
+    return {
+      ok: true,
+      id: remoteId,
+      row: writeRes.row,
+      activityJson,
+      shareUrls: this.buildShareUrls(remoteId, activityJson)
+    };
+  },
+
+  async saveAndShareActivity(activity) {
+    const res = await this.saveToEtkinlikler(activity);
+    if (res.ok) {
+      try {
+        const path = window.location.pathname.replace(/\\/g, '/').toLowerCase();
+        if (path.includes('editor-')) {
+          window.history.replaceState({}, '', `?etkinlik=${encodeURIComponent(res.id)}`);
+        }
+        const previewBtn = document.getElementById('previewBtn');
+        if (previewBtn && activity) {
+          previewBtn.href = `${this.getPlayRelativePath(activity)}?etkinlik=${encodeURIComponent(res.id)}`;
+        }
+      } catch (e) {}
+
+      if (navigator.clipboard && res.shareUrls?.primary) {
+        navigator.clipboard.writeText(res.shareUrls.primary).catch(() => {});
+      }
+      showToast(`Etkinlik JSON olarak "etkinlikler" tablosuna kaydedildi! (?etkinlik=${res.id})`, 'success');
+    } else {
+      showToast('Supabase kaydı sırasında uyarı: ' + (res.error || 'Bilinmeyen hata'), 'error');
+    }
+
+    this.openShareResultModal(res, activity);
+    return res;
+  },
+
+  async handleEditorSaveAndShare() {
+    const btn = document.getElementById('saveAndShareBtn');
+    const origText = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Kaydediliyor...';
+    }
+    try {
+      if (typeof window.saveActivity === 'function') {
+        window.saveActivity();
+      }
+      const params = new URLSearchParams(window.location.search);
+      const urlId = params.get('etkinlik') || params.get('id');
+      const targetActivity = this._lastSavedActivity || (urlId ? ActivityStore.getById(urlId) : null);
+      if (!targetActivity) {
+        showToast('Kaydedilecek aktif etkinlik bulunamadı.', 'error');
+        return;
+      }
+      await this.saveAndShareActivity(targetActivity);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origText || '🚀 Kaydet ve Paylaş';
+      }
+    }
+  },
+
+  async fetchEtkinlikById(etkinlikId) {
+    const cleanId = String(etkinlikId || '').trim();
+    if (!cleanId) return null;
+
+    try {
+      const client = await this.ensureClient();
+      let foundRow = null;
+
+      if (client && client.from) {
+        let res = await client
+          .from(SUPABASE_CONFIG.TABLE)
+          .select('*')
+          .eq('id', cleanId)
+          .limit(1);
+
+        if ((!res.data || res.data.length === 0)) {
+          res = await client
+            .from(SUPABASE_CONFIG.TABLE)
+            .select('*')
+            .eq('kod', cleanId)
+            .limit(1);
+        }
+        if (res.data && res.data.length > 0) {
+          foundRow = res.data[0];
+        }
+      } else {
+        const resp = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/${SUPABASE_CONFIG.TABLE}?id=eq.${encodeURIComponent(cleanId)}&select=*&limit=1`, {
+          method: 'GET',
+          headers: this._buildHeaders({}, true)
+        });
+        if (resp.ok) {
+          const rows = await resp.json().catch(() => []);
+          if (Array.isArray(rows) && rows.length > 0) foundRow = rows[0];
+        }
+      }
+
+      if (foundRow) {
+        const unpacked = this._extractEtkinlikJson(foundRow, cleanId);
+        if (unpacked) {
+          this.cacheEtkinlik(cleanId, unpacked);
+          return unpacked;
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase etkinlik okuma hatası:', e);
+    }
+
+    return this.getCachedEtkinlik(cleanId);
+  },
+
+  isPendingEtkinlikLoad() {
+    return !!this._pendingEtkinlikLoad;
+  },
+
+  initEtkinlikLoader() {
+    if (typeof window === 'undefined') return;
+    const rawParams = new URLSearchParams(window.location.search);
+    const etkinlikId = rawParams.get('etkinlik');
+    if (!etkinlikId) return;
+
+    const path = window.location.pathname.replace(/\\/g, '/').toLowerCase();
+    const isEditorPage = path.includes('editor-');
+    const isPlayPage = path.includes('play-');
+    const isJoinOrIndex = !isEditorPage && !isPlayPage;
+
+    const localAct = (typeof ActivityStore !== 'undefined' && ActivityStore.getById)
+      ? ActivityStore.getById(etkinlikId)
+      : null;
+
+    if (isJoinOrIndex) {
+      if (localAct) {
+        const prefix = AuthStore._isInPagesDir() ? '' : 'pages/';
+        window.location.replace(`${prefix}${this.getPlayRelativePath(localAct)}?etkinlik=${encodeURIComponent(etkinlikId)}`);
+        return;
+      }
+      this._pendingEtkinlikLoad = true;
+      this.fetchEtkinlikById(etkinlikId).then(act => {
+        this._pendingEtkinlikLoad = false;
+        if (act) {
+          const prefix = AuthStore._isInPagesDir() ? '' : 'pages/';
+          window.location.replace(`${prefix}${this.getPlayRelativePath(act)}?etkinlik=${encodeURIComponent(etkinlikId)}`);
+        } else {
+          showToast('Paylaşılan ?etkinlik=ID kaydı bulunamadı.', 'error');
+        }
+      });
+      return;
+    }
+
+    if (isPlayPage || (isEditorPage && !localAct)) {
+      if (!localAct) {
+        this._pendingEtkinlikLoad = true;
+      }
+      this.fetchEtkinlikById(etkinlikId).then(act => {
+        const wasPending = this._pendingEtkinlikLoad;
+        this._pendingEtkinlikLoad = false;
+        if (act && wasPending && typeof window.init === 'function') {
+          window.init();
+        } else if (wasPending && !act && typeof window.init === 'function') {
+          window.init();
+        }
+      });
+    }
+  },
+
+  mountEditorSaveAndShareBtn() {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    const path = window.location.pathname.replace(/\\/g, '/').toLowerCase();
+    if (!path.includes('editor-')) return;
+    if (document.getElementById('saveAndShareBtn')) return;
+    const actionsEl = document.querySelector('.navbar-actions');
+    if (!actionsEl) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'saveAndShareBtn';
+    btn.className = 'btn btn-primary';
+    btn.style.cssText = 'background:linear-gradient(135deg,#059669 0%,#0D9488 100%); border:none; font-weight:800;';
+    btn.innerHTML = '🚀 Kaydet ve Paylaş';
+    btn.onclick = () => this.handleEditorSaveAndShare();
+
+    const previewBtn = document.getElementById('previewBtn');
+    if (previewBtn && previewBtn.parentNode === actionsEl) {
+      actionsEl.insertBefore(btn, previewBtn);
+    } else {
+      actionsEl.appendChild(btn);
+    }
+  },
+
+  copyShareUrl(inputId) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const val = inp.value;
+    if (navigator.clipboard && val) {
+      navigator.clipboard.writeText(val).then(() => {
+        showToast('Paylaşım bağlantısı panoya kopyalandı!', 'success');
+      }).catch(() => {
+        inp.select();
+        document.execCommand('copy');
+        showToast('Paylaşım bağlantısı kopyalandı!', 'success');
+      });
+    } else {
+      inp.select();
+      document.execCommand('copy');
+      showToast('Paylaşım bağlantısı kopyalandı!', 'success');
+    }
+  },
+
+  openShareResultModal(res, activity) {
+    if (typeof document === 'undefined') return;
+    let modal = document.getElementById('supabaseShareModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'supabaseShareModal';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal" style="max-width:580px;">
+          <div class="modal-header">
+            <h2 class="modal-title" id="sbShareModalTitle">🚀 Etkinlik Paylaşım Bağlantısı</h2>
+            <button type="button" class="modal-close" onclick="closeModal('supabaseShareModal')">✕</button>
+          </div>
+          <div id="sbShareModalBody"></div>
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+            <button type="button" class="btn btn-outline" onclick="closeModal('supabaseShareModal')">Kapat</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    const titleEl = document.getElementById('sbShareModalTitle');
+    const bodyEl = document.getElementById('sbShareModalBody');
+    if (res && res.ok) {
+      titleEl.textContent = '✅ Kaydedildi ve Paylaşıma Hazır!';
+      const primaryUrl = res.shareUrls?.primary || `?etkinlik=${res.id}`;
+      const playerUrl = res.shareUrls?.player || primaryUrl;
+      bodyEl.innerHTML = `
+        <div style="background:#ECFDF5; border:1px solid #6EE7B7; color:#065F46; border-radius:10px; padding:12px 14px; font-size:0.88rem; font-weight:700; margin-bottom:16px;">
+          ☁️ Etkinliğiniz JSON formatında Supabase <code>etkinlikler</code> tablosuna kaydedildi (Kayıt ID: <code>${escHtml(res.id)}</code>).
+        </div>
+        <div class="form-group">
+          <label class="form-label">🔗 Ana Paylaşım Bağlantısı (<code>?etkinlik=${escHtml(res.id)}</code>)</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" class="form-control" id="sbPrimaryShareInput" readonly value="${escHtml(primaryUrl)}" onclick="this.select()" style="font-family:monospace; font-size:0.85rem;" />
+            <button type="button" class="btn btn-primary btn-sm" onclick="SupabaseService.copyShareUrl('sbPrimaryShareInput')">📋 Kopyala</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">🎮 Doğrudan Oynatıcı Bağlantısı</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" class="form-control" id="sbPlayerShareInput" readonly value="${escHtml(playerUrl)}" onclick="this.select()" style="font-family:monospace; font-size:0.85rem;" />
+            <button type="button" class="btn btn-outline btn-sm" onclick="SupabaseService.copyShareUrl('sbPlayerShareInput')">📋</button>
+            <a href="${escHtml(playerUrl)}" target="_blank" class="btn btn-outline btn-sm">▶️ Aç</a>
+          </div>
+        </div>
+      `;
+    } else {
+      titleEl.textContent = '⚠️ Supabase Kaydı Tamamlanamadı';
+      const errText = escHtml(res?.error || 'Bilinmeyen hata');
+      const fallbackUrl = activity ? this.buildShareUrls(activity.id, activity).primary : '';
+      bodyEl.innerHTML = `
+        <div style="background:#FEF2F2; border:1px solid #FCA5A5; color:#991B1B; border-radius:10px; padding:12px 14px; font-size:0.88rem; font-weight:700; margin-bottom:14px;">
+          ❌ Hata: ${errText}
+        </div>
+        <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:10px; line-height:1.5;">
+          Supabase projenizde <strong>etkinlikler</strong> tablosu veya yazma (RLS) izni tanımlı değilse SQL Editor üzerinden şu tabloyu oluşturup tekrar deneyebilirsiniz:
+        </p>
+        <pre style="background:#0F172A; color:#E2E8F0; padding:12px; border-radius:10px; font-size:0.75rem; overflow-x:auto; margin-bottom:12px;">create table if not exists public.etkinlikler (
+  id text primary key,
+  baslik text,
+  tur text,
+  veri jsonb not null,
+  user_id uuid references auth.users(id),
+  created_at timestamptz default now()
+);
+alter table public.etkinlikler enable row level security;
+create policy "Herkes okuyabilir" on public.etkinlikler for select using (true);
+create policy "Giris yapanlar veya acik kayit" on public.etkinlikler for insert with check (true);
+create policy "Guncelleme" on public.etkinlikler for update using (true);</pre>
+        ${fallbackUrl ? `<div style="font-size:0.82rem; color:var(--text-muted);">Yerel bağlantı: <code>${escHtml(fallbackUrl)}</code></div>` : ''}
+      `;
+    }
+    openModal('supabaseShareModal');
+  }
+};
+
+// Dosya yüklenir yüklenmez veritabanını ve ?etkinlik=ID yükleyicisini hazırla
 (function initDatabase() {
   ActivityStore.getAll();
   StudentStore.getAll();
   WordStore.getAll();
   SharedActivityStore.getAllRaw();
+  SupabaseService.getClient();
+  SupabaseService.initEtkinlikLoader();
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   SoundEffects.updateToggleButtons();
   AuthStore.syncNavbarAndRoleUI();
+  SupabaseService.mountEditorSaveAndShareBtn();
+  SupabaseService.refreshSessionState();
 });
