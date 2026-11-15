@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boşluk Doldurma - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .blank-text {
+      font-size: 1.2rem;
+      line-height: 2.8;
+      font-weight: 600;
+      color: var(--text);
+      word-spacing: 4px;
+    }
+  </style>
+</head>
+<body style="background: var(--bg);">
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="history.back()">← Geri</button>
+  </div>
+</nav>
+
+<div class="blank-wrapper" id="mainWrapper">
+  <div id="loadingScreen" class="text-center" style="padding:80px;">
+    <div style="font-size:4rem;">⏳</div>
+    <h2>Yükleniyor...</h2>
+  </div>
+
+  <div id="startScreen" class="hidden">
+    <div class="quiz-header">
+      <div style="font-size:3rem; margin-bottom:12px;">✏️</div>
+      <h1 style="font-size:2rem; font-weight:900; margin-bottom:8px;" id="actTitle"></h1>
+      <p style="color:var(--text-muted);" id="actDesc"></p>
+    </div>
+    <div class="card text-center" style="padding:40px; margin-bottom:24px;">
+      <div id="metaInfo" style="display:flex; justify-content:center; gap:32px; margin-bottom:32px;"></div>
+      <div class="form-group" style="max-width:280px; margin:0 auto 24px;">
+        <label class="form-label">Adınız Soyadınız</label>
+        <input type="text" class="form-control" id="playerName" placeholder="Öğrenci adı..." style="text-align:center;" />
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="startActivity()">▶️ Başla</button>
+    </div>
+  </div>
+
+  <div id="activityScreen" class="hidden">
+    <div class="quiz-progress-info" style="margin-bottom:8px;">
+      <span id="progressLabel">Soru 1 / 1</span>
+      <span id="scoreLabel">Puan: 0</span>
+    </div>
+    <div class="progress-bar mb-24">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+
+    <div id="questionArea"></div>
+
+    <div style="display:flex; justify-content:center; margin-top:24px; gap:12px; flex-wrap:wrap;">
+      <button class="btn btn-outline" id="hintBtn" onclick="showHint()">💡 İpucu Al</button>
+      <button class="btn btn-primary" onclick="checkAnswers()">✅ Cevapları Kontrol Et</button>
+    </div>
+
+    <div id="feedbackArea" style="margin-top:16px;"></div>
+
+    <div style="text-align:center; margin-top:24px;">
+      <button class="btn btn-primary hidden" id="nextBtn" onclick="nextQuestion()">Sonraki Soru →</button>
+    </div>
+  </div>
+
+  <div id="resultScreen" class="hidden">
+    <div class="quiz-result">
+      <div class="result-score-circle">
+        <span class="score-num" id="finalPercent">0%</span>
+        <span class="score-label">BAŞARI</span>
+      </div>
+      <h2 class="result-title" id="resultTitle">Tebrikler!</h2>
+      <p class="result-subtitle" id="resultSubtitle"></p>
+      <div class="result-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-num green" id="correctCount">0</div>
+          <div class="breakdown-label">Doğru</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num red" id="wrongCount">0</div>
+          <div class="breakdown-label">Yanlış</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num" id="totalCount" style="color:var(--primary);">0</div>
+          <div class="breakdown-label">Toplam Boşluk</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-lg" onclick="restartActivity()">🔄 Tekrar Çöz</button>
+        <a href="../index.html" class="btn btn-outline btn-lg">🏠 Ana Sayfa</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let questions = [];
+  let currentIndex = 0;
+  let totalBlanks = 0;
+  let correctBlanks = 0;
+  let playerName = '';
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const code = params.get('code');
+
+    if (id) activity = ActivityStore.getById(id);
+    else if (code) {
+      const all = ActivityStore.getAll();
+      activity = all.find(a => a.code === code.toUpperCase() && a.type === 'blank');
+    }
+
+    document.getElementById('loadingScreen').classList.add('hidden');
+
+    if (!activity) {
+      document.getElementById('mainWrapper').innerHTML = `
+        <div class="empty-state"><span class="empty-icon">😕</span>
+        <h3>Etkinlik bulunamadı</h3>
+        <a href="../index.html" class="btn btn-primary mt-16">Ana Sayfaya Dön</a></div>`;
+      return;
+    }
+
+    document.getElementById('actTitle').textContent = activity.title;
+    document.getElementById('actDesc').textContent = activity.description || '';
+
+    const qCount = activity.questions?.length || 0;
+    const blankCount = (activity.questions || []).reduce((sum, q) => {
+      return sum + (q.parts || []).filter(p => p.type === 'blank').length;
+    }, 0);
+
+    document.getElementById('metaInfo').innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:var(--primary);">${qCount}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Soru</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:var(--primary);">${blankCount}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Boşluk</div>
+      </div>`;
+
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  function startActivity() {
+    playerName = document.getElementById('playerName').value.trim() || 'Öğrenci';
+    questions = [...(activity.questions || [])];
+
+    if (questions.length === 0) {
+      showToast('Bu etkinlikte henüz soru yok!', 'warning');
+      return;
+    }
+
+    activity.playCount = (activity.playCount || 0) + 1;
+    ActivityStore.save(activity);
+
+    currentIndex = 0;
+    totalBlanks = 0;
+    correctBlanks = 0;
+
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('activityScreen').classList.remove('hidden');
+
+    if (activity.settings?.showHint === false) {
+      document.getElementById('hintBtn').classList.add('hidden');
+    }
+
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const q = questions[currentIndex];
+    const total = questions.length;
+
+    document.getElementById('progressLabel').textContent = `Soru ${currentIndex + 1} / ${total}`;
+    document.getElementById('progressFill').style.width = `${((currentIndex) / total) * 100}%`;
+    document.getElementById('nextBtn').classList.add('hidden');
+    document.getElementById('feedbackArea').innerHTML = '';
+
+    const area = document.getElementById('questionArea');
+    const parts = q.parts || parseTextFromRaw(q.rawText || '');
+    
+    let imgHtml = q.image ? `
+      <div class="activity-media-box" style="margin-bottom:16px;">
+        <img src="${q.image}" alt="Cümle Görseli" onclick="openLightbox('${q.image}')" title="Büyütmek için tıklayın" style="max-height:240px; cursor:zoom-in; border-radius:12px;" />
+      </div>` : '';
+
+    let html = `<div class="blank-question-box">${imgHtml}<div class="blank-text">`;
+
+    parts.forEach((part, pi) => {
+      if (part.type === 'text') {
+        html += `<span>${part.value}</span>`;
+      } else {
+        html += `<input type="text" class="blank-input"
+          id="blank_${currentIndex}_${pi}"
+          data-answer="${part.answer}"
+          data-hint="${part.hint || ''}"
+          placeholder="..."
+          autocomplete="off"
+          onkeydown="if(event.key==='Enter') checkAnswers()" />`;
+      }
+    });
+
+    html += `</div></div>`;
+    area.innerHTML = html;
+
+    setTimeout(() => {
+      const first = area.querySelector('.blank-input');
+      if (first) first.focus();
+    }, 100);
+  }
+
+  function parseTextFromRaw(raw) {
+    const parts = [];
+    const regex = /\[([^\]]+)\]/g;
+    let last = 0, match;
+    while ((match = regex.exec(raw)) !== null) {
+      if (match.index > last) parts.push({ type: 'text', value: raw.slice(last, match.index) });
+      parts.push({ type: 'blank', answer: match[1], hint: match[1][0] + '...' });
+      last = match.index + match[0].length;
+    }
+    if (last < raw.length) parts.push({ type: 'text', value: raw.slice(last) });
+    return parts;
+  }
+
+  function showHint() {
+    const inputs = document.querySelectorAll('.blank-input');
+    inputs.forEach(inp => {
+      if (!inp.classList.contains('correct') && !inp.classList.contains('wrong')) {
+        const hint = inp.dataset.hint;
+        if (hint) showToast(`İpucu: ${hint}`, 'info', 4000);
+      }
+    });
+  }
+
+  function checkAnswers() {
+    const inputs = document.querySelectorAll('.blank-input');
+    let correct = 0;
+    let total = inputs.length;
+
+    inputs.forEach(inp => {
+      inp.disabled = true;
+      const userAnswer = inp.value.trim().toLowerCase();
+      const correctAnswer = inp.dataset.answer.trim().toLowerCase();
+      if (userAnswer === correctAnswer) {
+        inp.classList.add('correct');
+        correct++;
+      } else {
+        inp.classList.add('wrong');
+        inp.title = `Doğru yanıt: ${inp.dataset.answer}`;
+      }
+    });
+
+    totalBlanks += total;
+    correctBlanks += correct;
+
+    const feedbackArea = document.getElementById('feedbackArea');
+    if (correct === total) {
+      SoundEffects.correct();
+      feedbackArea.innerHTML = `<div class="quiz-feedback correct show">🎉 Tebrikler! Tüm boşlukları doğru tamamladınız!</div>`;
+    } else {
+      SoundEffects.wrong();
+      feedbackArea.innerHTML = `<div class="quiz-feedback wrong show">❌ ${total - correct} boşluk yanlış tamamlandı. Kırmızı alanların üzerine gelerek doğru cevabı görebilirsiniz.</div>`;
+    }
+
+    document.getElementById('scoreLabel').textContent = `Doğru: ${correctBlanks}/${totalBlanks}`;
+    document.getElementById('nextBtn').classList.remove('hidden');
+  }
+
+  function nextQuestion() {
+    currentIndex++;
+    if (currentIndex >= questions.length) {
+      showResult();
+    } else {
+      showQuestion();
+    }
+  }
+
+  function showResult() {
+    document.getElementById('activityScreen').classList.add('hidden');
+    document.getElementById('resultScreen').classList.remove('hidden');
+
+    const percent = totalBlanks > 0 ? Math.round((correctBlanks / totalBlanks) * 100) : 0;
+    document.getElementById('finalPercent').textContent = percent + '%';
+    document.getElementById('correctCount').textContent = correctBlanks;
+    document.getElementById('wrongCount').textContent = totalBlanks - correctBlanks;
+    document.getElementById('totalCount').textContent = totalBlanks;
+    document.getElementById('progressFill').style.width = '100%';
+
+    let title, subtitle;
+    if (percent >= 90) { title = '🏆 Mükemmel Başarı!'; subtitle = `${playerName}, kelime bilgin harika!`; launchConfetti(); SoundEffects.win(); }
+    else if (percent >= 70) { title = '🌟 Çok İyi!'; subtitle = `${playerName}, gayet güzel bir sonuç!`; SoundEffects.win(); }
+    else if (percent >= 50) { title = '👍 Fena Değil!'; subtitle = `${playerName}, biraz daha okuma ve tekrar yapabilirsin.`; SoundEffects.correct(); }
+    else { title = '💪 Tekrar Dene!'; subtitle = `${playerName}, biraz daha pratikle çok daha iyi yapabilirsin!`; }
+
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultSubtitle').textContent = subtitle;
+  }
+
+  function restartActivity() {
+    document.getElementById('resultScreen').classList.add('hidden');
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boşluk Doldurma Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .editor-container { max-width: 860px; margin: 32px auto; padding: 0 16px; }
+    .editor-topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 64px; z-index: 50;
+    }
+    .question-block {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      border: 2px solid transparent;
+      transition: var(--transition);
+    }
+    .question-block:hover { border-color: var(--primary-light); }
+    .blank-editor-preview {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 1.05rem;
+      line-height: 2.4;
+      margin-top: 16px;
+      border: 2px solid var(--border);
+      word-spacing: 4px;
+    }
+    .blank-tag {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 6px;
+      padding: 2px 10px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 0 3px;
+      cursor: pointer;
+    }
+    .blank-tag:hover { background: var(--primary-dark); }
+    .add-question-btn {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      font-weight: 700;
+      background: transparent;
+      width: 100%;
+      font-family: var(--font);
+    }
+    .add-question-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .help-box {
+      background: var(--primary-light);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      margin-bottom: 20px;
+      border-left: 4px solid var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem;" id="saveStatus">✅ Kaydedildi</span>
+    <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Önizle</a>
+  </div>
+</nav>
+
+<div class="editor-topbar">
+  <div style="flex:1; min-width:200px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Boşluk doldurma etkinliği başlığı..."
+      style="font-size:1.1rem; font-weight:800;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span id="questionCount" class="badge badge-primary">0 Soru</span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default;"></span>
+  </div>
+</div>
+
+<div class="editor-container">
+
+  <div class="settings-panel card mb-24">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">⚙️ Ayarlar</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">İpucu düğmesini göster</div>
+        <div class="setting-desc">Öğrenciler takıldığında ilk harf ipucunu görebilsin</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="settingHint" checked onchange="markDirty()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Açıklama / Yönerge</div>
+        <div class="setting-desc">Öğrenciye gösterilecek kısa açıklama</div>
+      </div>
+      <input type="text" class="form-control" id="activityDesc" placeholder="Yönerge..." style="max-width:300px;" oninput="markDirty()" />
+    </div>
+  </div>
+
+  <div class="help-box">
+    💡 <strong>Nasıl kullanılır?</strong> Cümleyi yazın; öğrencinin doldurmasını istediğiniz sözcüğü köşeli parantez içinde yazın: <code>[cevap]</code>.<br>
+    Örnek: <em>Cümlenin sonuna [nokta] konur.</em>
+  </div>
+
+  <div id="questionsList"></div>
+
+  <button class="add-question-btn" onclick="addQuestion()">
+    ➕ Yeni Cümle/Soru Ekle
+  </button>
+
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let isDirty = false;
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) activity = ActivityStore.getById(id);
+    if (!activity) {
+      activity = ActivityStore.createNew('blank');
+      ActivityStore.save(activity);
+      window.history.replaceState({}, '', `?id=${activity.id}`);
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('activityDesc').value = activity.description || '';
+    document.getElementById('settingHint').checked = activity.settings?.showHint !== false;
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-blank.html?id=${activity.id}`;
+
+    if (!activity.questions) activity.questions = [];
+    renderQuestions();
+    updateCount();
+  }
+
+  function renderQuestions() {
+    const container = document.getElementById('questionsList');
+    if (activity.questions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:40px;">
+          <span class="empty-icon">✏️</span>
+          <h3>Henüz soru yok</h3>
+          <p>Aşağıdaki butona tıklayarak ilk alıştırmanızı ekleyin.</p>
+        </div>`;
+      return;
+    }
+    container.innerHTML = activity.questions.map((q, i) => questionBlock(q, i)).join('');
+  }
+
+  function questionBlock(q, index) {
+    const preview = buildPreview(q.rawText || '');
+    return `
+      <div class="question-block" id="qblock_${q.id}">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <span style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:1px;">CÜMLE / SORU ${index + 1}</span>
+          <div style="display:flex; gap:6px;">
+            <button class="icon-btn" onclick="moveQuestion('${q.id}', -1)">↑</button>
+            <button class="icon-btn" onclick="moveQuestion('${q.id}', 1)">↓</button>
+            <button class="icon-btn danger" onclick="removeQuestion('${q.id}')">🗑️</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Metin — boşluklar için <code>[kelime]</code> yazın</label>
+          <textarea class="form-control" rows="2"
+            placeholder="Örnek: Türkiye'nin başkenti [Ankara]'dır."
+            oninput="updateQuestion('${q.id}', this.value)"
+          >${q.rawText || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🖼️ Cümle / Soru Görseli (İsteğe bağlı)</label>
+          ${q.image ? `
+            <div class="image-preview-container" style="margin-bottom:8px;">
+              <img src="${q.image}" class="image-preview-thumb" alt="Görsel" onclick="openLightbox(this.src)" />
+              <div class="image-preview-info">
+                <div style="font-weight:700; font-size:0.85rem;">Görsel Eklendi</div>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="removeBlankImage('${q.id}')">🗑️ Kaldır</button>
+            </div>
+          ` : `
+            <div class="image-uploader-box" style="padding:10px 14px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:700; color:var(--primary); font-size:0.85rem;">
+                  <span>📁 Görsel Yükle</span>
+                  <input type="file" accept="image/*" style="display:none;" onchange="handleBlankImage('${q.id}', event)" />
+                </label>
+                <div style="display:flex; gap:6px; flex:1; max-width:320px;">
+                  <input type="text" class="form-control" id="bImgUrl_${q.id}" placeholder="Veya link yapıştırın..." style="font-size:0.8rem; padding:6px 10px;" />
+                  <button class="btn btn-outline btn-sm" onclick="applyBlankImageUrl('${q.id}')">Ekle</button>
+                </div>
+              </div>
+            </div>
+          `}
+        </div>
+        <div>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:8px;">ÖNİZLEME</div>
+          <div class="blank-editor-preview">${preview}</div>
+        </div>
+      </div>`;
+  }
+
+  function buildPreview(text) {
+    return text.replace(/\[([^\]]+)\]/g, (match, answer) =>
+      `<span class="blank-tag" title="Cevap: ${answer}">___</span>`
+    ) || '<span style="color:#bbb">Henüz metin girilmedi...</span>';
+  }
+
+  async function handleBlankImage(qId, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      showToast('Görsel işleniyor...', 'info');
+      const dataUrl = await compressImage(file, 800, 800, 0.75);
+      if (dataUrl) {
+        const q = activity.questions.find(x => x.id === qId);
+        if (q) {
+          q.image = dataUrl;
+          renderQuestions();
+          markDirty();
+          showToast('Görsel eklendi!', 'success');
+        }
+      }
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  function applyBlankImageUrl(qId) {
+    const input = document.getElementById(`bImgUrl_${qId}`);
+    if (!input || !input.value.trim()) return;
+    const q = activity.questions.find(x => x.id === qId);
+    if (q) {
+      q.image = input.value.trim();
+      renderQuestions();
+      markDirty();
+      showToast('Görsel eklendi!', 'success');
+    }
+  }
+
+  function removeBlankImage(qId) {
+    const q = activity.questions.find(x => x.id === qId);
+    if (q) {
+      q.image = null;
+      renderQuestions();
+      markDirty();
+      showToast('Görsel kaldırıldı.', 'info');
+    }
+  }
+
+  function addQuestion() {
+    if (!activity.questions) activity.questions = [];
+    const q = { id: generateId(), rawText: '', parts: [] };
+    activity.questions.push(q);
+    updateCount();
+    renderQuestions();
+    markDirty();
+    setTimeout(() => {
+      const el = document.getElementById(`qblock_${q.id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const ta = el.querySelector('textarea');
+        if (ta) ta.focus();
+      }
+    }, 100);
+  }
+
+  function removeQuestion(id) {
+    activity.questions = activity.questions.filter(q => q.id !== id);
+    updateCount();
+    renderQuestions();
+    markDirty();
+  }
+
+  function moveQuestion(id, dir) {
+    const idx = activity.questions.findIndex(q => q.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= activity.questions.length) return;
+    const tmp = activity.questions[idx];
+    activity.questions[idx] = activity.questions[newIdx];
+    activity.questions[newIdx] = tmp;
+    renderQuestions();
+    markDirty();
+  }
+
+  function updateQuestion(id, rawText) {
+    const q = activity.questions.find(q => q.id === id);
+    if (!q) return;
+    q.rawText = rawText;
+    q.parts = parseText(rawText);
+
+    const block = document.getElementById(`qblock_${id}`);
+    if (block) {
+      const previewEl = block.querySelector('.blank-editor-preview');
+      if (previewEl) previewEl.innerHTML = buildPreview(rawText);
+    }
+    markDirty();
+  }
+
+  function parseText(raw) {
+    const parts = [];
+    const regex = /\[([^\]]+)\]/g;
+    let last = 0;
+    let match;
+    while ((match = regex.exec(raw)) !== null) {
+      if (match.index > last) {
+        parts.push({ type: 'text', value: raw.slice(last, match.index) });
+      }
+      parts.push({ type: 'blank', answer: match[1], hint: match[1][0] + '...' });
+      last = match.index + match[0].length;
+    }
+    if (last < raw.length) parts.push({ type: 'text', value: raw.slice(last) });
+    return parts;
+  }
+
+  function updateCount() {
+    document.getElementById('questionCount').textContent = `${activity.questions.length} Soru`;
+  }
+
+  function markDirty() {
+    isDirty = true;
+    document.getElementById('saveStatus').textContent = '⏳ Kaydedilmedi';
+    document.getElementById('saveStatus').style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Boşluk Doldurma';
+    activity.description = document.getElementById('activityDesc').value.trim();
+    activity.settings = { showHint: document.getElementById('settingHint').checked };
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    document.getElementById('saveStatus').textContent = '✅ Kaydedildi';
+    document.getElementById('saveStatus').style.color = 'var(--success)';
+    showToast('Boşluk Doldurma kaydedildi!', 'success');
+  }
+
+  setInterval(() => { if (isDirty) saveActivity(); }, 30000);
+  window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  init();
+</script>
+</body>
+</html>

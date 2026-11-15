@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sezdirme Dersi - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    body { background: #F0FDFA; min-height: 100vh; display: flex; flex-direction: column; }
+    .sz-nav {
+      background: #fff; border-bottom: 2px solid #CCFBF1; padding: 8px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    .sz-nav-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 320px; flex-wrap: wrap; }
+    .sz-nav-left .t { font-weight: 900; color: #134E4A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+    .sz-nav-right { display: flex; gap: 6px; flex-wrap: wrap; }
+    .grade-pill { font-size: .75rem; background: #CCFBF1; color: #0F766E; padding: 3px 10px; border-radius: 50px; font-weight: 800; white-space: nowrap; }
+
+    /* Aşama şeridi */
+    .sz-track { display: flex; gap: 6px; padding: 12px 20px; overflow-x: auto; background: #fff; border-bottom: 1px solid #E2E8F0; }
+    .sz-track-item {
+      flex: 1 0 auto; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 50px;
+      border: 2px solid #E2E8F0; background: #F8FAFC; font-size: .8rem; font-weight: 800; color: #64748B;
+      cursor: pointer; white-space: nowrap; transition: var(--transition); font-family: var(--font);
+    }
+    .sz-track-item.done { background: #ECFDF5; border-color: #A7F3D0; color: #047857; }
+    .sz-track-item.active { color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+
+    .sz-main { flex: 1; width: 100%; max-width: 1100px; margin: 0 auto; padding: 20px 16px 8px; display: flex; flex-direction: column; min-width: 0; }
+    .sz-stage {
+      background: #fff; border-radius: 20px; box-shadow: 0 8px 30px rgba(13,148,136,.10);
+      padding: 28px 32px; flex: 1; min-width: 0; border-top: 6px solid var(--stage-color, #0D9488);
+      animation: stageIn .35s ease;
+    }
+    @keyframes stageIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .sz-stage-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .sz-stage-icon { width: 54px; height: 54px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0; }
+    .sz-stage-label { font-size: .78rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+    .sz-stage-title { font-size: 1.7rem; font-weight: 900; color: #0F172A; line-height: 1.2; }
+    .sz-big { font-size: 1.35rem; line-height: 1.65; color: #1E293B; white-space: pre-line; }
+    .sz-question-box {
+      margin-top: 22px; background: linear-gradient(135deg, #F5F3FF, #EDE9FE); border-left: 6px solid #8B5CF6;
+      border-radius: 14px; padding: 18px 22px; font-size: 1.3rem; font-weight: 800; color: #4C1D95; line-height: 1.5;
+    }
+    .sz-img { max-width: 100%; max-height: 300px; border-radius: 14px; margin: 16px 0; display: block; cursor: zoom-in; object-fit: contain; }
+    .sz-instruction { font-size: 1.1rem; color: #475569; font-weight: 700; margin-bottom: 16px; }
+
+    /* Vurgular */
+    .sz-mark { border-radius: 6px; padding: 0 3px; transition: all .35s ease; }
+    .sz-mark.revealed { background: #FEF08A; color: #92400E; font-weight: 900; box-shadow: 0 0 0 2px #FDE047; }
+
+    .sz-examples { display: flex; flex-direction: column; gap: 12px; }
+    .sz-example {
+      display: flex; gap: 14px; align-items: center; padding: 14px 18px; border-radius: 14px;
+      background: #F8FAFC; border: 2px solid #E2E8F0; font-size: 1.35rem; font-weight: 700; color: #1E293B;
+      cursor: pointer; transition: var(--transition);
+    }
+    .sz-example:hover { border-color: #7DD3FC; background: #F0F9FF; }
+    .sz-example .n { width: 34px; height: 34px; border-radius: 50%; background: #0EA5E9; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .95rem; font-weight: 900; flex-shrink: 0; }
+
+    .sz-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .sz-group { border-radius: 16px; padding: 18px; border: 2px dashed; }
+    .sz-group h4 { font-size: 1.1rem; font-weight: 900; margin-bottom: 12px; }
+    .sz-group ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .sz-group li { background: #fff; border-radius: 10px; padding: 10px 14px; font-size: 1.2rem; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+
+    .sz-q-card { border: 2px solid #FBCFE8; border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; background: #FFF7FB; animation: stageIn .3s ease; }
+    .sz-q-card .q { font-size: 1.3rem; font-weight: 800; color: #831843; display: flex; gap: 12px; }
+    .sz-q-card .q .num { background: #EC4899; color: #fff; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .95rem; }
+    .sz-reveal { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 1.1rem; font-weight: 700; animation: stageIn .3s ease; }
+    .sz-reveal.hint { background: #FEF9C3; color: #854D0E; }
+    .sz-reveal.answer { background: #DCFCE7; color: #166534; }
+    .sz-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+    .sz-pool { display: flex; flex-wrap: wrap; gap: 10px; padding: 16px; min-height: 70px; border-radius: 14px; background: #F1F5F9; border: 2px dashed #CBD5E1; margin-bottom: 16px; }
+    .sz-chip {
+      padding: 10px 18px; border-radius: 50px; background: #fff; border: 2px solid #CBD5E1; font-weight: 800; font-size: 1.1rem;
+      cursor: grab; user-select: none; transition: var(--transition); font-family: var(--font); color: #0F172A;
+    }
+    .sz-chip.selected { border-color: #10B981; background: #ECFDF5; transform: scale(1.06); box-shadow: 0 4px 12px rgba(16,185,129,.3); }
+    .sz-chip.ok { border-color: #22C55E; background: #DCFCE7; }
+    .sz-chip.bad { border-color: #EF4444; background: #FEE2E2; animation: shake .4s; }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    .sz-cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .sz-cat { border-radius: 16px; border: 3px solid #A7F3D0; background: #F0FDF4; min-height: 150px; padding: 14px; cursor: pointer; transition: var(--transition); }
+    .sz-cat:hover, .sz-cat.drag-over { border-color: #10B981; background: #DCFCE7; }
+    .sz-cat-title { font-weight: 900; color: #065F46; margin-bottom: 10px; font-size: 1.05rem; }
+    .sz-cat-items { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .sz-hyp-input { display: grid; grid-template-columns: minmax(0, 180px) minmax(0, 1fr) auto; gap: 10px; margin: 16px 0; }
+    .sz-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .sz-note-card { background: #FEF9C3; border-radius: 6px 16px 16px 16px; padding: 14px 16px; box-shadow: 0 4px 10px rgba(0,0,0,.08); position: relative; font-weight: 700; color: #422006; animation: stageIn .3s ease; word-break: break-word; }
+    .sz-note-card:nth-child(3n+2) { background: #DBEAFE; color: #1E3A8A; }
+    .sz-note-card:nth-child(3n) { background: #FCE7F3; color: #831843; }
+    .sz-note-card .who { font-size: .78rem; opacity: .75; margin-bottom: 4px; }
+    .sz-note-card .x { position: absolute; top: 6px; right: 8px; border: none; background: none; cursor: pointer; opacity: .5; font-size: .9rem; }
+    .sz-note-card .star { position: absolute; bottom: 6px; right: 8px; border: none; background: none; cursor: pointer; font-size: 1.1rem; opacity: .4; }
+    .sz-note-card .star.on { opacity: 1; }
+
+    .sz-curtain { text-align: center; padding: 50px 20px; border-radius: 20px; background: repeating-linear-gradient(45deg, #FEFCE8, #FEFCE8 14px, #FEF9C3 14px, #FEF9C3 28px); border: 3px dashed #FACC15; }
+    .sz-curtain .lock { font-size: 4rem; margin-bottom: 10px; }
+    .sz-rule-box { background: linear-gradient(135deg, #FEFCE8, #FEF3C7); border: 3px solid #FACC15; border-radius: 20px; padding: 24px 28px; font-size: 1.3rem; line-height: 1.7; color: #422006; font-weight: 700; white-space: pre-line; animation: ruleIn .6s cubic-bezier(.175,.885,.32,1.275); }
+    @keyframes ruleIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+    .sz-rule-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px; align-items: start; }
+
+    .sz-mcq { border: 2px solid #FECACA; border-radius: 16px; padding: 16px 18px; margin-bottom: 14px; background: #FFFBFB; }
+    .sz-mcq .q { font-size: 1.2rem; font-weight: 800; margin-bottom: 12px; color: #7F1D1D; }
+    .sz-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .sz-opt { text-align: left; padding: 12px 14px; border-radius: 12px; border: 2px solid #E2E8F0; background: #fff; font-family: var(--font); font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: var(--transition); color: #1E293B; }
+    .sz-opt:hover:not(:disabled) { border-color: #F87171; background: #FEF2F2; }
+    .sz-opt.correct { border-color: #22C55E; background: #DCFCE7; }
+    .sz-opt.wrong { border-color: #EF4444; background: #FEE2E2; }
+    .sz-opt:disabled { cursor: default; }
+
+    .sz-teacher-note { margin-top: 22px; background: #F1F5F9; border-left: 5px solid #64748B; border-radius: 10px; padding: 12px 16px; font-size: .95rem; color: #334155; }
+    .sz-timer { display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-size: 1.1rem; color: #7C3AED; background: #F5F3FF; padding: 6px 14px; border-radius: 50px; }
+
+    .sz-footer { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .sz-counter { font-weight: 900; color: #0F766E; }
+
+    .sz-start { max-width: 860px; margin: 30px auto; padding: 0 16px; width: 100%; }
+    .sz-flow { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 22px 0; }
+    .sz-flow span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 50px; font-size: .85rem; font-weight: 800; color: #fff; }
+
+    /* Dedektiflik Vakası (Telsiz + Şüpheli Teşhisi) */
+    .sz-detective-banner {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #F8FAFC; border-left: 6px solid #F59E0B; border-radius: 16px;
+      padding: 16px 20px; margin-bottom: 16px; font-size: 1.05rem; line-height: 1.55;
+    }
+    .sz-radio-log {
+      display: flex; flex-direction: column; gap: 10px;
+      max-height: 430px; overflow-y: auto; padding: 14px;
+      background: #F1F5F9; border: 2px solid #CBD5E1; border-radius: 16px; margin-bottom: 14px;
+    }
+    .sz-bubble {
+      max-width: 84%; padding: 12px 16px; border: 2px solid; box-shadow: 0 3px 10px rgba(15,23,42,.06);
+      animation: stageIn .28s ease;
+    }
+    .sz-bubble.from-dedektif {
+      align-self: flex-start; background: #FFFBEB; border-color: #F59E0B; color: #78350F;
+      border-radius: 6px 18px 18px 18px;
+    }
+    .sz-bubble.from-merkez {
+      align-self: flex-end; background: #EFF6FF; border-color: #3B82F6; color: #1E3A8A;
+      border-radius: 18px 6px 18px 18px;
+    }
+    .sz-bubble-head {
+      display: flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 900;
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; opacity: .88;
+    }
+    .sz-bubble-text { font-size: 1.18rem; font-weight: 800; line-height: 1.45; }
+    .sz-bubble-clue {
+      margin-top: 8px; padding: 6px 10px; border-radius: 8px; font-size: .88rem; font-weight: 700;
+      background: rgba(255,255,255,.78); border-left: 3px solid #0D9488; color: #134E4A;
+    }
+    .sz-suspect-panel {
+      margin-top: 18px; padding: 18px; border-radius: 16px;
+      background: #F8FAFC; border: 2px solid #CBD5E1;
+    }
+    .sz-suspect-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 12px;
+    }
+    .sz-suspect-card {
+      background: #fff; border: 2px solid #E2E8F0; border-radius: 14px; padding: 14px;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
+      transition: var(--transition);
+    }
+    .sz-suspect-card.eliminated { opacity: .48; background: #F1F5F9; border-style: dashed; }
+    .sz-suspect-card.eliminated .sz-suspect-traits { text-decoration: line-through; }
+    .sz-suspect-card.caught { border-color: #16A34A; background: #DCFCE7; box-shadow: 0 6px 18px rgba(22,163,74,.2); }
+    .sz-suspect-card.wrong-guess { border-color: #EF4444; background: #FEE2E2; animation: shake .4s; }
+
+    body.fs .sz-nav, body.fs .sz-track { display: none; }
+
+    @media (max-width: 720px) {
+      .sz-stage { padding: 20px 16px; }
+      .sz-stage-title { font-size: 1.3rem; }
+      .sz-big, .sz-example, .sz-question-box { font-size: 1.1rem; }
+      .sz-compare, .sz-opts, .sz-rule-grid { grid-template-columns: 1fr; }
+      .sz-hyp-input { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sz-nav">
+  <div class="sz-nav-left">
+    <a href="../index.html" class="navbar-brand" style="font-size:1.1rem;"><span class="logo-icon" style="font-size:1.4rem;">📚</span> DüzgünÖğretmenlik</a>
+    <span class="t" id="lessonTitle">Sezdirme Dersi</span>
+    <span class="grade-pill" id="gradePill" style="display:none;"></span>
+  </div>
+  <div class="sz-nav-right">
+    <button class="btn btn-outline btn-sm" id="noteBtn" onclick="toggleNotes()" title="Kısayol: N">👩‍🏫 Öğretmen Notları</button>
+    <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="toggleFullscreen()" title="Kısayol: F">⛶ Tam Ekran</button>
+    <a id="editLink" href="#" class="btn btn-outline btn-sm">✏️ Düzenle</a>
+    <a href="../index.html" class="btn btn-primary btn-sm">← Çıkış</a>
+  </div>
+</div>
+
+<div id="startScreen" class="sz-start"></div>
+
+<div id="lessonScreen" style="display:none; flex:1; flex-direction:column; min-width:0;">
+  <div class="sz-track" id="track"></div>
+  <div class="sz-main"><div class="sz-stage" id="stage"></div></div>
+  <div class="sz-footer">
+    <button class="btn btn-outline" id="prevBtn" onclick="go(-1)">← Önceki Aşama</button>
+    <span class="sz-counter" id="counter"></span>
+    <button class="btn btn-primary" id="nextBtn" onclick="go(1)">Sonraki Aşama →</button>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let idx = 0;
+  let showNotes = localStorage.getItem('dg_sz_notes') === 'true';
+  const state = {};          // adım bazlı geçici durum
+  let hypotheses = [];       // sınıfın kural tahminleri
+  let thinkTimer = null;
+
+  function hypKey() { return 'dg_sz_hyp_' + activity.id; }
+  function loadHyp() { try { hypotheses = JSON.parse(sessionStorage.getItem(hypKey()) || '[]'); } catch (e) { hypotheses = []; } }
+  function saveHyp() { try { sessionStorage.setItem(hypKey(), JSON.stringify(hypotheses)); } catch (e) {} }
+
+  function init() {
+    const id = new URLSearchParams(location.search).get('id');
+    activity = id ? ActivityStore.getById(id) : null;
+    if (!activity || activity.type !== 'sezdirme') {
+      document.getElementById('startScreen').innerHTML = `<div class="card text-center" style="padding:40px;"><div style="font-size:3rem;">🔍</div><h2>Sezdirme dersi bulunamadı</h2><p style="color:var(--text-muted); margin:10px 0 20px;">Ders silinmiş olabilir.</p><a href="../index.html" class="btn btn-primary">Panele Dön</a></div>`;
+      return;
+    }
+    document.title = activity.title + ' - Sezdirme Dersi';
+    document.getElementById('lessonTitle').textContent = activity.title;
+    document.getElementById('editLink').href = `editor-sezdirme.html?id=${activity.id}`;
+    if (activity.grade) {
+      const gp = document.getElementById('gradePill');
+      gp.textContent = `🎓 ${activity.grade}. Sınıf${activity.theme ? ' · ' + activity.theme : ''}`;
+      gp.style.display = 'inline-block';
+    }
+    loadHyp();
+    updateNoteBtn();
+    renderStart();
+  }
+
+  function renderStart() {
+    const steps = activity.steps || [];
+    const flow = steps.map(s => {
+      const m = SEZDIRME_STAGES[s.type] || {};
+      return `<span style="background:${m.color}">${m.icon} ${escHtml(m.label)}</span>`;
+    }).join('<span style="background:none; color:#94A3B8; padding:6px 0;">→</span>');
+    document.getElementById('startScreen').innerHTML = `
+      <div class="card" style="padding:36px; text-align:center; border-top:6px solid #0D9488;">
+        <div style="font-size:3.2rem;">🔍</div>
+        <div style="font-size:.8rem; font-weight:900; letter-spacing:2px; color:#0D9488; margin-top:6px;">SEZDİRME YÖNTEMİYLE DERS</div>
+        <h1 style="font-size:1.9rem; font-weight:900; margin:8px 0;">${escHtml(activity.title)}</h1>
+        <p style="color:var(--text-muted); font-size:1.05rem;">${escHtml(activity.description || '')}</p>
+        <div class="sz-flow">${flow}</div>
+        ${activity.objective ? `<div style="background:#F0FDFA; border:1px dashed #5EEAD4; border-radius:12px; padding:12px 16px; text-align:left; font-size:.9rem; color:#134E4A; margin-bottom:20px;"><strong>👩‍🏫 Öğretmen için hedef (öğrencilere okumayın):</strong> ${escHtml(activity.objective)}</div>` : ''}
+        <button class="btn btn-primary btn-lg" style="background:#0D9488;" onclick="startLesson()">▶️ Derse Başla</button>
+        <div style="margin-top:14px; font-size:.82rem; color:var(--text-muted);">Kısayollar: ← → aşamalar arası geçiş · N öğretmen notları · F tam ekran</div>
+      </div>`;
+  }
+
+  function startLesson() {
+    activity.playCount = (activity.playCount || 0) + 1;
+    ActivityStore.save(activity);
+    document.getElementById('startScreen').style.display = 'none';
+    document.getElementById('lessonScreen').style.display = 'flex';
+    SoundEffects.click();
+    render();
+  }
+
+  function go(d) {
+    const n = idx + d;
+    if (n < 0) return;
+    if (n >= activity.steps.length) { finishLesson(); return; }
+    idx = n; stopThink(); SoundEffects.click(); render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function jump(i) { idx = i; stopThink(); SoundEffects.click(); render(); }
+
+  function finishLesson() {
+    SoundEffects.win(); launchConfetti();
+    document.getElementById('stage').innerHTML = `
+      <div style="text-align:center; padding:40px 10px;">
+        <div style="font-size:4rem;">🎉</div>
+        <h2 style="font-size:2rem; font-weight:900; margin:10px 0;">Kuralı birlikte keşfettik!</h2>
+        <p class="sz-big" style="color:#475569;">Sınıfça ${hypotheses.length} tahmin üretildi. Öğrencileriniz kuralı ezberlemedi, kendileri buldu.</p>
+        <div class="sz-actions" style="justify-content:center; margin-top:24px;">
+          <button class="btn btn-outline" onclick="jump(0)">↺ Baştan Başla</button>
+          <a class="btn btn-primary" href="../index.html?tur=minideneme">📝 Ölçme için Mini Denemelere Git</a>
+        </div>
+      </div>`;
+    document.getElementById('counter').textContent = 'Ders tamamlandı';
+  }
+
+  function render() {
+    const steps = activity.steps || [];
+    const s = steps[idx];
+    const meta = SEZDIRME_STAGES[s.type] || { label: 'Adım', icon: '📌', color: '#0D9488' };
+
+    document.getElementById('track').innerHTML = steps.map((st, i) => {
+      const m = SEZDIRME_STAGES[st.type] || {};
+      const cls = i === idx ? 'active' : (i < idx ? 'done' : '');
+      return `<button class="sz-track-item ${cls}" style="${i === idx ? `background:${m.color}; border-color:${m.color};` : ''}" onclick="jump(${i})">${i < idx ? '✔' : m.icon} ${escHtml(m.label)}</button>`;
+    }).join('');
+    document.querySelector('.sz-track-item.active')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+
+    const stage = document.getElementById('stage');
+    stage.style.setProperty('--stage-color', meta.color);
+    stage.style.animation = 'none'; void stage.offsetWidth; stage.style.animation = '';
+
+    let body = '';
+    switch (s.type) {
+      case 'dedektif':    body = rDedektif(s); break;
+      case 'hazirlik':    body = rHazirlik(s); break;
+      case 'gozlem':      body = rGozlem(s); break;
+      case 'karsilastir': body = rKarsilastir(s); break;
+      case 'soru':        body = rSoru(s); break;
+      case 'siniflandir': body = rSiniflandir(s); break;
+      case 'cikarim':     body = rCikarim(s); break;
+      case 'kural':       body = rKural(s); break;
+      case 'uygulama':    body = rUygulama(s); break;
+    }
+
+    stage.innerHTML = `
+      <div class="sz-stage-head">
+        <div class="sz-stage-icon" style="background:${meta.color}22;">${meta.icon}</div>
+        <div style="min-width:0;">
+          <div class="sz-stage-label" style="color:${meta.color};">${idx + 1}. Aşama · ${escHtml(meta.label)}</div>
+          <div class="sz-stage-title">${escHtml(s.title || meta.label)}</div>
+        </div>
+      </div>
+      ${s.type !== 'kural' ? imgHtml(s.image, s.imageCaption) : ''}
+      ${body}
+      ${showNotes && s.note ? `<div class="sz-teacher-note">👩‍🏫 <strong>Öğretmen notu:</strong> ${escHtml(s.note)}</div>` : ''}
+    `;
+
+    document.getElementById('counter').textContent = `${idx + 1} / ${steps.length}`;
+    document.getElementById('prevBtn').disabled = idx === 0;
+    document.getElementById('nextBtn').textContent = idx === steps.length - 1 ? 'Dersi Bitir 🎉' : 'Sonraki Aşama →';
+
+    if (s.type === 'siniflandir') bindDrag(s);
+  }
+
+  function imgHtml(src, caption = '') {
+    if (!src) return '';
+    return `
+      <figure style="margin:14px 0; text-align:center;">
+        <img class="sz-img" style="margin:0 auto;" src="${escHtml(src)}" alt="Görsel" onclick="openLightbox(this.src)" title="Büyütmek için tıklayın" />
+        ${caption ? `<figcaption style="margin-top:6px; font-size:0.95rem; font-weight:700; color:#475569;">🖼️ ${escHtml(caption)}</figcaption>` : ''}
+      </figure>
+    `;
+  }
+  function thinkBtn() {
+    return `<button class="btn btn-outline btn-sm" onclick="startThink(30)">⏳ Düşünme Süresi (30 sn)</button> <span id="thinkArea"></span>`;
+  }
+
+  // 0. DEDEKTİFLİK VAKASI (Telsiz Diyaloğu + Şüpheli Teşhisi)
+  function rDedektif(s) {
+    const dialogues = s.dialogues || [];
+    const suspects = s.suspects || [];
+    const st = state[s.id] || (state[s.id] = {
+      openCount: dialogues.length ? 1 : 0,
+      marks: false,
+      eliminated: {},
+      caughtIdx: null,
+      wrongIdx: null
+    });
+
+    const visible = dialogues.slice(0, st.openCount);
+    const bubblesHtml = visible.map((d, i) => {
+      const isMerkez = d.speaker === 'merkez';
+      const defaultName = isMerkez ? 'Merkez Komiseri' : 'Sahadaki Memur';
+      return `
+        <div class="sz-bubble ${isMerkez ? 'from-merkez' : 'from-dedektif'}">
+          <div class="sz-bubble-head">
+            <span>${isMerkez ? '👮' : '📻'}</span>
+            <span>${escHtml(d.speakerName || defaultName)}</span>
+            <span style="opacity:.65;">#${i + 1}</span>
+          </div>
+          <div class="sz-bubble-text">${renderSezdirmeMarks(d.text || '', st.marks)}</div>
+          ${st.marks && d.clueNote ? `<div class="sz-bubble-clue">💡 ${escHtml(d.clueNote)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    const suspectsHtml = suspects.length ? `
+      <div class="sz-suspect-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <h4 style="font-size:1.08rem; font-weight:900; color:#0F172A; margin:0;">🚨 Şüpheli Teşhis Panosu (${suspects.length} Kişi)</h4>
+          <span style="font-size:.85rem; color:#475569; font-weight:700;">Telsiz ipuçlarına göre uymayanları eleyin, doğru şüpheliyi yakalayın!</span>
+        </div>
+        <div class="sz-suspect-grid">
+          ${suspects.map((sp, i) => {
+            const isElim = !!st.eliminated[i];
+            const isCaught = st.caughtIdx === i;
+            const isWrong = st.wrongIdx === i;
+            const cls = isCaught ? 'caught' : (isWrong ? 'wrong-guess' : (isElim ? 'eliminated' : ''));
+            return `
+              <div class="sz-suspect-card ${cls}">
+                <div>
+                  <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                    <span style="font-size:2rem;">${escHtml(sp.avatar || '🕵️')}</span>
+                    <div>
+                      <div style="font-weight:900; color:#0F172A;">${escHtml(sp.name || `${i + 1}. Şüpheli`)}</div>
+                      ${isCaught ? `<span style="font-size:.75rem; background:#16A34A; color:#fff; padding:2px 8px; border-radius:999px; font-weight:800;">🚔 YAKALANDI!</span>` : ''}
+                    </div>
+                  </div>
+                  <div class="sz-suspect-traits" style="font-size:.95rem; font-weight:700; color:#334155; line-height:1.45;">
+                    ${escHtml(sp.traits || '')}
+                  </div>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-outline btn-sm" style="flex:1; justify-content:center;" onclick="dedektifEliminate('${s.id}', ${i})" ${isCaught ? 'disabled' : ''}>
+                    ${isElim ? '↩️ Geri Al' : '❌ Ele'}
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" style="flex:1; justify-content:center; background:${isCaught ? '#16A34A' : '#0F172A'};" onclick="dedektifCatch('${s.id}', ${i})" ${st.caughtIdx !== null ? 'disabled' : ''}>
+                    ${isCaught ? '✅ Yakalandı' : '🚨 Yakala!'}
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    return `
+      ${s.caseBrief ? `<div class="sz-detective-banner">🕵️ <strong>Vaka Dosyası:</strong> ${escHtml(s.caseBrief)}</div>` : ''}
+      <div class="sz-radio-log" id="szRadioLog">
+        ${bubblesHtml || '<div style="color:#64748B; font-weight:700; text-align:center; padding:18px;">Telsiz kaydı yok.</div>'}
+      </div>
+      <div class="sz-actions">
+        ${st.openCount < dialogues.length
+          ? `<button class="btn btn-primary btn-sm" style="background:#0F172A;" onclick="dedektifAct('${s.id}','next')">📻 Sonraki Telsiz Mesajı (${st.openCount}/${dialogues.length})</button>`
+          : `<span style="font-weight:800; color:#0F766E;">📡 Tüm telsiz kayıtları dinlendi ✔</span>`}
+        ${st.openCount < dialogues.length
+          ? `<button class="btn btn-outline btn-sm" onclick="dedektifAct('${s.id}','all')">⏩ Tümünü Aç</button>`
+          : `<button class="btn btn-outline btn-sm" onclick="dedektifAct('${s.id}','reset')">↺ Diyaloğu Sıfırla</button>`}
+        <button class="btn btn-primary btn-sm" style="background:#D97706;" onclick="dedektifAct('${s.id}','marks')">
+          ${st.marks ? '🙈 İpuçlarını Gizle' : '🔦 İpucu Sözcüklerini Vurgula'}
+        </button>
+        ${thinkBtn()}
+      </div>
+      ${suspectsHtml}
+      ${s.question ? `<div class="sz-question-box">🔎 ${escHtml(s.question)}</div>` : ''}
+    `;
+  }
+  function dedektifAct(id, action) {
+    const st = state[id];
+    const s = activity.steps[idx];
+    const total = (s.dialogues || []).length;
+    if (action === 'next' && st.openCount < total) {
+      st.openCount++;
+      SoundEffects.flip();
+    } else if (action === 'all') {
+      st.openCount = total;
+      SoundEffects.click();
+    } else if (action === 'reset') {
+      st.openCount = total ? 1 : 0;
+      st.eliminated = {};
+      st.caughtIdx = null;
+      st.wrongIdx = null;
+      SoundEffects.click();
+    } else if (action === 'marks') {
+      st.marks = !st.marks;
+      SoundEffects.flip();
+    }
+    render();
+    if (action === 'next' || action === 'all') {
+      setTimeout(() => {
+        const log = document.getElementById('szRadioLog');
+        if (log) log.scrollTop = log.scrollHeight;
+      }, 40);
+    }
+  }
+  function dedektifEliminate(id, i) {
+    const st = state[id];
+    if (st.caughtIdx === i) return;
+    st.eliminated[i] = !st.eliminated[i];
+    if (st.wrongIdx === i) st.wrongIdx = null;
+    SoundEffects.click();
+    render();
+  }
+  function dedektifCatch(id, i) {
+    const st = state[id];
+    const sp = (activity.steps[idx].suspects || [])[i];
+    if (!sp) return;
+    if (sp.isCulprit) {
+      st.caughtIdx = i;
+      st.wrongIdx = null;
+      delete st.eliminated[i];
+      SoundEffects.win();
+      launchConfetti();
+      showToast(`Tebrikler! ${sp.name} doğru eşkâlle yakalandı!`, 'success');
+    } else {
+      st.wrongIdx = i;
+      SoundEffects.wrong();
+      showToast('Bu kişi telsizdeki eşkâle uymuyor! İpuçlarını tekrar kontrol edin.', 'warning');
+    }
+    render();
+  }
+
+  // 1. MERAK UYANDIRMA
+  function rHazirlik(s) {
+    return `
+      <div class="sz-big">${escHtml(s.content || '')}</div>
+      ${s.question ? `<div class="sz-question-box">🤔 ${escHtml(s.question)}</div>` : ''}
+      <div class="sz-actions">${thinkBtn()}</div>`;
+  }
+
+  // 2. GÖZLEM
+  function rGozlem(s) {
+    const st = state[s.id] || (state[s.id] = { all: false, one: {} });
+    const ex = (s.examples || []).map((e, i) => `
+      <div class="sz-example" onclick="toggleOne('${s.id}', ${i})" title="Bu cümlenin vurgusunu aç/kapat">
+        <span class="n">${i + 1}</span><span>${renderSezdirmeMarks(e, st.all || st.one[i])}</span>
+      </div>`).join('');
+    return `
+      ${s.instruction ? `<div class="sz-instruction">${escHtml(s.instruction)}</div>` : ''}
+      <div class="sz-examples">${ex}</div>
+      <div class="sz-actions">
+        <button class="btn btn-primary btn-sm" style="background:#0EA5E9;" onclick="toggleAll('${s.id}')">${st.all ? '🙈 Vurguları Gizle' : '🔦 Dikkat Çeken Yerleri Göster'}</button>
+        ${thinkBtn()}
+      </div>`;
+  }
+  function toggleOne(id, i) { const st = state[id]; st.one[i] = !st.one[i]; SoundEffects.flip(); render(); }
+  function toggleAll(id) { const st = state[id]; st.all = !st.all; if (!st.all) st.one = {}; SoundEffects.flip(); render(); }
+
+  // 3. KARŞILAŞTIRMA
+  function rKarsilastir(s) {
+    const st = state[s.id] || (state[s.id] = { all: false });
+    const grp = (g, color, bg) => `
+      <div class="sz-group" style="border-color:${color}; background:${bg};">
+        <h4 style="color:${color};">${escHtml(g?.title || '')}</h4>
+        ${g?.image ? imgHtml(g.image) : ''}
+        <ul>${(g?.items || []).map(t => `<li>${renderSezdirmeMarks(t, st.all)}</li>`).join('')}</ul>
+      </div>`;
+    return `
+      ${s.instruction ? `<div class="sz-instruction">${escHtml(s.instruction)}</div>` : ''}
+      <div class="sz-compare">${grp(s.groupA, '#2563EB', '#EFF6FF')}${grp(s.groupB, '#D97706', '#FFFBEB')}</div>
+      ${s.question ? `<div class="sz-question-box" style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7); border-color:#F59E0B; color:#78350F;">⚖️ ${escHtml(s.question)}</div>` : ''}
+      <div class="sz-actions">
+        <button class="btn btn-primary btn-sm" style="background:#F59E0B;" onclick="toggleAll('${s.id}')">${st.all ? '🙈 Vurguları Gizle' : '🔦 Farkı Vurgula'}</button>
+        ${thinkBtn()}
+      </div>`;
+  }
+
+  // 4. YÖNLENDİRİCİ SORULAR
+  function rSoru(s) {
+    const qs = s.questions || [];
+    const st = state[s.id] || (state[s.id] = { open: 1, hint: {}, ans: {} });
+    const cards = qs.slice(0, st.open).map((q, i) => `
+      <div class="sz-q-card">
+        <div class="q"><span class="num">${i + 1}</span><span>${escHtml(q.q)}</span></div>
+        ${st.hint[i] && q.hint ? `<div class="sz-reveal hint">💡 ${escHtml(q.hint)}</div>` : ''}
+        ${st.ans[i] && q.answer ? `<div class="sz-reveal answer">✅ ${escHtml(q.answer)}</div>` : ''}
+        <div class="sz-actions">
+          ${q.hint ? `<button class="btn btn-outline btn-sm" onclick="soruAct('${s.id}','hint',${i})">${st.hint[i] ? 'İpucunu Gizle' : '💡 İpucu Ver'}</button>` : ''}
+          ${q.answer ? `<button class="btn btn-outline btn-sm" style="border-color:#16A34A; color:#16A34A;" onclick="soruAct('${s.id}','ans',${i})">${st.ans[i] ? 'Cevabı Gizle' : '✅ Beklenen Cevap'}</button>` : ''}
+        </div>
+      </div>`).join('');
+    return `
+      <div class="sz-instruction">Soruları tek tek açın, öğrencilerin düşünmesine fırsat verin. Cevabı hemen göstermeyin!</div>
+      ${cards}
+      <div class="sz-actions">
+        ${st.open < qs.length ? `<button class="btn btn-primary btn-sm" style="background:#EC4899;" onclick="soruAct('${s.id}','next')">➕ Sonraki Soruyu Aç (${st.open}/${qs.length})</button>` : `<span style="font-weight:800; color:#9D174D;">Tüm sorular açıldı ✔</span>`}
+        ${thinkBtn()}
+      </div>`;
+  }
+  function soruAct(id, what, i) {
+    const st = state[id];
+    if (what === 'next') st.open++;
+    else st[what][i] = !st[what][i];
+    SoundEffects.flip(); render();
+  }
+
+  // 5. SINIFLANDIRMA
+  function rSiniflandir(s) {
+    const st = state[s.id] || (state[s.id] = {
+      place: {}, sel: null, checked: false, names: !s.hideNames,
+      order: (s.items || []).map((_, i) => i).sort(() => Math.random() - .5)
+    });
+    const chip = (i) => {
+      const it = s.items[i];
+      let cls = st.sel === i ? 'selected' : '';
+      if (st.checked && st.place[i] !== undefined) cls = st.place[i] === it.c ? 'ok' : 'bad';
+      return `<span class="sz-chip ${cls}" draggable="true" data-i="${i}" onclick="chipClick(event,'${s.id}',${i})">${escHtml(it.text)}</span>`;
+    };
+    const pool = st.order.filter(i => st.place[i] === undefined).map(chip).join('');
+    const letters = 'ABCDEF';
+    const cats = (s.categories || []).map((c, ci) => `
+      <div class="sz-cat" data-c="${ci}" onclick="catClick('${s.id}',${ci})">
+        <div class="sz-cat-title">${st.names ? '🏷️ ' + escHtml(c) : `📦 ${letters[ci]} Grubu`}</div>
+        <div class="sz-cat-items">${st.order.filter(i => st.place[i] === ci).map(chip).join('')}</div>
+      </div>`).join('');
+    const placed = Object.keys(st.place).length, total = (s.items || []).length;
+    return `
+      ${s.instruction ? `<div class="sz-instruction">${escHtml(s.instruction)}</div>` : ''}
+      <div style="font-size:.85rem; color:#64748B; margin-bottom:8px;">Bir sözcüğe tıklayıp ardından bir gruba tıklayın ya da sürükleyip bırakın.</div>
+      <div class="sz-pool" id="szPool">${pool || '<span style="color:#94A3B8; font-weight:700;">Tüm örnekler yerleştirildi 👏</span>'}</div>
+      <div class="sz-cats">${cats}</div>
+      <div class="sz-actions">
+        <button class="btn btn-primary btn-sm" style="background:#10B981;" onclick="sinifAct('${s.id}','check')" ${placed === 0 ? 'disabled' : ''}>✔️ Kontrol Et (${placed}/${total})</button>
+        <button class="btn btn-outline btn-sm" onclick="sinifAct('${s.id}','names')">${st.names ? '🙈 Grup Adlarını Gizle' : '🏷️ Grup Adlarını Göster'}</button>
+        <button class="btn btn-outline btn-sm" onclick="sinifAct('${s.id}','reset')">↺ Sıfırla</button>
+      </div>`;
+  }
+  function chipClick(e, id, i) {
+    e.stopPropagation();
+    const st = state[id];
+    if (st.place[i] !== undefined) { delete st.place[i]; st.checked = false; st.sel = null; }
+    else st.sel = st.sel === i ? null : i;
+    SoundEffects.click(); render();
+  }
+  function catClick(id, ci) {
+    const st = state[id];
+    if (st.sel === null || st.sel === undefined) return;
+    st.place[st.sel] = ci; st.sel = null; st.checked = false;
+    SoundEffects.click(); render();
+  }
+  function sinifAct(id, what) {
+    const st = state[id];
+    const s = activity.steps[idx];
+    if (what === 'check') {
+      st.checked = true;
+      const keys = Object.keys(st.place);
+      const ok = keys.filter(k => st.place[k] === s.items[k].c).length;
+      if (ok === keys.length && keys.length === s.items.length) { SoundEffects.win(); launchConfetti(); showToast('Harika! Tüm örnekler doğru grupta. Şimdi gruplara ad verin!', 'success'); }
+      else if (ok === keys.length) { SoundEffects.correct(); showToast(`Yerleştirilen ${ok} örneğin hepsi doğru!`, 'success'); }
+      else { SoundEffects.wrong(); showToast(`${ok}/${keys.length} doğru. Kırmızı olanları yeniden düşünün.`, 'warning'); }
+    } else if (what === 'names') { st.names = !st.names; SoundEffects.flip(); }
+    else if (what === 'reset') { st.place = {}; st.checked = false; st.sel = null; }
+    render();
+  }
+  function bindDrag(s) {
+    document.querySelectorAll('.sz-chip').forEach(ch => {
+      ch.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', ch.dataset.i); });
+    });
+    const st = state[s.id];
+    document.querySelectorAll('.sz-cat').forEach(cat => {
+      cat.addEventListener('dragover', e => { e.preventDefault(); cat.classList.add('drag-over'); });
+      cat.addEventListener('dragleave', () => cat.classList.remove('drag-over'));
+      cat.addEventListener('drop', e => {
+        e.preventDefault();
+        const i = parseInt(e.dataTransfer.getData('text/plain'));
+        if (!isNaN(i)) { st.place[i] = parseInt(cat.dataset.c); st.checked = false; st.sel = null; SoundEffects.click(); render(); }
+      });
+    });
+    const pool = document.getElementById('szPool');
+    if (pool) {
+      pool.addEventListener('dragover', e => e.preventDefault());
+      pool.addEventListener('drop', e => {
+        e.preventDefault();
+        const i = parseInt(e.dataTransfer.getData('text/plain'));
+        if (!isNaN(i)) { delete st.place[i]; st.checked = false; render(); }
+      });
+    }
+  }
+
+  // 6. ÇIKARIM (öğrencilerin kendi kuralı)
+  function boardHtml(withStar) {
+    if (!hypotheses.length) return `<div style="color:#94A3B8; font-weight:700; padding:12px;">Henüz tahmin eklenmedi.</div>`;
+    return `<div class="sz-board">${hypotheses.map((h, i) => `
+      <div class="sz-note-card">
+        <button class="x" onclick="delHyp(${i})" title="Sil">✕</button>
+        <div class="who">✍️ ${escHtml(h.who || 'Bir öğrenci')}</div>
+        <div>${escHtml(h.text)}</div>
+        ${withStar ? `<button class="star ${h.star ? 'on' : ''}" onclick="starHyp(${i})" title="Kurala en yakın tahmin">⭐</button>` : ''}
+      </div>`).join('')}</div>`;
+  }
+  function rCikarim(s) {
+    return `
+      <div class="sz-question-box" style="background:linear-gradient(135deg,#EEF2FF,#E0E7FF); border-color:#6366F1; color:#312E81;">✍️ ${escHtml(s.prompt || '')}</div>
+      <div class="sz-hyp-input">
+        <input class="form-control" id="hypWho" placeholder="Öğrenci adı (isteğe bağlı)" />
+        <input class="form-control" id="hypText" placeholder="${escHtml(s.placeholder || 'Bence kural şu...')}" onkeydown="if(event.key==='Enter') addHyp()" />
+        <button class="btn btn-primary" style="background:#6366F1;" onclick="addHyp()">📌 Panoya Ekle</button>
+      </div>
+      <h4 style="font-weight:900; color:#312E81; margin:8px 0 10px;">📋 Sınıfın Tahmin Panosu (${hypotheses.length})</h4>
+      ${boardHtml(false)}`;
+  }
+  function addHyp() {
+    const t = document.getElementById('hypText').value.trim();
+    if (!t) { showToast('Önce bir tahmin yazın.', 'warning'); return; }
+    hypotheses.push({ who: document.getElementById('hypWho').value.trim(), text: t, star: false });
+    saveHyp(); SoundEffects.correct(); render();
+    setTimeout(() => document.getElementById('hypText')?.focus(), 50);
+  }
+  function delHyp(i) { hypotheses.splice(i, 1); saveHyp(); render(); }
+  function starHyp(i) { hypotheses[i].star = !hypotheses[i].star; saveHyp(); if (hypotheses[i].star) SoundEffects.correct(); render(); }
+
+  // 7. KURALIN KEŞFİ
+  function rKural(s) {
+    const st = state[s.id] || (state[s.id] = { open: false });
+    if (!st.open) {
+      return `
+        <div class="sz-curtain">
+          <div class="lock">🔒</div>
+          <h3 style="font-size:1.5rem; font-weight:900; color:#713F12;">Kural henüz gizli!</h3>
+          <p style="color:#854D0E; font-weight:700; margin:8px 0 18px;">Sınıfınız ${hypotheses.length} tahmin üretti. Hazırsanız kuralı birlikte ortaya çıkaralım ve tahminlerle karşılaştıralım.</p>
+          <button class="btn btn-primary btn-lg" style="background:#CA8A04;" onclick="openRule('${s.id}')">🔓 Kuralı Ortaya Çıkar</button>
+        </div>`;
+    }
+    return `
+      <div class="sz-rule-grid">
+        <div>
+          <div class="sz-rule-box">💡 ${escHtml(s.rule || '')}</div>
+          ${imgHtml(s.image, s.imageCaption)}
+        </div>
+        <div>
+          <h4 style="font-weight:900; color:#713F12; margin-bottom:10px;">🔎 Tahminlerimizle karşılaştıralım</h4>
+          <div style="font-size:.82rem; color:#64748B; margin-bottom:8px;">Kurala en yakın tahmini ⭐ ile işaretleyin.</div>
+          ${boardHtml(true)}
+        </div>
+      </div>`;
+  }
+  function openRule(id) { state[id].open = true; SoundEffects.win(); launchConfetti(); render(); }
+
+  // 8. PEKİŞTİRME
+  function rUygulama(s) {
+    const st = state[s.id] || (state[s.id] = { ans: {} });
+    const items = s.items || [];
+    const done = Object.keys(st.ans).length;
+    const right = Object.keys(st.ans).filter(k => st.ans[k] === items[k].correct).length;
+    return items.map((it, i) => {
+      const a = st.ans[i];
+      const opts = (it.options || []).map((o, oi) => {
+        let cls = '';
+        if (a !== undefined) { if (oi === it.correct) cls = 'correct'; else if (oi === a) cls = 'wrong'; }
+        return `<button class="sz-opt ${cls}" ${a !== undefined ? 'disabled' : ''} onclick="answer('${s.id}',${i},${oi})">${'ABCD'[oi] || ''}) ${escHtml(o)}</button>`;
+      }).join('');
+      return `
+        <div class="sz-mcq">
+          <div class="q">${i + 1}. ${escHtml(it.q)}</div>
+          ${it.image ? imgHtml(it.image) : ''}
+          <div class="sz-opts">${opts}</div>
+          ${a !== undefined && it.explanation ? `<div class="sz-reveal ${a === it.correct ? 'answer' : 'hint'}">${a === it.correct ? '✅' : '💡'} ${escHtml(it.explanation)}</div>` : ''}
+        </div>`;
+    }).join('') + (done ? `<div style="font-weight:900; color:#7F1D1D; font-size:1.1rem;">Sonuç: ${right} / ${items.length} doğru ${done === items.length && right === items.length ? '🏆' : ''}</div>` : '');
+  }
+  function answer(id, i, oi) {
+    const st = state[id];
+    st.ans[i] = oi;
+    const it = activity.steps[idx].items[i];
+    if (oi === it.correct) SoundEffects.correct(); else SoundEffects.wrong();
+    render();
+  }
+
+  // DÜŞÜNME SÜRESİ
+  function startThink(sec) {
+    stopThink();
+    let left = sec;
+    const paint = () => { const el = document.getElementById('thinkArea'); if (el) el.innerHTML = `<span class="sz-timer">⏳ ${left} sn</span>`; };
+    paint();
+    thinkTimer = setInterval(() => {
+      left--;
+      if (left <= 0) { stopThink(); SoundEffects.pass(); const el = document.getElementById('thinkArea'); if (el) el.innerHTML = `<span class="sz-timer">🙋 Süre doldu! Kim söylemek ister?</span>`; return; }
+      paint();
+    }, 1000);
+  }
+  function stopThink() { if (thinkTimer) { clearInterval(thinkTimer); thinkTimer = null; } }
+
+  function toggleNotes() {
+    showNotes = !showNotes;
+    localStorage.setItem('dg_sz_notes', showNotes);
+    updateNoteBtn();
+    if (document.getElementById('lessonScreen').style.display !== 'none') render();
+  }
+  function updateNoteBtn() { document.getElementById('noteBtn').textContent = showNotes ? '👩‍🏫 Notları Gizle' : '👩‍🏫 Öğretmen Notları'; }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+    else document.exitFullscreen?.();
+  }
+  document.addEventListener('fullscreenchange', () => document.body.classList.toggle('fs', !!document.fullscreenElement));
+
+  document.addEventListener('keydown', e => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+    if (document.getElementById('lessonScreen').style.display === 'none') return;
+    if (e.key === 'ArrowRight') go(1);
+    else if (e.key === 'ArrowLeft') go(-1);
+    else if (e.key.toLowerCase() === 'n') toggleNotes();
+    else if (e.key.toLowerCase() === 'f') toggleFullscreen();
+  });
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sezdirme Dersi Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    .editor-topbar {
+      background: #fff; border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 64px; z-index: 50;
+    }
+    .sz-editor-layout {
+      display: grid; grid-template-columns: 300px minmax(0, 1fr);
+      min-height: calc(100vh - 130px);
+    }
+    .sz-sidebar {
+      background: #fff; border-right: 2px solid var(--border);
+      padding: 16px; overflow-y: auto;
+    }
+    .sz-step-item {
+      border: 2px solid var(--border); border-radius: 12px;
+      padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+      background: #fff; transition: var(--transition);
+    }
+    .sz-step-item:hover { border-color: #0D9488; background: #F0FDFA; }
+    .sz-step-item.active { border-color: #0D9488; background: #CCFBF1; color: #134E4A; }
+    .sz-step-badge {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0; color: #fff; font-weight: 800;
+    }
+    .sz-main-editor {
+      padding: 24px; background: var(--bg); overflow-y: auto; min-width: 0;
+    }
+    .sz-card {
+      background: #fff; border-radius: var(--radius);
+      padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px;
+    }
+    .sz-pedagogy-banner {
+      background: linear-gradient(135deg, #F0FDFA, #CCFBF1);
+      border-left: 5px solid #0D9488; border-radius: 12px;
+      padding: 14px 18px; margin-bottom: 20px; color: #134E4A; font-size: 0.9rem;
+    }
+    .stage-type-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px; margin-bottom: 18px;
+    }
+    .stage-type-pill {
+      padding: 8px 10px; border-radius: 10px; border: 2px solid var(--border);
+      background: #fff; cursor: pointer; font-family: var(--font);
+      font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;
+      color: var(--text-muted); transition: var(--transition);
+    }
+    .stage-type-pill.active { color: #fff; border-color: transparent; }
+    .row-box {
+      background: #F8FAFC; border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px; margin-bottom: 10px;
+    }
+    @media (max-width: 860px) {
+      .sz-editor-layout { grid-template-columns: 1fr; }
+      .sz-sidebar { border-right: none; border-bottom: 2px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem; color:var(--text-muted);" id="saveStatus">✅ Kaydedildi</span>
+    <button type="button" class="btn btn-outline btn-sm" style="border-color:#0F172A; color:#0F172A;" onclick="openModal('detectiveTemplateModal')">🕵️ Dedektiflik Şablonu Yükle</button>
+    <button class="btn btn-primary" style="background:#0D9488;" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Sınıfta Başlat</a>
+  </div>
+</nav>
+
+<div class="editor-topbar">
+  <div style="flex:1; min-width:220px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Sezdirme dersi başlığı..." style="font-weight:800; font-size:1.05rem;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <select id="activityGrade" class="form-control" style="width:auto; padding:8px 12px; font-weight:700;" onchange="markDirty()">
+      <option value="5">🎓 5. Sınıf</option>
+      <option value="6">🎓 6. Sınıf</option>
+      <option value="7">🎓 7. Sınıf</option>
+      <option value="8">🎓 8. Sınıf (LGS)</option>
+    </select>
+    <input type="text" id="activityTheme" class="form-control" placeholder="Tema (örn: Dilimizin Zenginliği)" style="width:210px; padding:8px 12px;" oninput="markDirty()" />
+    <input type="text" id="activityOutcome" class="form-control" placeholder="Kazanım (örn: DYS.DO.6.2)" style="width:150px; padding:8px 12px;" oninput="markDirty()" />
+    <span id="codeDisplay" class="activity-code-badge" style="padding:6px 10px; background:#CCFBF1; color:#0F766E; border-radius:6px; font-weight:900; font-family:monospace;"></span>
+  </div>
+</div>
+
+<div class="sz-editor-layout">
+  <!-- SOL: AŞAMA LİSTESİ -->
+  <div class="sz-sidebar">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:0.9rem; color:#134E4A;">🔍 Sezdirme Akışı (Tümevarım)</strong>
+      <span id="stepCount" class="badge" style="background:#CCFBF1; color:#0F766E;">0 Aşama</span>
+    </div>
+    <div id="stepList"></div>
+    <div style="margin-top:12px;">
+      <label class="form-label" style="font-size:0.8rem;">➕ Yeni Aşama Ekle:</label>
+      <div style="display:flex; gap:6px;">
+        <select id="newStepType" class="form-control" style="padding:8px; font-size:0.85rem;">
+          <option value="dedektif">🕵️ Dedektiflik Vakası (Telsiz &amp; Şüpheli)</option>
+          <option value="hazirlik">💭 Merak Uyandırma</option>
+          <option value="gozlem">👀 Gözlem (Örnekler)</option>
+          <option value="karsilastir">⚖️ Karşılaştırma</option>
+          <option value="soru">❓ Yönlendirici Sorular</option>
+          <option value="siniflandir">🧩 Sınıflandırma</option>
+          <option value="cikarim">✍️ Çıkarım Panosu</option>
+          <option value="kural">💡 Kuralın Keşfi</option>
+          <option value="uygulama">🎯 Pekiştirme</option>
+        </select>
+        <button class="btn btn-primary btn-sm" style="background:#0D9488; white-space:nowrap;" onclick="addStep()">Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAĞ: AŞAMA DÜZENLEYİCİ -->
+  <div class="sz-main-editor">
+    <div class="sz-pedagogy-banner">
+      <strong>💡 MEB Sezdirme İlkesi:</strong> Kuralı veya terimi dersin başında söylemeyin. Önce <em>Merak Uyandırma, Gözlem, Karşılaştırma ve Yönlendirici Sorular</em> ile öğrencilerin örüntüyü fark etmesini sağlayın; <em>Çıkarım</em> aşamasında kendi kurallarını yazdırın, en sonda <em>Kuralın Keşfi</em> perdesini açın.
+    </div>
+
+    <div class="sz-card" style="padding:16px 20px;">
+      <div class="grid-2" style="gap:12px;">
+        <div>
+          <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">Kısa Açıklama (Kartta görünür)</label>
+          <input type="text" id="activityDesc" class="form-control" style="padding:8px 12px;" placeholder="Örn: Kuralı söylemeden örneklerden keşfettiren ders akışı..." oninput="markDirty()" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">👩‍🏫 Öğretmen İçin Ders Hedefi (Öğrenciye gösterilmez)</label>
+          <input type="text" id="activityObjective" class="form-control" style="padding:8px 12px;" placeholder="Örn: Öğrenciler ünsüz benzeşmesi kuralını kendileri bulur." oninput="markDirty()" />
+        </div>
+      </div>
+    </div>
+
+    <div class="sz-card" id="stepEditor"></div>
+  </div>
+</div>
+
+<!-- DEDEKTİFLİK ŞABLONU YÜKLEME MODALI -->
+<div class="modal-overlay" id="detectiveTemplateModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 class="modal-title">🕵️ Dedektiflik Tarzı Sezdirme Şablonu Yükle</h2>
+      <button type="button" class="modal-close" onclick="closeModal('detectiveTemplateModal')">✕</button>
+    </div>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;">
+      Seçtiğiniz kurgu bu dersin mevcut aşamalarının yerine yüklenir. İsterseniz ardından tüm telsiz mesajlarını ve şüphelileri kendi konunuza göre düzenleyebilirsiniz.
+    </p>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <button type="button" class="row-box" style="text-align:left; cursor:pointer; border:2px solid #0F172A; background:#F8FAFC;" onclick="loadDetectivePreset('soyguncu')">
+        <div style="font-weight:900; font-size:1rem; color:#0F172A;">📻 Soyguncu Telsiz Operasyonu (Örnek Ders: İsim &amp; Sıfat Keşfi)</div>
+        <div style="font-size:0.84rem; color:var(--text-muted); margin-top:4px;">
+          "Soyguncu şeye bindi..." diyaloğuyla başlayıp 4 şüpheli eşkâliyle isim ve sıfatları sezdiren 8 aşamalı tam ders akışı.
+        </div>
+      </button>
+      <button type="button" class="row-box" style="text-align:left; cursor:pointer; border:2px solid #0D9488; background:#F0FDFA;" onclick="loadDetectivePreset('custom')">
+        <div style="font-weight:900; font-size:1rem; color:#0F766E;">🕵️ Her Konuya Uyarlanabilir Dedektiflik Taslağı</div>
+        <div style="font-size:0.84rem; color:var(--text-muted); margin-top:4px;">
+          Noktalama, yazım kuralları, fiilimsiler veya anlatım bozukluğu gibi herhangi bir konuya uyarlayabileceğiniz hazır vaka kurgusu.
+        </div>
+      </button>
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <button type="button" class="btn btn-outline" onclick="closeModal('detectiveTemplateModal')">İptal</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let currentIdx = 0;
+  let isDirty = false;
+
+  function init() {
+    const id = new URLSearchParams(location.search).get('id');
+    if (id) activity = ActivityStore.getById(id);
+    if (!activity || activity.type !== 'sezdirme') {
+      activity = ActivityStore.createNew('sezdirme');
+      ActivityStore.save(activity);
+      history.replaceState({}, '', `?id=${activity.id}`);
+    }
+    if (!Array.isArray(activity.steps) || !activity.steps.length) {
+      activity.steps = ['hazirlik', 'gozlem', 'karsilastir', 'soru', 'siniflandir', 'cikarim', 'kural', 'uygulama'].map(t => createSezdirmeStep(t));
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('activityDesc').value = activity.description || '';
+    document.getElementById('activityObjective').value = activity.objective || '';
+    document.getElementById('activityGrade').value = activity.grade || '5';
+    document.getElementById('activityTheme').value = activity.theme || '';
+    document.getElementById('activityOutcome').value = activity.outcome || '';
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-sezdirme.html?id=${activity.id}`;
+
+    renderAll();
+  }
+
+  function renderAll() {
+    renderSidebar();
+    renderStepEditor();
+  }
+
+  function renderSidebar() {
+    const steps = activity.steps || [];
+    document.getElementById('stepCount').textContent = `${steps.length} Aşama`;
+    document.getElementById('stepList').innerHTML = steps.map((s, i) => {
+      const m = SEZDIRME_STAGES[s.type] || { icon: '📌', label: 'Aşama', color: '#0D9488' };
+      const hasImg = !!(s.image || s.groupA?.image || s.groupB?.image || (s.items || []).some(it => it?.image));
+      return `
+        <div class="sz-step-item ${i === currentIdx ? 'active' : ''}" onclick="selectStep(${i})">
+          <div class="sz-step-badge" style="background:${m.color};">${m.icon}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:0.72rem; font-weight:800; color:${m.color};">${i + 1}. ${escHtml(m.label)} ${hasImg ? '🖼️' : ''}</div>
+            <div style="font-size:0.85rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(s.title || m.label)}</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:2px;" onclick="event.stopPropagation()">
+            <button style="border:none; background:none; cursor:pointer; font-size:0.7rem;" onclick="moveStep(${i},-1)" title="Yukarı">▲</button>
+            <button style="border:none; background:none; cursor:pointer; font-size:0.7rem;" onclick="moveStep(${i},1)" title="Aşağı">▼</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function selectStep(i) { currentIdx = i; renderAll(); }
+
+  function addStep() {
+    const type = document.getElementById('newStepType').value;
+    activity.steps.push(createSezdirmeStep(type));
+    currentIdx = activity.steps.length - 1;
+    markDirty();
+    renderAll();
+  }
+
+  function moveStep(i, d) {
+    const n = i + d;
+    if (n < 0 || n >= activity.steps.length) return;
+    const tmp = activity.steps[i];
+    activity.steps[i] = activity.steps[n];
+    activity.steps[n] = tmp;
+    if (currentIdx === i) currentIdx = n;
+    else if (currentIdx === n) currentIdx = i;
+    markDirty();
+    renderAll();
+  }
+
+  function deleteCurrentStep() {
+    if (activity.steps.length <= 1) { showToast('En az 1 aşama bulunmalıdır.', 'warning'); return; }
+    activity.steps.splice(currentIdx, 1);
+    if (currentIdx >= activity.steps.length) currentIdx = activity.steps.length - 1;
+    markDirty();
+    renderAll();
+  }
+
+  function changeStepType(newType) {
+    const old = activity.steps[currentIdx];
+    const fresh = createSezdirmeStep(newType);
+    fresh.id = old.id;
+    fresh.note = old.note || '';
+    fresh.image = old.image || '';
+    fresh.imageCaption = old.imageCaption || '';
+    activity.steps[currentIdx] = fresh;
+    markDirty();
+    renderAll();
+  }
+
+  function renderStepEditor() {
+    const s = activity.steps[currentIdx];
+    const meta = SEZDIRME_STAGES[s.type] || { label: 'Aşama', icon: '📌', color: '#0D9488', desc: '' };
+
+    const typeButtons = Object.entries(SEZDIRME_STAGES).map(([k, v]) => `
+      <button type="button" class="stage-type-pill ${s.type === k ? 'active' : ''}"
+        style="${s.type === k ? `background:${v.color};` : ''}"
+        onclick="changeStepType('${k}')">
+        <span>${v.icon}</span><span>${escHtml(v.label)}</span>
+      </button>
+    `).join('');
+
+    let fields = '';
+    if (s.type === 'dedektif') {
+      const dlgs = s.dialogues || (s.dialogues = []);
+      const sus = s.suspects || (s.suspects = []);
+      const dlgRows = dlgs.map((d, i) => `
+        <div class="row-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <strong>📻 ${i + 1}. Telsiz Mesajı</strong>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <select class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem;" onchange="updDedDlg(${i},'speaker',this.value)">
+                <option value="dedektif" ${d.speaker !== 'merkez' ? 'selected' : ''}>📻 Sahadaki Memur</option>
+                <option value="merkez" ${d.speaker === 'merkez' ? 'selected' : ''}>👮 Merkez Dedektifi</option>
+              </select>
+              <button type="button" class="btn btn-outline btn-sm" onclick="moveDedDlg(${i},-1)" title="Yukarı">▲</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="moveDedDlg(${i},1)" title="Aşağı">▼</button>
+              <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedDlg(${i})">✕</button>
+            </div>
+          </div>
+          <div class="grid-2" style="gap:8px; margin-bottom:8px;">
+            <input type="text" class="form-control" placeholder="Konuşmacı adı (örn: Sahadaki Memur)" value="${escHtml(d.speakerName || '')}" oninput="updDedDlg(${i},'speakerName',this.value)" />
+            <input type="text" class="form-control" placeholder="💡 İpucu notu (vurgular açılınca görünür)" value="${escHtml(d.clueNote || '')}" oninput="updDedDlg(${i},'clueNote',this.value)" />
+          </div>
+          <input type="text" class="form-control" placeholder="Mesaj metni ([köşeli parantez] vurgulu sözcükler desteklenir)..." value="${escHtml(d.text || '')}" oninput="updDedDlg(${i},'text',this.value)" />
+        </div>
+      `).join('');
+
+      const susRows = sus.map((sp, i) => `
+        <div class="row-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <strong>🚨 ${i + 1}. Şüpheli</strong>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <label style="display:flex; align-items:center; gap:5px; font-weight:800; font-size:0.82rem; color:#15803D; cursor:pointer;">
+                <input type="radio" name="dedCulprit" ${sp.isCulprit ? 'checked' : ''} onchange="setDedCulprit(${i})" />
+                Gerçek Şüpheli (Doğru Eşkâl)
+              </label>
+              <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedSus(${i})">✕</button>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:80px minmax(0, 1fr) minmax(0, 2fr); gap:8px;">
+            <input type="text" class="form-control" placeholder="Simge" value="${escHtml(sp.avatar || '🕵️')}" oninput="updDedSus(${i},'avatar',this.value)" title="Emoji/Simge" />
+            <input type="text" class="form-control" placeholder="Şüpheli adı" value="${escHtml(sp.name || '')}" oninput="updDedSus(${i},'name',this.value)" />
+            <input type="text" class="form-control" placeholder="Eşkâl / özellikleri..." value="${escHtml(sp.traits || '')}" oninput="updDedSus(${i},'traits',this.value)" />
+          </div>
+        </div>
+      `).join('');
+
+      fields = `
+        <div class="form-group">
+          <label class="form-label">🕵️ Vaka Dosyası Giriş Özeti</label>
+          <textarea class="form-control" rows="2" oninput="upd('caseBrief', this.value)">${escHtml(s.caseBrief || '')}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">📻 Telsiz Diyalog Satırları <small style="color:#0D9488;">(Vurgulamak istediğiniz sözcükleri <strong>[köşeli parantez]</strong> içine yazın)</small></label>
+          ${dlgRows}
+          <button type="button" class="btn btn-outline btn-sm" onclick="addDedDlg()">➕ Telsiz Mesajı Ekle</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🚨 Şüpheli Teşhis Kartları (Öğrencilerin eleyerek yakalayacağı kişiler)</label>
+          ${susRows}
+          <button type="button" class="btn btn-outline btn-sm" onclick="addDedSus()">➕ Şüpheli Ekle</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🔎 Vaka Sonu Keşif / Tartışma Sorusu</label>
+          <input type="text" class="form-control" value="${escHtml(s.question || '')}" oninput="upd('question', this.value)" />
+        </div>
+      `;
+    } else if (s.type === 'hazirlik') {
+      fields = `
+        <div class="form-group">
+          <label class="form-label">Senaryo / Örnek Durum / Kısa Hikâye</label>
+          <textarea class="form-control" rows="4" oninput="upd('content', this.value)">${escHtml(s.content || '')}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🤔 Sınıfa Yöneltilecek Merak Sorusu</label>
+          <input type="text" class="form-control" value="${escHtml(s.question || '')}" oninput="upd('question', this.value)" />
+        </div>
+      `;
+    } else if (s.type === 'gozlem') {
+      const exRows = (s.examples || []).map((ex, i) => `
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <span style="padding:10px 12px; background:#E0F2FE; color:#0369A1; border-radius:8px; font-weight:900;">${i + 1}</span>
+          <input type="text" class="form-control" value="${escHtml(ex)}" oninput="updEx(${i}, this.value)" placeholder="Örn: [Kırmızı] uçurtma gökyüzünde süzülüyordu." />
+          <button class="btn btn-outline btn-sm" onclick="delEx(${i})">✕</button>
+        </div>
+      `).join('');
+      fields = `
+        <div class="form-group">
+          <label class="form-label">Yönerge</label>
+          <input type="text" class="form-control" value="${escHtml(s.instruction || '')}" oninput="upd('instruction', this.value)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Örnek Cümleler <small style="color:#0D9488;">(Sonradan vurgulanacak sözcüğü veya eki <strong>[köşeli parantez]</strong> içine alın: örn. Kitap[çı]dan aldım)</small></label>
+          ${exRows}
+          <button class="btn btn-outline btn-sm" onclick="addEx()">➕ Örnek Cümle Ekle</button>
+        </div>
+      `;
+    } else if (s.type === 'karsilastir') {
+      const gA = s.groupA || (s.groupA = { title: 'A Grubu', items: [], image: '' });
+      const gB = s.groupB || (s.groupB = { title: 'B Grubu', items: [], image: '' });
+      fields = `
+        <div class="form-group">
+          <label class="form-label">Karşılaştırma Yönergesi</label>
+          <input type="text" class="form-control" value="${escHtml(s.instruction || '')}" oninput="upd('instruction', this.value)" />
+        </div>
+        <div class="grid-2">
+          <div class="row-box">
+            <label class="form-label">1. Grup Başlığı</label>
+            <input type="text" class="form-control mb-16" value="${escHtml(gA.title)}" oninput="activity.steps[currentIdx].groupA.title=this.value; markDirty()" />
+            <label class="form-label">1. Grup Görseli (İsteğe bağlı)</label>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+              <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                📁 Görsel Yükle
+                <input type="file" accept="image/*" style="display:none;" onchange="handleGroupImageUpload('groupA', this)" />
+              </label>
+              <input type="text" class="form-control" style="flex:1; min-width:140px; padding:6px 10px; font-size:0.82rem;" placeholder="veya görsel bağlantısı..." value="${escHtml(gA.image && !gA.image.startsWith('data:') ? gA.image : '')}" oninput="setGroupImageUrl('groupA', this.value)" />
+              ${gA.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeGroupImage('groupA')">🗑️</button>` : ''}
+            </div>
+            ${gA.image ? `<img src="${escHtml(gA.image)}" alt="1. Grup Görseli" style="max-height:110px; max-width:100%; border-radius:8px; margin-bottom:10px; display:block; object-fit:contain;" />` : ''}
+            <label class="form-label">1. Grup Örnekleri (Her satıra 1 örnek, [vurgu] destekli)</label>
+            <textarea class="form-control" rows="4" oninput="activity.steps[currentIdx].groupA.items=this.value.split('\\n'); markDirty()">${escHtml((gA.items || []).join('\n'))}</textarea>
+          </div>
+          <div class="row-box">
+            <label class="form-label">2. Grup Başlığı</label>
+            <input type="text" class="form-control mb-16" value="${escHtml(gB.title)}" oninput="activity.steps[currentIdx].groupB.title=this.value; markDirty()" />
+            <label class="form-label">2. Grup Görseli (İsteğe bağlı)</label>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+              <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                📁 Görsel Yükle
+                <input type="file" accept="image/*" style="display:none;" onchange="handleGroupImageUpload('groupB', this)" />
+              </label>
+              <input type="text" class="form-control" style="flex:1; min-width:140px; padding:6px 10px; font-size:0.82rem;" placeholder="veya görsel bağlantısı..." value="${escHtml(gB.image && !gB.image.startsWith('data:') ? gB.image : '')}" oninput="setGroupImageUrl('groupB', this.value)" />
+              ${gB.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeGroupImage('groupB')">🗑️</button>` : ''}
+            </div>
+            ${gB.image ? `<img src="${escHtml(gB.image)}" alt="2. Grup Görseli" style="max-height:110px; max-width:100%; border-radius:8px; margin-bottom:10px; display:block; object-fit:contain;" />` : ''}
+            <label class="form-label">2. Grup Örnekleri (Her satıra 1 örnek, [vurgu] destekli)</label>
+            <textarea class="form-control" rows="4" oninput="activity.steps[currentIdx].groupB.items=this.value.split('\\n'); markDirty()">${escHtml((gB.items || []).join('\n'))}</textarea>
+          </div>
+        </div>
+        <div class="form-group mt-16">
+          <label class="form-label">⚖️ Farkı Bulduran Tartışma Sorusu</label>
+          <input type="text" class="form-control" value="${escHtml(s.question || '')}" oninput="upd('question', this.value)" />
+        </div>
+      `;
+    } else if (s.type === 'soru') {
+      const qs = (s.questions || []).map((q, i) => `
+        <div class="row-box">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <strong>${i + 1}. Yönlendirici Soru</strong>
+            <button class="btn btn-outline btn-sm" onclick="delQ(${i})">🗑️ Sil</button>
+          </div>
+          <input type="text" class="form-control mb-16" placeholder="Soru..." value="${escHtml(q.q || '')}" oninput="updQ(${i},'q',this.value)" />
+          <div class="grid-2">
+            <input type="text" class="form-control" placeholder="💡 İpucu (isteğe bağlı)" value="${escHtml(q.hint || '')}" oninput="updQ(${i},'hint',this.value)" />
+            <input type="text" class="form-control" placeholder="✅ Beklenen cevap" value="${escHtml(q.answer || '')}" oninput="updQ(${i},'answer',this.value)" />
+          </div>
+        </div>
+      `).join('');
+      fields = `
+        <div class="form-group">
+          <label class="form-label">Adım Adım Keşif Soruları</label>
+          ${qs}
+          <button class="btn btn-outline btn-sm" onclick="addQ()">➕ Yönlendirici Soru Ekle</button>
+        </div>
+      `;
+    } else if (s.type === 'siniflandir') {
+      const cats = s.categories || (s.categories = ['1. Grup', '2. Grup']);
+      const catInputs = cats.map((c, ci) => `
+        <div style="display:flex; gap:6px; margin-bottom:6px;">
+          <input type="text" class="form-control" value="${escHtml(c)}" oninput="updCat(${ci}, this.value)" placeholder="${ci + 1}. Grup adı" />
+          ${cats.length > 2 ? `<button class="btn btn-outline btn-sm" onclick="delCat(${ci})">✕</button>` : ''}
+        </div>
+      `).join('');
+      const itemRows = (s.items || []).map((it, i) => `
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <input type="text" class="form-control" value="${escHtml(it.text)}" oninput="updSinifItem(${i},'text',this.value)" placeholder="Sözcük veya cümle..." />
+          <select class="form-control" style="max-width:220px;" onchange="updSinifItem(${i},'c',parseInt(this.value))">
+            ${cats.map((c, ci) => `<option value="${ci}" ${it.c === ci ? 'selected' : ''}>${ci + 1}. Grup: ${escHtml(c)}</option>`).join('')}
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="delSinifItem(${i})">✕</button>
+        </div>
+      `).join('');
+      fields = `
+        <div class="form-group">
+          <label class="form-label">Yönerge</label>
+          <input type="text" class="form-control" value="${escHtml(s.instruction || '')}" oninput="upd('instruction', this.value)" />
+        </div>
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer;">
+            <input type="checkbox" ${s.hideNames !== false ? 'checked' : ''} onchange="upd('hideNames', this.checked)" />
+            Sezdirme için grup adlarını başlangıçta gizle ("A Grubu, B Grubu" olarak görünsün, sonra açılsın)
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gruplar (Kategoriler)</label>
+          ${catInputs}
+          ${cats.length < 4 ? `<button class="btn btn-outline btn-sm" onclick="addCat()">➕ Grup Ekle</button>` : ''}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sınıflandırılacak Örnekler</label>
+          ${itemRows}
+          <button class="btn btn-outline btn-sm" onclick="addSinifItem()">➕ Örnek Ekle</button>
+        </div>
+      `;
+    } else if (s.type === 'cikarim') {
+      fields = `
+        <div class="form-group">
+          <label class="form-label">Öğrencilere Kural Yazdırma Yönergesi</label>
+          <textarea class="form-control" rows="3" oninput="upd('prompt', this.value)">${escHtml(s.prompt || '')}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tahmin Kutusu İpucu (Placeholder)</label>
+          <input type="text" class="form-control" value="${escHtml(s.placeholder || '')}" oninput="upd('placeholder', this.value)" />
+        </div>
+      `;
+    } else if (s.type === 'kural') {
+      fields = `
+        <div class="form-group">
+          <label class="form-label">💡 Keşfedilen Kural Metni (Derste perde açıldığında gösterilir)</label>
+          <textarea class="form-control" rows="5" oninput="upd('rule', this.value)">${escHtml(s.rule || '')}</textarea>
+        </div>
+      `;
+    } else if (s.type === 'uygulama') {
+      const mcq = (s.items || []).map((it, i) => `
+        <div class="row-box">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <strong>${i + 1}. Pekiştirme Sorusu</strong>
+            <button class="btn btn-outline btn-sm" onclick="delMcq(${i})">🗑️ Sil</button>
+          </div>
+          <input type="text" class="form-control mb-16" value="${escHtml(it.q || '')}" placeholder="Soru metni..." oninput="updMcq(${i},'q',this.value)" />
+          <div style="display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+              🖼️ Soruya Görsel Yükle
+              <input type="file" accept="image/*" style="display:none;" onchange="handleMcqImageUpload(${i}, this)" />
+            </label>
+            <input type="text" class="form-control" style="flex:1; min-width:160px; padding:6px 10px; font-size:0.82rem;" placeholder="veya soru görseli bağlantısı (https://...)" value="${escHtml(it.image && !it.image.startsWith('data:') ? it.image : '')}" oninput="setMcqImageUrl(${i}, this.value)" />
+            ${it.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeMcqImage(${i})">🗑️ Görseli Kaldır</button>` : ''}
+          </div>
+          ${it.image ? `<img src="${escHtml(it.image)}" alt="Soru Görseli" style="max-height:130px; max-width:100%; border-radius:8px; margin-bottom:12px; display:block; object-fit:contain;" />` : ''}
+          <div class="grid-2 mb-16">
+            ${(it.options || ['','','','']).map((op, oi) => `
+              <div style="display:flex; align-items:center; gap:6px;">
+                <input type="radio" name="mcq_${i}" ${it.correct === oi ? 'checked' : ''} onchange="updMcq(${i},'correct',${oi})" title="Doğru cevap" />
+                <input type="text" class="form-control" value="${escHtml(op)}" placeholder="${'ABCD'[oi]} seçeneği" oninput="updMcqOpt(${i},${oi},this.value)" />
+              </div>
+            `).join('')}
+          </div>
+          <input type="text" class="form-control" value="${escHtml(it.explanation || '')}" placeholder="Açıklama (isteğe bağlı)..." oninput="updMcq(${i},'explanation',this.value)" />
+        </div>
+      `).join('');
+      fields = `
+        <div class="form-group">
+          <label class="form-label">Keşfedilen Kuralı Pekiştirme Soruları</label>
+          ${mcq}
+          <button class="btn btn-outline btn-sm" onclick="addMcq()">➕ Pekiştirme Sorusu Ekle</button>
+        </div>
+      `;
+    }
+
+    const imageBoxHtml = `
+      <div class="form-group" style="background:#F0FDFA; border:2px dashed #5EEAD4; border-radius:12px; padding:14px 16px; margin-bottom:18px;">
+        <label class="form-label" style="color:#0F766E; margin-bottom:8px;">🖼️ Bu Aşama İçin Görsel Ekle <small style="font-weight:600; color:var(--text-muted);">(Karikatür, afiş, tablo, kavram haritası veya fotoğraf)</small></label>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <label class="btn btn-primary btn-sm" style="background:#0D9488; cursor:pointer;">
+            📁 Bilgisayardan Görsel Seç
+            <input type="file" accept="image/*" style="display:none;" onchange="handleStepImageUpload(this)" />
+          </label>
+          <input type="text" class="form-control" style="flex:1; min-width:220px; padding:8px 12px; font-size:0.88rem;" placeholder="veya görsel bağlantısı (https://...) yapıştırın..." value="${escHtml(s.image && !s.image.startsWith('data:') ? s.image : '')}" oninput="setStepImageUrl(this.value)" />
+          ${s.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="removeStepImage()">🗑️ Görseli Kaldır</button>` : ''}
+        </div>
+        ${s.image ? `
+          <div style="margin-top:12px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#fff; padding:10px 12px; border-radius:10px; border:1px solid #CCFBF1;">
+            <img src="${escHtml(s.image)}" alt="Aşama Görseli" style="max-height:140px; max-width:240px; border-radius:8px; object-fit:contain; cursor:zoom-in;" onclick="openLightbox(this.src)" title="Büyütmek için tıklayın" />
+            <div style="flex:1; min-width:180px;">
+              <label class="form-label" style="font-size:0.8rem; margin-bottom:4px;">Görsel Alt Yazısı / Açıklaması (İsteğe bağlı)</label>
+              <input type="text" class="form-control" style="padding:7px 10px; font-size:0.85rem;" placeholder="Örn: Görseldeki tabelalarda hangi yazım yanlışı dikkatinizi çekiyor?" value="${escHtml(s.imageCaption || '')}" oninput="upd('imageCaption', this.value)" />
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    document.getElementById('stepEditor').innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+        <div>
+          <span style="font-size:0.78rem; font-weight:900; color:${meta.color}; text-transform:uppercase;">${currentIdx + 1}. AŞAMA TÜRÜ</span>
+          <div style="font-size:0.85rem; color:var(--text-muted);">${escHtml(meta.desc)}</div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="deleteCurrentStep()">🗑️ Bu Aşamayı Sil</button>
+      </div>
+      <div class="stage-type-grid">${typeButtons}</div>
+      <div class="form-group">
+        <label class="form-label">Aşama Başlığı</label>
+        <input type="text" class="form-control" value="${escHtml(s.title || '')}" oninput="upd('title', this.value)" />
+      </div>
+      ${imageBoxHtml}
+      ${fields}
+      <div class="form-group" style="margin-top:16px; margin-bottom:0;">
+        <label class="form-label">👩‍🏫 Bu Aşama İçin Öğretmen Notu (Yalnızca öğretmen modunda görünür)</label>
+        <input type="text" class="form-control" value="${escHtml(s.note || '')}" placeholder="Örn: Bu aşamada henüz terimin adını söylemeyin, öğrencilerin örnekleri karşılaştırmasını bekleyin..." oninput="upd('note', this.value)" />
+      </div>
+    `;
+  }
+
+  async function handleStepImageUpload(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file, 900, 900, 0.78);
+      activity.steps[currentIdx].image = dataUrl;
+      markDirty();
+      renderAll();
+      showToast('Görsel aşamaya eklendi!', 'success');
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  function setStepImageUrl(url) {
+    activity.steps[currentIdx].image = url.trim();
+    markDirty();
+    renderSidebar();
+  }
+
+  function removeStepImage() {
+    activity.steps[currentIdx].image = '';
+    activity.steps[currentIdx].imageCaption = '';
+    markDirty();
+    renderAll();
+    showToast('Görsel kaldırıldı.', 'info');
+  }
+
+  async function handleGroupImageUpload(groupKey, input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file, 800, 800, 0.75);
+      activity.steps[currentIdx][groupKey].image = dataUrl;
+      markDirty();
+      renderAll();
+      showToast('Grup görseli eklendi!', 'success');
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  function setGroupImageUrl(groupKey, url) {
+    activity.steps[currentIdx][groupKey].image = url.trim();
+    markDirty();
+    renderSidebar();
+  }
+
+  function removeGroupImage(groupKey) {
+    activity.steps[currentIdx][groupKey].image = '';
+    markDirty();
+    renderAll();
+  }
+
+  async function handleMcqImageUpload(qIdx, input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file, 800, 800, 0.75);
+      activity.steps[currentIdx].items[qIdx].image = dataUrl;
+      markDirty();
+      renderAll();
+      showToast('Soru görseli eklendi!', 'success');
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  function setMcqImageUrl(qIdx, url) {
+    activity.steps[currentIdx].items[qIdx].image = url.trim();
+    markDirty();
+    renderSidebar();
+  }
+
+  function removeMcqImage(qIdx) {
+    activity.steps[currentIdx].items[qIdx].image = '';
+    markDirty();
+    renderAll();
+  }
+
+  function upd(k, v) {
+    activity.steps[currentIdx][k] = v;
+    markDirty();
+    if (k === 'title') renderSidebar();
+  }
+  function updEx(i, v) { activity.steps[currentIdx].examples[i] = v; markDirty(); }
+  function addEx() { (activity.steps[currentIdx].examples ||= []).push('Yeni [örnek] cümle.'); markDirty(); renderStepEditor(); }
+  function delEx(i) { activity.steps[currentIdx].examples.splice(i, 1); markDirty(); renderStepEditor(); }
+
+  function updQ(i, k, v) { activity.steps[currentIdx].questions[i][k] = v; markDirty(); }
+  function addQ() { (activity.steps[currentIdx].questions ||= []).push({ q: '', hint: '', answer: '' }); markDirty(); renderStepEditor(); }
+  function delQ(i) { activity.steps[currentIdx].questions.splice(i, 1); markDirty(); renderStepEditor(); }
+
+  function updCat(ci, v) { activity.steps[currentIdx].categories[ci] = v; markDirty(); }
+  function addCat() { activity.steps[currentIdx].categories.push('Yeni Grup'); markDirty(); renderStepEditor(); }
+  function delCat(ci) { activity.steps[currentIdx].categories.splice(ci, 1); markDirty(); renderStepEditor(); }
+  function updSinifItem(i, k, v) { activity.steps[currentIdx].items[i][k] = v; markDirty(); }
+  function addSinifItem() { (activity.steps[currentIdx].items ||= []).push({ text: '', c: 0 }); markDirty(); renderStepEditor(); }
+  function delSinifItem(i) { activity.steps[currentIdx].items.splice(i, 1); markDirty(); renderStepEditor(); }
+
+  function updMcq(i, k, v) { activity.steps[currentIdx].items[i][k] = v; markDirty(); }
+  function updMcqOpt(i, oi, v) { activity.steps[currentIdx].items[i].options[oi] = v; markDirty(); }
+  function addMcq() { (activity.steps[currentIdx].items ||= []).push({ q: '', options: ['', '', '', ''], correct: 0, explanation: '' }); markDirty(); renderStepEditor(); }
+  function delMcq(i) { activity.steps[currentIdx].items.splice(i, 1); markDirty(); renderStepEditor(); }
+
+  function updDedDlg(i, k, v) { activity.steps[currentIdx].dialogues[i][k] = v; markDirty(); }
+  function addDedDlg() {
+    const dlgs = activity.steps[currentIdx].dialogues ||= [];
+    const nextSpeaker = dlgs.length % 2 === 0 ? 'dedektif' : 'merkez';
+    dlgs.push({ speaker: nextSpeaker, speakerName: nextSpeaker === 'merkez' ? 'Merkez Dedektifi' : 'Sahadaki Memur', text: '', clueNote: '' });
+    markDirty(); renderStepEditor();
+  }
+  function delDedDlg(i) { activity.steps[currentIdx].dialogues.splice(i, 1); markDirty(); renderStepEditor(); }
+  function moveDedDlg(i, d) {
+    const arr = activity.steps[currentIdx].dialogues;
+    const n = i + d;
+    if (!arr || n < 0 || n >= arr.length) return;
+    const tmp = arr[i]; arr[i] = arr[n]; arr[n] = tmp;
+    markDirty(); renderStepEditor();
+  }
+  function updDedSus(i, k, v) { activity.steps[currentIdx].suspects[i][k] = v; markDirty(); }
+  function setDedCulprit(i) {
+    (activity.steps[currentIdx].suspects || []).forEach((sp, idx) => { sp.isCulprit = (idx === i); });
+    markDirty();
+  }
+  function addDedSus() {
+    const sus = activity.steps[currentIdx].suspects ||= [];
+    sus.push({ name: `${sus.length + 1}. Şüpheli`, avatar: '🕵️', traits: '', isCulprit: sus.length === 0 });
+    markDirty(); renderStepEditor();
+  }
+  function delDedSus(i) { activity.steps[currentIdx].suspects.splice(i, 1); markDirty(); renderStepEditor(); }
+
+  function loadDetectivePreset(preset) {
+    activity.steps = createDetectiveSezdirmeSteps(preset);
+    if (preset === 'soyguncu' && (!activity.title || activity.title === 'Yeni Sezdirme Dersi')) {
+      activity.title = '🕵️ Dedektiflik Vakası: Soyguncu Neye Bindi?';
+      document.getElementById('activityTitle').value = activity.title;
+    }
+    currentIdx = 0;
+    closeModal('detectiveTemplateModal');
+    markDirty();
+    renderAll();
+    showToast('Dedektiflik tarzı sezdirme şablonu yüklendi!', 'success');
+  }
+
+  function markDirty() {
+    isDirty = true;
+    const st = document.getElementById('saveStatus');
+    st.textContent = '⏳ Kaydedilmedi';
+    st.style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Sezdirme Dersi';
+    activity.description = document.getElementById('activityDesc').value.trim();
+    activity.objective = document.getElementById('activityObjective').value.trim();
+    activity.grade = document.getElementById('activityGrade').value;
+    activity.theme = document.getElementById('activityTheme').value.trim();
+    activity.outcome = document.getElementById('activityOutcome').value.trim();
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    const st = document.getElementById('saveStatus');
+    st.textContent = '✅ Kaydedildi';
+    st.style.color = 'var(--success)';
+    showToast('Sezdirme dersi kaydedildi!', 'success');
+  }
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveActivity(); }
+  });
+
+  init();
+</script>
+</body>
+</html>

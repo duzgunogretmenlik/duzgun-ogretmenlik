@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Öğretmen Girişi - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    .login-wrapper {
+      min-height: calc(100vh - 64px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      background: linear-gradient(135deg, #4B44CC 0%, #0D9488 100%);
+    }
+    .login-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 20px 56px rgba(0,0,0,0.22);
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .login-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 20px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+    .pass-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .pass-input-wrap input {
+      padding-right: 48px;
+    }
+    .toggle-pass-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.15rem;
+      padding: 4px 6px;
+      color: var(--text-muted);
+    }
+    .hint-box {
+      background: #F0FDFA;
+      border: 2px dashed #5EEAD4;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 20px;
+      font-size: 0.86rem;
+      color: #134E4A;
+    }
+    .forgot-box {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 2px solid var(--border);
+      display: none;
+    }
+    .error-banner {
+      background: #FEE2E2;
+      color: #B91C1C;
+      border: 1px solid #FCA5A5;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .success-banner {
+      background: #DCFCE7;
+      color: #166534;
+      border: 1px solid #86EFAC;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg);
+      padding: 5px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    .auth-tab-btn {
+      border: none;
+      background: transparent;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-family: var(--font);
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .auth-tab-btn.active {
+      background: #fff;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">🏠 Etkinlikler</a></li>
+    <li><a href="turkce-oneriler.html">🗣️ Türkçe Öneriler</a></li>
+    <li><a href="join.html">🎮 Etkinliğe Gir</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <a href="../index.html" class="btn btn-outline btn-sm">← Etkinliklere Dön</a>
+  </div>
+</nav>
+
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-icon" id="authHeaderIcon">🔐</div>
+      <h1 id="authHeaderTitle" style="font-size:1.65rem; font-weight:900; color:var(--text);">Öğretmen Paneli</h1>
+      <p id="authHeaderSubtitle" style="color:var(--text-muted); font-size:0.92rem; margin-top:4px;">
+        Etkinlik oluşturmak, düzenlemek ve <strong>Sınıfım</strong> modülünü yönetmek için giriş yapın veya ücretsiz kayıt olun.
+      </p>
+    </div>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab-btn active" id="tabLoginBtn" onclick="switchAuthTab('login')">🔐 Giriş Yap</button>
+      <button type="button" class="auth-tab-btn" id="tabRegisterBtn" onclick="switchAuthTab('register')">✨ Kayıt Ol</button>
+    </div>
+
+    <div id="loginError" class="error-banner"></div>
+    <div id="loginSuccess" class="success-banner"></div>
+
+    <!-- GİRİŞ YAP PANELİ -->
+    <div id="loginPanel">
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="loginUsername">Kullanıcı Adı</label>
+          <input type="text" class="form-control" id="loginUsername" placeholder="Kullanıcı adınız..." autocomplete="username" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Şifre</label>
+          <div class="pass-input-wrap">
+            <input type="password" class="form-control" id="loginPassword" placeholder="Şifreniz..." autocomplete="current-password" required />
+            <button type="button" class="toggle-pass-btn" onclick="togglePassVisibility('loginPassword', this)" title="Şifreyi Göster/Gizle">👁️</button>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:8px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; font-weight:700; cursor:pointer; color:var(--text);">
+            <input type="checkbox" id="rememberMe" checked style="width:16px; height:16px; accent-color:var(--primary);" />
+            Beni bu cihazda hatırla
+          </label>
+          <button type="button" onclick="toggleForgotBox()" style="background:none; border:none; color:var(--primary); font-weight:800; font-size:0.86rem; cursor:pointer; font-family:var(--font);">
+            Şifremi Unuttum
+          </button>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
+          🔐 Öğretmen Paneline Giriş Yap
+        </button>
+      </form>
+
+      <!-- İLK KURULUM BİLGİ KUTUSU (Yalnızca varsayılan şifre değişene kadar görünür) -->
+      <div id="firstTimeHint" class="hint-box" style="display:none;">
+        <div style="font-weight:900; margin-bottom:6px;">💡 İlk Giriş Bilgileri (Varsayılan Öğretmen)</div>
+        <div style="line-height:1.6;">
+          Kullanıcı Adı: <code style="background:#fff; padding:2px 6px; border-radius:4px; font-weight:800;">ogretmen</code><br />
+          Şifre: <code style="background:#fff; padding:2px 6px; border-radius:4px; font-weight:800;">123456</code>
+        </div>
+        <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-sm" style="border-color:#0D9488; color:#0F766E; background:#fff;" onclick="fillDefaultCredentials()">
+            ✨ Bilgileri Doldur
+          </button>
+          <span style="font-size:0.78rem; opacity:0.85;">Yeni bir öğretmen hesabıyla da <strong>Kayıt Ol</strong> sekmesinden başlayabilirsiniz.</span>
+        </div>
+      </div>
+
+      <!-- ŞİFRE KURTARMA / SIFIRLAMA ALANI -->
+      <div id="forgotBox" class="forgot-box">
+        <h3 style="font-size:1rem; font-weight:900; color:var(--text); margin-bottom:8px;">🔑 Güvenlik Sorusu ile Şifre Sıfırlama</h3>
+        <div class="form-group">
+          <label class="form-label" for="forgotUsername">Kullanıcı Adı</label>
+          <input type="text" class="form-control" id="forgotUsername" placeholder="Şifresini sıfırlayacağınız kullanıcı adı..." oninput="updateForgotQuestion()" />
+        </div>
+        <div id="forgotQuestionText" style="background:var(--bg); padding:10px 12px; border-radius:8px; font-size:0.88rem; font-weight:700; color:var(--primary-dark); margin-bottom:12px;"></div>
+        <div class="form-group">
+          <label class="form-label" for="forgotAnswer">Güvenlik Yanıtı</label>
+          <input type="text" class="form-control" id="forgotAnswer" placeholder="Güvenlik sorusunun yanıtı..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="forgotNewPass">Yeni Şifre</label>
+          <div class="pass-input-wrap">
+            <input type="password" class="form-control" id="forgotNewPass" placeholder="En az 4 karakter yeni şifre..." />
+            <button type="button" class="toggle-pass-btn" onclick="togglePassVisibility('forgotNewPass', this)" title="Şifreyi Göster/Gizle">👁️</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="toggleForgotBox()">İptal</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="handleResetPassword()">✅ Şifreyi Sıfırla ve Giriş Yap</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KAYIT OL PANELİ -->
+    <div id="registerPanel" style="display:none;">
+      <form onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label class="form-label" for="regDisplayName">Ad Soyad / Görünen Ad <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="regDisplayName" placeholder="Örn: Zeynep Öğretmen" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regUsername">Kullanıcı Adı <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="regUsername" placeholder="Boşluksuz, en az 3 karakter (Örn: zeynep_trk)" autocomplete="username" required />
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label class="form-label" for="regPassword">Şifre <span style="color:var(--danger)">*</span></label>
+            <div class="pass-input-wrap">
+              <input type="password" class="form-control" id="regPassword" placeholder="En az 4 karakter" autocomplete="new-password" required />
+              <button type="button" class="toggle-pass-btn" onclick="togglePassVisibility('regPassword', this)" title="Şifreyi Göster/Gizle">👁️</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="regPasswordConfirm">Şifre Tekrar <span style="color:var(--danger)">*</span></label>
+            <div class="pass-input-wrap">
+              <input type="password" class="form-control" id="regPasswordConfirm" placeholder="Tekrar yazın" autocomplete="new-password" required />
+              <button type="button" class="toggle-pass-btn" onclick="togglePassVisibility('regPasswordConfirm', this)" title="Şifreyi Göster/Gizle">👁️</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regSecurityQuestion">Güvenlik Sorusu (Şifre sıfırlama için)</label>
+          <input type="text" class="form-control" id="regSecurityQuestion" value="En sevdiğiniz Türk şairi veya ilk görev okulunuz?" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regSecurityAnswer">Güvenlik Yanıtı <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-control" id="regSecurityAnswer" placeholder="Unutmayacağınız bir yanıt..." required />
+        </div>
+
+        <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; font-weight:700; cursor:pointer; color:var(--text); margin-bottom:16px;">
+          <input type="checkbox" id="regRememberMe" checked style="width:16px; height:16px; accent-color:var(--primary);" />
+          Kayıt sonrası oturumumu bu cihazda açık tut
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">
+          ✨ Öğretmen Hesabı Oluştur ve Başla
+        </button>
+      </form>
+
+      <div class="hint-box" style="margin-top:16px;">
+        <strong>📚 Hesabınızla Neler Ayrı Tutulur?</strong>
+        <div style="margin-top:4px; line-height:1.55;">
+          Site içindeki tüm <strong>hazır Türkçe derslerini</strong> kullanabilir; bunlara ek olarak <strong>kendi oluşturduğunuz dersleri</strong> ve <strong>kendi Sınıfım listenizi</strong> diğer öğretmenlerden tamamen bağımsız yönetebilirsiniz.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  function getRedirectTarget() {
+    const raw = new URLSearchParams(window.location.search).get('redirect');
+    if (raw && !/^[a-z0-9+.-]+:/i.test(raw) && !raw.startsWith('//') && !raw.includes('..')) {
+      return raw;
+    }
+    return '../index.html';
+  }
+
+  function clearLoginMessages() {
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('loginSuccess').style.display = 'none';
+  }
+
+  function switchAuthTab(tab) {
+    const isReg = tab === 'register';
+    document.getElementById('loginPanel').style.display = isReg ? 'none' : 'block';
+    document.getElementById('registerPanel').style.display = isReg ? 'block' : 'none';
+    document.getElementById('tabLoginBtn').classList.toggle('active', !isReg);
+    document.getElementById('tabRegisterBtn').classList.toggle('active', isReg);
+    document.getElementById('authHeaderIcon').textContent = isReg ? '👩‍🏫' : '🔐';
+    document.getElementById('authHeaderTitle').textContent = isReg ? 'Yeni Öğretmen Kaydı' : 'Öğretmen Paneli Girişi';
+    document.getElementById('authHeaderSubtitle').innerHTML = isReg
+      ? 'Ücretsiz öğretmen hesabınızı oluşturarak <strong>hazır derslere</strong> ve <strong>kendi derslerinize</strong> hemen başlayın.'
+      : 'Etkinlik oluşturmak, düzenlemek ve <strong>Sınıfım</strong> modülünü yönetmek için giriş yapın veya kayıt olun.';
+    clearLoginMessages();
+  }
+
+  function updateForgotQuestion() {
+    const uname = (document.getElementById('forgotUsername')?.value || '').trim();
+    const user = uname ? AuthStore.findUserByUsername(uname) : AuthStore.getAccount();
+    const qEl = document.getElementById('forgotQuestionText');
+    if (!qEl) return;
+    if (!user) {
+      qEl.textContent = '⚠️ Bu kullanıcı adına ait hesap bulunamadı.';
+    } else {
+      qEl.textContent = '❓ ' + (user.securityQuestion || 'Güvenlik sorusu tanımlanmamış.');
+    }
+  }
+
+  function initLoginPage() {
+    if (AuthStore.isLoggedIn()) {
+      window.location.replace(getRedirectTarget());
+      return;
+    }
+
+    const users = AuthStore.getUsers();
+    const primary = users[0];
+    if (primary && primary.isDefaultPassword) {
+      document.getElementById('firstTimeHint').style.display = 'block';
+    }
+    const forgotUserInput = document.getElementById('forgotUsername');
+    if (forgotUserInput && primary) {
+      forgotUserInput.value = primary.username;
+    }
+    updateForgotQuestion();
+
+    const mode = new URLSearchParams(window.location.search).get('mode');
+    if (mode === 'register') {
+      switchAuthTab('register');
+    }
+  }
+
+  function togglePassVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁️';
+    }
+  }
+
+  function fillDefaultCredentials() {
+    document.getElementById('loginUsername').value = 'ogretmen';
+    document.getElementById('loginPassword').value = '123456';
+    document.getElementById('loginPassword').focus();
+  }
+
+  function showLoginError(msg) {
+    const err = document.getElementById('loginError');
+    const ok = document.getElementById('loginSuccess');
+    ok.style.display = 'none';
+    err.textContent = '❌ ' + msg;
+    err.style.display = 'block';
+  }
+
+  function showLoginSuccess(msg) {
+    const err = document.getElementById('loginError');
+    const ok = document.getElementById('loginSuccess');
+    err.style.display = 'none';
+    ok.textContent = '✅ ' + msg;
+    ok.style.display = 'block';
+  }
+
+  function handleLogin(event) {
+    event.preventDefault();
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+    const remember = document.getElementById('rememberMe').checked;
+
+    const res = AuthStore.login(username, password, remember);
+    if (!res.ok) {
+      showLoginError(res.error);
+      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+      return;
+    }
+
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    showLoginSuccess(`Hoş geldiniz, ${res.account.displayName}! Panele yönlendiriliyorsunuz...`);
+    setTimeout(() => {
+      window.location.href = getRedirectTarget();
+    }, 350);
+  }
+
+  function handleRegister(event) {
+    event.preventDefault();
+    const displayName = document.getElementById('regDisplayName').value;
+    const username = document.getElementById('regUsername').value;
+    const password = document.getElementById('regPassword').value;
+    const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+    const securityQuestion = document.getElementById('regSecurityQuestion').value;
+    const securityAnswer = document.getElementById('regSecurityAnswer').value;
+    const remember = document.getElementById('regRememberMe').checked;
+
+    if (password !== passwordConfirm) {
+      showLoginError('Şifre ve tekrarı birbiriyle eşleşmiyor!');
+      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+      return;
+    }
+
+    const res = AuthStore.register(
+      { displayName, username, password, securityQuestion, securityAnswer },
+      remember
+    );
+    if (!res.ok) {
+      showLoginError(res.error);
+      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+      return;
+    }
+
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    showLoginSuccess(`Hesabınız oluşturuldu, hoş geldiniz ${res.account.displayName}! Panele yönlendiriliyorsunuz...`);
+    setTimeout(() => {
+      window.location.href = getRedirectTarget();
+    }, 450);
+  }
+
+  function toggleForgotBox() {
+    const box = document.getElementById('forgotBox');
+    const willOpen = box.style.display !== 'block';
+    box.style.display = willOpen ? 'block' : 'none';
+    if (willOpen) {
+      const loginU = (document.getElementById('loginUsername')?.value || '').trim();
+      const forgotU = document.getElementById('forgotUsername');
+      if (forgotU && loginU) forgotU.value = loginU;
+      updateForgotQuestion();
+    }
+  }
+
+  function handleResetPassword() {
+    const username = document.getElementById('forgotUsername').value.trim();
+    const answer = document.getElementById('forgotAnswer').value;
+    const newPass = document.getElementById('forgotNewPass').value;
+    const res = AuthStore.resetPasswordWithAnswer(username, answer, newPass);
+    if (!res.ok) {
+      showLoginError(res.error);
+      if (typeof SoundEffects !== 'undefined') SoundEffects.wrong();
+      return;
+    }
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    showLoginSuccess('Yeni şifreniz kaydedildi ve giriş yapıldı! Yönlendiriliyorsunuz...');
+    setTimeout(() => {
+      window.location.href = getRedirectTarget();
+    }, 450);
+  }
+
+  initLoginPage();
+</script>
+</body>
+</html>

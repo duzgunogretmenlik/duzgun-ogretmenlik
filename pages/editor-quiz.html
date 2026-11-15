@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Deneme Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    body { background: var(--bg); }
+    .editor-topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 64px;
+      z-index: 50;
+    }
+    .editor-container {
+      max-width: 900px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .question-block {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      border: 2px solid transparent;
+      transition: var(--transition);
+      position: relative;
+    }
+    .question-block:hover { border-color: var(--primary-light); }
+    .question-block.focused { border-color: var(--primary); }
+    .question-num {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .correct-radio {
+      width: 20px; height: 20px;
+      accent-color: var(--success);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .option-label {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+    }
+    .option-input { flex: 1; }
+    .settings-panel {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-weight: 700; font-size: 0.95rem; }
+    .setting-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: .3s;
+    }
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: .3s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+    .add-question-btn {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      font-weight: 700;
+      background: transparent;
+      width: 100%;
+      font-family: var(--font);
+    }
+    .add-question-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem; color:var(--text-muted);" id="saveStatus">✅ Kaydedildi</span>
+    <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Önizle</a>
+  </div>
+</nav>
+
+<div class="editor-topbar">
+  <div style="flex:1; min-width:200px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Mini Deneme başlığı..." style="font-size:1.1rem; font-weight:800;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span id="questionCount" class="badge badge-primary">0 Soru</span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default; font-size:0.9rem;"></span>
+  </div>
+</div>
+
+<div class="editor-container">
+
+  <!-- AYARLAR -->
+  <div class="settings-panel">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">⚙️ Mini Deneme Ayarları</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Soru başına süre</div>
+        <div class="setting-desc">Öğrencilerin her soru için tanınan süre</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="number" id="settingTime" class="form-control" value="30" min="5" max="300" style="width:80px; text-align:center;" oninput="markDirty()" />
+        <span style="color:var(--text-muted); font-size:0.9rem;">sn</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Sonuç bildirimini anında göster</div>
+        <div class="setting-desc">İşaretleme sonrasında doğru/yanlış ve açıklama görünsün</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="settingFeedback" checked onchange="markDirty()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Açıklama (isteğe bağlı)</div>
+        <div class="setting-desc">Mini deneme hakkında kısa bilgi</div>
+      </div>
+      <input type="text" id="activityDesc" class="form-control" placeholder="Açıklama..." style="max-width:300px;" oninput="markDirty()" />
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">🎓 Sınıf Düzeyi</div>
+        <div class="setting-desc">Türkiye Yüzyılı Maarif Modeli sınıf kademesi</div>
+      </div>
+      <select id="activityGrade" class="form-control" style="max-width:180px;" onchange="markDirty()">
+        <option value="5">5. Sınıf</option>
+        <option value="6">6. Sınıf</option>
+        <option value="7">7. Sınıf</option>
+        <option value="8">8. Sınıf (LGS)</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">🏷️ Maarif Teması & Kazanım Kodu</div>
+        <div class="setting-desc">Örn: Dilimizin Zenginliği (DYS.DO.6.1)</div>
+      </div>
+      <div style="display:flex; gap:8px; max-width:340px; width:100%;">
+        <input type="text" id="activityTheme" class="form-control" placeholder="Tema (örn: Oyun Dünyası)" oninput="markDirty()" />
+        <input type="text" id="activityOutcome" class="form-control" placeholder="Kazanım (örn: T.O.5.20)" style="max-width:130px;" oninput="markDirty()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- SORULAR -->
+  <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">📝 Sorular</h3>
+  <div id="questionsList"></div>
+
+  <button class="add-question-btn" onclick="addQuestion()">
+    ➕ Yeni Soru Ekle
+  </button>
+
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let isDirty = false;
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    if (id) {
+      activity = ActivityStore.getById(id);
+    }
+
+    if (!activity) {
+      activity = ActivityStore.createNew('minideneme');
+      ActivityStore.save(activity);
+      window.history.replaceState({}, '', `?id=${activity.id}`);
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('activityDesc').value = activity.description || '';
+    document.getElementById('activityGrade').value = activity.grade || '5';
+    document.getElementById('activityTheme').value = activity.theme || '';
+    document.getElementById('activityOutcome').value = activity.outcome || '';
+    document.getElementById('settingTime').value = activity.settings?.timePerQuestion || 30;
+    document.getElementById('settingFeedback').checked = activity.settings?.showFeedback !== false;
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-quiz.html?id=${activity.id}`;
+
+    renderQuestions();
+    updateCount();
+  }
+
+  function renderQuestions() {
+    const container = document.getElementById('questionsList');
+    if (!activity.questions || activity.questions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:40px;">
+          <span class="empty-icon">📝</span>
+          <h3>Henüz soru yok</h3>
+          <p>Aşağıdaki butona tıklayarak ilk sorunuzu ekleyin.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = activity.questions.map((q, i) => questionBlock(q, i)).join('');
+  }
+
+  function questionBlock(q, index) {
+    const letters = ['A','B','C','D'];
+    const optionsHTML = (q.options || ['','','','']).map((opt, oi) => `
+      <div class="option-row">
+        <input type="radio" class="correct-radio" name="correct_${q.id}"
+          ${q.correct === oi ? 'checked' : ''}
+          onchange="setCorrect('${q.id}', ${oi})"
+          title="Doğru cevap" />
+        <div class="option-label">${letters[oi]}</div>
+        <input type="text" class="form-control option-input"
+          value="${opt}"
+          placeholder="${letters[oi]} şıkkını yazın..."
+          oninput="updateOption('${q.id}', ${oi}, this.value)" />
+      </div>
+    `).join('');
+
+    return `
+      <div class="question-block" id="qblock_${q.id}">
+        <div class="question-num">
+          <span>SORU ${index + 1}</span>
+          <div style="display:flex; gap:6px;">
+            <button class="icon-btn" onclick="moveQuestion('${q.id}', -1)" title="Yukarı taşı">↑</button>
+            <button class="icon-btn" onclick="moveQuestion('${q.id}', 1)" title="Aşağı taşı">↓</button>
+            <button class="icon-btn danger" onclick="removeQuestion('${q.id}')" title="Soruyu sil">🗑️</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Soru Kökü ve Metni</label>
+          <textarea class="form-control" rows="2"
+            placeholder="Soruyu buraya yazın..."
+            oninput="updateQuestionText('${q.id}', this.value)"
+            onfocus="document.getElementById('qblock_${q.id}').classList.add('focused')"
+            onblur="document.getElementById('qblock_${q.id}').classList.remove('focused')"
+          >${q.text || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🖼️ Soru Görseli (Afiş, Tablo, Şiir veya Kitap Resmi - İsteğe bağlı)</label>
+          ${q.image ? `
+            <div class="image-preview-container" style="margin-bottom:8px;">
+              <img src="${q.image}" class="image-preview-thumb" alt="Soru Görseli" onclick="openLightbox(this.src)" />
+              <div class="image-preview-info">
+                <div style="font-weight:700; font-size:0.85rem;">Görsel Eklendi</div>
+                <div style="color:var(--text-muted); font-size:0.75rem;">Öğrenciler soruyu bu görselle birlikte görecek</div>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="removeQuestionImage('${q.id}')">🗑️ Kaldır</button>
+            </div>
+          ` : `
+            <div class="image-uploader-box" style="padding:10px 14px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:700; color:var(--primary); font-size:0.85rem;">
+                  <span>📁 Bilgisayardan Görsel Yükle</span>
+                  <input type="file" accept="image/*" style="display:none;" onchange="handleQuestionFile('${q.id}', event)" />
+                </label>
+                <div style="display:flex; gap:6px; flex:1; max-width:320px;">
+                  <input type="text" class="form-control" id="imgUrl_${q.id}" placeholder="Veya görsel linki yapıştırın..." style="font-size:0.8rem; padding:6px 10px;" />
+                  <button class="btn btn-outline btn-sm" onclick="applyQuestionImageUrl('${q.id}')">Ekle</button>
+                </div>
+              </div>
+            </div>
+          `}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Seçenekler <span style="font-size:0.8rem; color:var(--text-muted);">(Doğru seçeneğin yanındaki daireyi işaretleyin)</span></label>
+          ${optionsHTML}
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Çözüm / Açıklama (isteğe bağlı)</label>
+          <input type="text" class="form-control"
+            value="${q.explanation || ''}"
+            placeholder="Doğru cevabın açıklaması / ipucu..."
+            oninput="updateExplanation('${q.id}', this.value)" />
+        </div>
+      </div>
+    `;
+  }
+
+  async function handleQuestionFile(qId, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      showToast('Görsel işleniyor...', 'info');
+      const dataUrl = await compressImage(file, 800, 800, 0.75);
+      if (dataUrl) {
+        const q = activity.questions.find(x => x.id === qId);
+        if (q) {
+          q.image = dataUrl;
+          renderQuestions();
+          markDirty();
+          showToast('Soru görseli eklendi!', 'success');
+        }
+      }
+    } catch (e) {
+      showToast('Görsel yüklenirken bir hata oluştu.', 'error');
+    }
+  }
+
+  function applyQuestionImageUrl(qId) {
+    const input = document.getElementById(`imgUrl_${qId}`);
+    if (!input || !input.value.trim()) return;
+    const q = activity.questions.find(x => x.id === qId);
+    if (q) {
+      q.image = input.value.trim();
+      renderQuestions();
+      markDirty();
+      showToast('Görsel eklendi!', 'success');
+    }
+  }
+
+  function removeQuestionImage(qId) {
+    const q = activity.questions.find(x => x.id === qId);
+    if (q) {
+      q.image = null;
+      renderQuestions();
+      markDirty();
+      showToast('Görsel kaldırıldı.', 'info');
+    }
+  }
+
+  function addQuestion() {
+    if (!activity.questions) activity.questions = [];
+    const q = {
+      id: generateId(),
+      text: '',
+      options: ['', '', '', ''],
+      correct: 0,
+      explanation: ''
+    };
+    activity.questions.push(q);
+    updateCount();
+    renderQuestions();
+    markDirty();
+
+    setTimeout(() => {
+      const el = document.getElementById(`qblock_${q.id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const ta = el.querySelector('textarea');
+        if (ta) ta.focus();
+      }
+    }, 100);
+  }
+
+  function removeQuestion(id) {
+    activity.questions = activity.questions.filter(q => q.id !== id);
+    updateCount();
+    renderQuestions();
+    markDirty();
+  }
+
+  function moveQuestion(id, dir) {
+    const idx = activity.questions.findIndex(q => q.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= activity.questions.length) return;
+    const tmp = activity.questions[idx];
+    activity.questions[idx] = activity.questions[newIdx];
+    activity.questions[newIdx] = tmp;
+    renderQuestions();
+    markDirty();
+  }
+
+  function updateQuestionText(id, val) {
+    const q = activity.questions.find(q => q.id === id);
+    if (q) { q.text = val; markDirty(); }
+  }
+
+  function updateOption(qId, optIdx, val) {
+    const q = activity.questions.find(q => q.id === qId);
+    if (q) { q.options[optIdx] = val; markDirty(); }
+  }
+
+  function setCorrect(qId, optIdx) {
+    const q = activity.questions.find(q => q.id === qId);
+    if (q) { q.correct = optIdx; markDirty(); }
+  }
+
+  function updateExplanation(id, val) {
+    const q = activity.questions.find(q => q.id === id);
+    if (q) { q.explanation = val; markDirty(); }
+  }
+
+  function updateCount() {
+    const count = activity.questions?.length || 0;
+    document.getElementById('questionCount').textContent = `${count} Soru`;
+  }
+
+  function markDirty() {
+    isDirty = true;
+    document.getElementById('saveStatus').textContent = '⏳ Kaydedilmedi';
+    document.getElementById('saveStatus').style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Mini Deneme';
+    activity.description = document.getElementById('activityDesc').value.trim();
+    activity.grade = document.getElementById('activityGrade').value;
+    activity.theme = document.getElementById('activityTheme').value.trim();
+    activity.outcome = document.getElementById('activityOutcome').value.trim();
+    activity.settings = {
+      timePerQuestion: parseInt(document.getElementById('settingTime').value) || 30,
+      showFeedback: document.getElementById('settingFeedback').checked
+    };
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    document.getElementById('saveStatus').textContent = '✅ Kaydedildi';
+    document.getElementById('saveStatus').style.color = 'var(--success)';
+    showToast('Mini Deneme kaydedildi!', 'success');
+  }
+
+  setInterval(() => { if (isDirty) saveActivity(); }, 30000);
+  window.addEventListener('beforeunload', (e) => {
+    if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  init();
+</script>
+</body>
+</html>

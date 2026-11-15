@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parolla Oyunu - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    body {
+      background: #F4F6FB;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .play-nav {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .answer-feedback-popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: 900;
+      font-size: 1.2rem;
+      color: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 25;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .answer-feedback-popup.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    .feedback-correct { background: #2ECC71; }
+    .feedback-wrong { background: #E74C3C; }
+    .feedback-pass { background: #F39C12; }
+
+    .review-table-wrapper {
+      max-height: 320px;
+      overflow-y: auto;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .review-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: left;
+    }
+    .review-table th, .review-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .review-table th {
+      background: #F8F9FA;
+      font-weight: 800;
+      position: sticky;
+      top: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- GEZİNTİ VE BAŞLIK -->
+<div class="play-nav">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <a href="../index.html" class="navbar-brand" style="font-size:1.1rem;">
+      <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+    </a>
+    <span style="color:var(--border);">|</span>
+    <span id="activityTitle" style="font-weight:800; font-size:1rem; color:var(--text);">Parolla</span>
+    <span id="gradeBadge" style="display:none; font-size:0.75rem; background:#eff6ff; color:#1e40af; padding:2px 8px; border-radius:6px; font-weight:700;"></span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default;"></span>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <button class="btn btn-outline btn-sm" id="soundToggleBtn" onclick="toggleSound()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="toggleFullscreen()">⛶ Tam Ekran</button>
+    <a id="editLink" href="#" class="btn btn-outline btn-sm">✏️ Düzenle</a>
+    <a href="../index.html" class="btn btn-primary btn-sm">← Çıkış</a>
+  </div>
+</div>
+
+<div class="parolla-wrapper">
+
+  <!-- ÜST İSTATİSTİK VE GERİ SAYIM ÇUBUĞU -->
+  <div class="parolla-header-stats">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <div class="parolla-stat-badge stat-correct">
+        <span>✅ Doğru:</span>
+        <strong id="statCorrect">0</strong>
+      </div>
+      <div class="parolla-stat-badge stat-wrong">
+        <span>❌ Yanlış:</span>
+        <strong id="statWrong">0</strong>
+      </div>
+      <div class="parolla-stat-badge stat-pass">
+        <span>⏭️ Pas:</span>
+        <strong id="statPass">0</strong>
+      </div>
+      <div class="parolla-stat-badge stat-remain">
+        <span>🎯 Kalan:</span>
+        <strong id="statRemaining">0</strong>
+      </div>
+    </div>
+
+    <!-- SÜRE -->
+    <div class="parolla-timer" id="timerBox">
+      <span>⏱️</span>
+      <span id="timerText">03:00</span>
+    </div>
+  </div>
+
+  <!-- OYUN ALANI (ALFABE ÇARKI + MERKEZ SORU) -->
+  <div class="parolla-arena">
+    <div class="parolla-wheel-container" id="wheelContainer">
+
+      <!-- GERİ BİLDİRİM BALONCUĞU -->
+      <div class="answer-feedback-popup" id="feedbackPopup">Doğru!</div>
+
+      <!-- MERKEZ SORU VE CEVAP KARTI -->
+      <div class="parolla-center-card" id="centerCard">
+        <div>
+          <div class="parolla-current-letter-badge" id="currentLetterBadge">A</div>
+          <div class="parolla-letter-hint" id="currentLetterHint">"A" Harfi ile Başlayan Cevap</div>
+          <div class="parolla-question-text" id="currentQuestionText">Soru yükleniyor...</div>
+          <div class="parolla-word-clue" id="currentWordClue">_ _ _ _ _</div>
+        </div>
+
+        <div>
+          <!-- ÖĞRENCİ METİN GİRİŞİ -->
+          <div class="parolla-input-box">
+            <input type="text" class="form-control" id="answerInput" placeholder="Cevabı yazıp Enter'a basın..." autocomplete="off" />
+            <button class="btn btn-primary" onclick="submitTypedAnswer()">Cevapla</button>
+          </div>
+
+          <!-- ÖĞRETMEN DEĞERLENDİRME / HIZLI DÜĞMELER -->
+          <div class="parolla-teacher-actions">
+            <button class="parolla-btn-judge btn-judge-correct" onclick="judgeCurrent(true)" title="Doğru kabul et (D tuşu)">
+              ✅ Doğru
+            </button>
+            <button class="parolla-btn-judge btn-judge-pass" id="passBtn" onclick="judgeCurrent(null)" title="Pas geç (P tuşu)">
+              ⏭️ Pas
+            </button>
+            <button class="parolla-btn-judge btn-judge-wrong" onclick="judgeCurrent(false)" title="Yanlış kabul et (Y tuşu)">
+              ❌ Yanlış
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- OYUN BİTTİ / SONUÇ MODALI -->
+<div class="modal-overlay" id="resultModal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <h2 class="modal-title">🎉 Parolla Tamamlandı!</h2>
+      <button class="modal-close" onclick="closeModal('resultModal')">✕</button>
+    </div>
+
+    <div style="text-align:center; padding:16px 0;">
+      <div style="font-size:3rem; margin-bottom:8px;">🏆</div>
+      <h3 style="font-size:1.6rem; font-weight:900; color:var(--text);" id="resultTitle">Tebrikler!</h3>
+      <p style="color:var(--text-muted); font-size:0.95rem;">Türkçe Parolla yarışmasını başarıyla tamamladınız.</p>
+
+      <!-- SKOR ÖZETİ -->
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin:20px 0;">
+        <div style="background:#E8F8F5; border-radius:12px; padding:16px 8px;">
+          <div style="font-size:1.8rem; font-weight:900; color:#27ae60;" id="resCorrect">0</div>
+          <div style="font-size:0.8rem; font-weight:800; color:#27ae60;">Doğru</div>
+        </div>
+        <div style="background:#FDEDEC; border-radius:12px; padding:16px 8px;">
+          <div style="font-size:1.8rem; font-weight:900; color:#e74c3c;" id="resWrong">0</div>
+          <div style="font-size:0.8rem; font-weight:800; color:#e74c3c;">Yanlış</div>
+        </div>
+        <div style="background:#FEF9E7; border-radius:12px; padding:16px 8px;">
+          <div style="font-size:1.8rem; font-weight:900; color:#f39c12;" id="resPass">0</div>
+          <div style="font-size:0.8rem; font-weight:800; color:#f39c12;">Boş / Pas</div>
+        </div>
+        <div style="background:var(--primary-light); border-radius:12px; padding:16px 8px;">
+          <div style="font-size:1.8rem; font-weight:900; color:var(--primary);" id="resTime">00:00</div>
+          <div style="font-size:0.8rem; font-weight:800; color:var(--primary);">Kalan Süre</div>
+        </div>
+      </div>
+
+      <!-- SINIFIM'A PUAN VE NOT EKLEME ENTEGRASYONU -->
+      <div style="background:#FAF5FF; border:2px dashed #9B59B6; border-radius:var(--radius-sm); padding:16px; margin:20px 0; text-align:left;">
+        <div style="font-weight:800; font-size:0.95rem; color:#8E44AD; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <span>👥 Sınıfım Modülü Entegrasyonu</span>
+        </div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
+          Bu yarışmadaki başarı puanını (Doğru başına +10 puan) doğrudan bir öğrencinize ekleyin:
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <select id="studentSelect" class="form-control" style="flex:2; min-width:180px;">
+            <option value="">-- Öğrenci Seçin --</option>
+          </select>
+          <button class="btn btn-secondary" onclick="awardPointsToStudent()">🏅 Puanı Sınıfıma İşle</button>
+        </div>
+        <div id="awardMsg" style="font-size:0.85rem; font-weight:700; color:var(--success); margin-top:8px; display:none;"></div>
+      </div>
+
+      <!-- HARF-SORU İNCELEME TABLOSU -->
+      <div class="review-table-wrapper">
+        <table class="review-table">
+          <thead>
+            <tr>
+              <th style="width:40px;">Harf</th>
+              <th>Soru</th>
+              <th>Doğru Cevap</th>
+              <th style="width:70px;">Durum</th>
+            </tr>
+          </thead>
+          <tbody id="reviewTableBody"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:24px; flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="restartGame()">🔄 Yeniden Oyna</button>
+        <a href="../index.html" class="btn btn-primary">📋 Öğretmen Paneline Dön</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let questions = [];
+  let currentIndex = 0;
+  let timerInterval = null;
+  let timeLeft = 180;
+  let totalTime = 180;
+  let isGameOver = false;
+  let soundEnabled = true;
+
+  // Ses Sentezleyici (Web Audio API)
+  let audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    return audioCtx;
+  }
+
+  function playTone(freq, type = 'sine', duration = 0.15, delay = 0) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      setTimeout(() => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      }, delay * 1000);
+    } catch(e) {}
+  }
+
+  function soundSuccess() {
+    SoundEffects.correct();
+  }
+
+  function soundWrong() {
+    SoundEffects.wrong();
+  }
+
+  function soundPass() {
+    SoundEffects.pass();
+  }
+
+  function soundVictory() {
+    SoundEffects.win();
+  }
+
+  function toggleSound() {
+    SoundEffects.toggleMute();
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  // Türkçe Karakter Normalleştirme
+  function normalizeTurkish(str) {
+    if (!str) return '';
+    return str
+      .replace(/I/g, 'ı')
+      .replace(/İ/g, 'i')
+      .replace(/Ç/g, 'ç')
+      .replace(/Ş/g, 'ş')
+      .replace(/Ö/g, 'ö')
+      .replace(/Ü/g, 'ü')
+      .replace(/Ğ/g, 'ğ')
+      .toLowerCase()
+      .trim();
+  }
+
+  // BAŞLATMA
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const all = ActivityStore.getAll();
+    activity = all.find(a => a.id === id) || all.find(a => a.type === 'parolla');
+
+    if (!activity) {
+      alert('Parolla etkinliği bulunamadı!');
+      window.location = '../index.html';
+      return;
+    }
+
+    document.getElementById('activityTitle').textContent = activity.title;
+    if (activity.grade) {
+      const gb = document.getElementById('gradeBadge');
+      if (gb) {
+        gb.textContent = `🎓 ${activity.grade}. Sınıf`;
+        gb.style.display = 'inline-block';
+      }
+    }
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('editLink').href = `editor-parolla.html?id=${activity.id}`;
+
+    // Soruları hazırla: her soruya durum ekle ('waiting', 'correct', 'wrong', 'passed')
+    questions = (activity.questions || []).map((q, idx) => ({
+      ...q,
+      idx,
+      state: 'waiting', // 'waiting' | 'correct' | 'wrong' | 'passed'
+      studentAnswer: ''
+    }));
+
+    if (questions.length === 0) {
+      alert('Bu etkinlikte soru bulunmuyor.');
+      window.location = AuthStore.isLoggedIn() ? `editor-parolla.html?id=${activity.id}` : '../index.html';
+      return;
+    }
+
+    totalTime = activity.settings?.timeLimit || 180;
+    timeLeft = totalTime;
+
+    if (activity.settings?.allowPass === false) {
+      document.getElementById('passBtn').style.display = 'none';
+    }
+
+    // Oynanma sayısını artır
+    activity.playCount = (activity.playCount || 0) + 1;
+    ActivityStore.save(activity);
+
+    populateStudentsDropdown();
+    buildWheel();
+    startTimer();
+    loadQuestion(0);
+
+    // Klavye dinleyicisi
+    document.getElementById('answerInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitTypedAnswer();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      // Eğer input odaklı değilse D, Y, P kısayollarını çalıştır
+      if (document.activeElement === document.getElementById('answerInput')) return;
+      if (e.key === 'd' || e.key === 'D') judgeCurrent(true);
+      if (e.key === 'y' || e.key === 'Y') judgeCurrent(false);
+      if (e.key === 'p' || e.key === 'P' || e.key === ' ') judgeCurrent(null);
+    });
+  }
+
+  // ÇARKI OLUŞTURMA
+  function buildWheel() {
+    const container = document.getElementById('wheelContainer');
+    // Eski düğümleri temizle (merkez kart ve popup hariç)
+    container.querySelectorAll('.parolla-node').forEach(n => n.remove());
+
+    const total = questions.length;
+    // Dairesel yarıçapı container boyutuna göre hesapla
+    const rect = container.getBoundingClientRect();
+    const size = Math.min(rect.width || 580, rect.height || 580);
+    const radius = (size / 2) - 28;
+    const centerX = size / 2;
+    const centerY = size / 2;
+
+    questions.forEach((q, i) => {
+      // Tepeden (12 yönünden) başla (- PI / 2)
+      const angle = (i / total) * 2 * Math.PI - (Math.PI / 2);
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+
+      const node = document.createElement('div');
+      node.className = `parolla-node state-${q.state}`;
+      node.id = `node-${i}`;
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+      node.textContent = q.letter || (i + 1);
+      node.title = `${q.letter} Harfi`;
+      node.onclick = () => {
+        // Eğer tıklanan harf pas geçilmiş veya bekleniyorsa ona git
+        if (q.state === 'passed' || q.state === 'waiting') {
+          loadQuestion(i);
+        }
+      };
+
+      container.appendChild(node);
+    });
+  }
+
+  // SORUYU YÜKLE
+  function loadQuestion(index) {
+    if (isGameOver) return;
+    currentIndex = index;
+    const q = questions[currentIndex];
+
+    // Node stillerini güncelle
+    questions.forEach((item, i) => {
+      const node = document.getElementById(`node-${i}`);
+      if (!node) return;
+      node.className = `parolla-node state-${item.state}`;
+      if (i === currentIndex) {
+        node.classList.add('state-current');
+      }
+    });
+
+    // Merkez kartı doldur
+    document.getElementById('currentLetterBadge').textContent = q.letter || (currentIndex + 1);
+    document.getElementById('currentLetterHint').textContent = `"${q.letter}" Harfi ile Başlayan Cevap`;
+    document.getElementById('currentQuestionText').textContent = q.question || 'Soru metni belirtilmemiş.';
+
+    // İpucu harf sayısı çizgileri
+    const ans = (q.answer || '').trim();
+    if (ans) {
+      const masked = ans.split('').map((char, ci) => (ci === 0 ? char : '_')).join(' ');
+      document.getElementById('currentWordClue').textContent = `${masked}  (${ans.length} Harfli)`;
+    } else {
+      document.getElementById('currentWordClue').textContent = '';
+    }
+
+    const input = document.getElementById('answerInput');
+    input.value = '';
+    input.focus();
+
+    updateHeaderStats();
+  }
+
+  // ÖĞRENCİNİN YAZDIĞI CEVABI DEĞERLENDİR
+  function submitTypedAnswer() {
+    if (isGameOver) return;
+    const input = document.getElementById('answerInput');
+    const typed = input.value.trim();
+    if (!typed) {
+      showToast('Lütfen bir cevap yazın veya Pas geçin!', 'warning');
+      return;
+    }
+
+    const q = questions[currentIndex];
+    q.studentAnswer = typed;
+    const isCorrect = normalizeTurkish(typed) === normalizeTurkish(q.answer);
+    judgeCurrent(isCorrect);
+  }
+
+  // DOĞRU / YANLIŞ / PAS KARARI
+  function judgeCurrent(status) {
+    if (isGameOver) return;
+    const q = questions[currentIndex];
+
+    if (status === true) {
+      q.state = 'correct';
+      showFeedback('Doğru! 👏', 'feedback-correct');
+      soundSuccess();
+    } else if (status === false) {
+      q.state = 'wrong';
+      showFeedback(`Yanlış! (${q.answer})`, 'feedback-wrong');
+      soundWrong();
+    } else {
+      // Pas
+      q.state = 'passed';
+      showFeedback('Pas Geçildi ⏭️', 'feedback-pass');
+      soundPass();
+    }
+
+    updateHeaderStats();
+
+    // Node durumunu güncelle
+    const node = document.getElementById(`node-${currentIndex}`);
+    if (node) {
+      node.className = `parolla-node state-${q.state}`;
+    }
+
+    // Kısa gecikmeyle bir sonraki soruya geç
+    setTimeout(() => {
+      advanceNextQuestion();
+    }, 450);
+  }
+
+  function showFeedback(text, cls) {
+    const popup = document.getElementById('feedbackPopup');
+    popup.textContent = text;
+    popup.className = `answer-feedback-popup ${cls} show`;
+    setTimeout(() => {
+      popup.classList.remove('show');
+    }, 1100);
+  }
+
+  // BİR SONRAKİ SORUYU BUL (Döngüsel & Pas mantığı)
+  function advanceNextQuestion() {
+    if (isGameOver) return;
+
+    // Önce henüz hiç bakılmamış 'waiting' soruları ara (sıradan devam)
+    let nextIdx = -1;
+    for (let i = currentIndex + 1; i < questions.length; i++) {
+      if (questions[i].state === 'waiting') {
+        nextIdx = i;
+        break;
+      }
+    }
+
+    // Başa dönüp 'waiting' var mı bak
+    if (nextIdx === -1) {
+      for (let i = 0; i <= currentIndex; i++) {
+        if (questions[i].state === 'waiting') {
+          nextIdx = i;
+          break;
+        }
+      }
+    }
+
+    // Eğer hiç 'waiting' kalmadıysa, 'passed' sorulara dön (öğretmen izin vermişse)
+    if (nextIdx === -1 && activity.settings?.allowPass !== false) {
+      for (let i = currentIndex + 1; i < questions.length; i++) {
+        if (questions[i].state === 'passed') {
+          nextIdx = i;
+          break;
+        }
+      }
+      if (nextIdx === -1) {
+        for (let i = 0; i <= currentIndex; i++) {
+          if (questions[i].state === 'passed') {
+            nextIdx = i;
+            break;
+          }
+        }
+      }
+    }
+
+    // Hala soru bulunamadıysa tüm sorular yanıtlandı demektir!
+    if (nextIdx === -1) {
+      endGame(true);
+    } else {
+      loadQuestion(nextIdx);
+    }
+  }
+
+  // İSTATİSTİKLERİ GÜNCELLE
+  function updateHeaderStats() {
+    const correct = questions.filter(q => q.state === 'correct').length;
+    const wrong = questions.filter(q => q.state === 'wrong').length;
+    const pass = questions.filter(q => q.state === 'passed').length;
+    const remain = questions.filter(q => q.state === 'waiting').length;
+
+    document.getElementById('statCorrect').textContent = correct;
+    document.getElementById('statWrong').textContent = wrong;
+    document.getElementById('statPass').textContent = pass;
+    document.getElementById('statRemaining').textContent = remain;
+  }
+
+  // SÜRE VE ZAMANLAYICI
+  function startTimer() {
+    clearInterval(timerInterval);
+    updateTimerDisplay();
+
+    timerInterval = setInterval(() => {
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        endGame(false);
+        return;
+      }
+      timeLeft--;
+      updateTimerDisplay();
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    const timerBox = document.getElementById('timerBox');
+    document.getElementById('timerText').textContent = formatted;
+
+    if (timeLeft <= 15) {
+      timerBox.className = 'parolla-timer timer-danger';
+    } else if (timeLeft <= 45) {
+      timerBox.className = 'parolla-timer timer-warning';
+    } else {
+      timerBox.className = 'parolla-timer';
+    }
+  }
+
+  // OYUN BİTİŞİ
+  function endGame(completedAll) {
+    if (isGameOver) return;
+    isGameOver = true;
+    clearInterval(timerInterval);
+
+    const correct = questions.filter(q => q.state === 'correct').length;
+    const wrong = questions.filter(q => q.state === 'wrong').length;
+    const pass = questions.filter(q => q.state === 'passed' || q.state === 'waiting').length;
+
+    document.getElementById('resCorrect').textContent = correct;
+    document.getElementById('resWrong').textContent = wrong;
+    document.getElementById('resPass').textContent = pass;
+
+    const usedTime = totalTime - timeLeft;
+    const usedMins = Math.floor(usedTime / 60);
+    const usedSecs = usedTime % 60;
+    document.getElementById('resTime').textContent = `${String(usedMins).padStart(2, '0')}:${String(usedSecs).padStart(2, '0')}`;
+
+    if (correct >= questions.length * 0.7) {
+      document.getElementById('resultTitle').textContent = '🌟 Harika Bir Performans!';
+      launchConfetti();
+      soundVictory();
+    } else {
+      document.getElementById('resultTitle').textContent = completedAll ? 'Parolla Tamamlandı!' : '⏱️ Süre Doldu!';
+    }
+
+    // Detaylı İnceleme Tablosu
+    const tbody = document.getElementById('reviewTableBody');
+    tbody.innerHTML = questions.map(q => {
+      let stateBadge = '';
+      if (q.state === 'correct') stateBadge = '<span class="badge badge-success">Doğru</span>';
+      else if (q.state === 'wrong') stateBadge = '<span class="badge badge-danger">Yanlış</span>';
+      else stateBadge = '<span class="badge badge-warning">Pas</span>';
+
+      return `
+        <tr>
+          <td><strong>${q.letter}</strong></td>
+          <td>${q.question}</td>
+          <td style="font-weight:700; color:var(--primary);">${q.answer}</td>
+          <td>${stateBadge}</td>
+        </tr>
+      `;
+    }).join('');
+
+    openModal('resultModal');
+  }
+
+  function restartGame() {
+    closeModal('resultModal');
+    isGameOver = false;
+    timeLeft = totalTime;
+    questions.forEach(q => {
+      q.state = 'waiting';
+      q.studentAnswer = '';
+    });
+    buildWheel();
+    startTimer();
+    loadQuestion(0);
+  }
+
+  // SINIFIM MODÜLÜ ENTEGRASYONU
+  function populateStudentsDropdown() {
+    const students = StudentStore.getAll();
+    const select = document.getElementById('studentSelect');
+    if (!students.length) {
+      select.innerHTML = '<option value="">(Sınıfım modülünde kayıtlı öğrenci yok)</option>';
+      return;
+    }
+    select.innerHTML = '<option value="">-- Öğrenci Seçin --</option>' +
+      students.map(s => `<option value="${s.id}">${s.name} (${s.className} - No: ${s.number})</option>`).join('');
+  }
+
+  function awardPointsToStudent() {
+    const studentId = document.getElementById('studentSelect').value;
+    if (!studentId) {
+      showToast('Lütfen puan verilecek öğrenciyi seçin!', 'warning');
+      return;
+    }
+    const correct = questions.filter(q => q.state === 'correct').length;
+    const pointsToAdd = correct * 10;
+
+    StudentStore.addPoints(studentId, pointsToAdd, `Parolla Alfabe Yarışması (${correct} Doğru)`);
+    StudentStore.addNote(studentId, `Türkçe Parolla etkinliğinde ${questions.length} sorudan ${correct} doğru yanıt verdi.`);
+
+    if (correct >= 15) {
+      StudentStore.addBadge(studentId, { name: 'Kelime Avcısı', icon: '🎯' });
+    }
+
+    const msg = document.getElementById('awardMsg');
+    msg.textContent = `✅ Başarılı! Öğrenciye +${pointsToAdd} puan eklendi ve değerlendirme notu kaydedildi.`;
+    msg.style.display = 'block';
+    showToast('Öğrenci puanı güncellendi!', 'success');
+  }
+
+  // Ekran boyutu değiştiğinde çarkı yeniden ölçekle
+  window.addEventListener('resize', () => {
+    buildWheel();
+    const q = questions[currentIndex];
+    const node = document.getElementById(`node-${currentIndex}`);
+    if (node) node.classList.add('state-current');
+  });
+
+  init();
+</script>
+</body>
+</html>

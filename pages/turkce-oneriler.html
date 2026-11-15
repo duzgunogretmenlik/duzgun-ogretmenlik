@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yabancı Sözcüklere Türkçe Öneriler - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .word-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .word-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      border-top: 4px solid var(--primary);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: var(--transition);
+      position: relative;
+    }
+    .word-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-3px);
+    }
+    .word-card.official { border-top-color: #27ae60; }
+    .word-card.student { border-top-color: #9B59B6; }
+
+    .foreign-title {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #2C3E50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .origin-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: #EDF2F7;
+      color: #718096;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .turkish-result-box {
+      background: #F8F9FE;
+      border: 2px dashed #D6D8F8;
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin: 14px 0;
+    }
+    .turkish-word {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--primary);
+    }
+    .word-example {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      font-style: italic;
+      margin-top: 8px;
+    }
+    .proposer-tag {
+      font-size: 0.78rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #8E44AD;
+      background: #F4ECF7;
+      padding: 4px 10px;
+      border-radius: 50px;
+    }
+    .proposer-tag.tdk {
+      color: #27ae60;
+      background: #E8F8F5;
+    }
+
+    .like-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #FFF5F5;
+      color: #E53E3E;
+      border: 1px solid #FED7D7;
+      border-radius: 50px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .like-btn:hover {
+      background: #E53E3E;
+      color: #fff;
+      transform: scale(1.05);
+    }
+
+    @media print {
+      .navbar, .hero-small, .search-box, .filter-buttons, .navbar-actions, button, footer {
+        display: none !important;
+      }
+      body { background: #fff; font-size: 11pt; }
+      .word-grid { display: block; }
+      .word-card {
+        page-break-inside: avoid;
+        border: 1px solid #ccc;
+        margin-bottom: 15px;
+        box-shadow: none;
+      }
+      .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
+    }
+    .print-header { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- GEZİNTİ ÇUBUĞU (NAVBAR) -->
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">📋 Etkinliklerim</a></li>
+    <li><a href="sinifim.html">👥 Sınıfım</a></li>
+    <li><a href="turkce-oneriler.html" class="active">🗣️ Türkçe Öneriler</a></li>
+    <li><a href="join.html">🎮 Etkinliğe Gir</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Sınıf Panosu İçin Yazdır</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('newWordModal')">💡 Öneri Paylaş</button>
+  </div>
+</nav>
+
+<!-- YAZDIRMA BAŞLIĞI -->
+<div class="print-header">
+  <h2>📚 DüzgünÖğretmenlik — Yabancı Sözcüklere Türkçe Karşılıklar Panosu</h2>
+  <p>Dilimiz Kimliğimizdir · Türkçe Dersi Öğrenci & TDK Önerileri</p>
+  <hr style="margin: 10px 0;" />
+</div>
+
+<!-- KARŞILAMA VE BİLGİ ALANI -->
+<div class="hero-small" style="background: linear-gradient(135deg, #16A085 0%, #2ECC71 100%);">
+  <div>
+    <h1>🗣️ Yabancı Sözcüklere Türkçe Öneriler</h1>
+    <p>Günlük dilde ve dijital ortamlarda kullanılan yabancı kelimelere öz Türkçe karşılıklar keşfedin, dilediğinizce yeni önerilerde bulunun.</p>
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button class="btn btn-outline-white btn-sm" onclick="openModal('newWordModal')">➕ Yeni Sözcük Öner</button>
+  </div>
+</div>
+
+<div class="section">
+
+  <!-- İSTATİSTİK KARTLARI -->
+  <div class="grid-4 mb-24" id="wordStats"></div>
+
+  <!-- ARAMA VE FİLTRELEME -->
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
+    <div class="search-box" style="margin-bottom:0; max-width:340px;">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="form-control" id="wordSearchInput" placeholder="Yabancı kelime veya Türkçe karşılık ara..." oninput="renderWords()" />
+    </div>
+
+    <div class="activity-type-filter" style="margin-bottom:0;">
+      <button class="filter-btn active" data-filter="all" onclick="setWordFilter('all', this)">Tümü</button>
+      <button class="filter-btn" data-filter="student" onclick="setWordFilter('student', this)">🎓 Öğrenci Önerileri</button>
+      <button class="filter-btn" data-filter="official" onclick="setWordFilter('official', this)">🏛️ TDK Karşılıkları</button>
+      <button class="filter-btn" data-filter="popular" onclick="setWordFilter('popular', this)">❤️ En Çok Beğenilenler</button>
+    </div>
+  </div>
+
+  <!-- SÖZCÜK KARTLARI LİSTESİ -->
+  <div class="word-grid" id="wordGrid"></div>
+
+</div>
+
+<!-- YENİ SÖZCÜK ÖNERİSİ EKLEME MODALI -->
+<div class="modal-overlay" id="newWordModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 class="modal-title">💡 Yeni Türkçe Karşılık Öner</h2>
+      <button class="modal-close" onclick="closeModal('newWordModal')">✕</button>
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">
+      Öğrenciler ve öğretmenler tamamen isteğe bağlı olarak yabancı kelimelere kendi öz Türkçe önerilerini yazabilirler.
+    </p>
+
+    <div class="form-group">
+      <label class="form-label">Yabancı Sözcük <span style="color:var(--danger)">*</span></label>
+      <input type="text" class="form-control" id="inputForeign" placeholder="Örn: spoiler, link, trend, random, story..." />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Kökeni (İsteğe bağlı)</label>
+      <input type="text" class="form-control" id="inputOrigin" placeholder="Örn: İngilizce, Fransızca, İtalyanca..." value="İngilizce" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Önerdiğiniz Türkçe Karşılık <span style="color:var(--danger)">*</span></label>
+      <input type="text" class="form-control" id="inputTurkish" placeholder="Örn: olaybozan, bağlantı, eğilim, gelişigüzel..." style="font-weight:700; color:var(--primary);" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Örnek Cümle İçinde Kullanımı (İsteğe bağlı)</label>
+      <textarea class="form-control" id="inputExample" rows="2" placeholder="Örn: Kitabın sonunu söyleyerek olaybozanlık yapma lütfen!"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Öneren Kişi (İsteğe bağlı)</label>
+      <input type="text" class="form-control" id="inputProposer" placeholder="Adınız, Sınıfınız (örn: Kerem - 6/B) veya Anonim Öğrenci" />
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeModal('newWordModal')">İptal</button>
+      <button class="btn btn-primary" onclick="submitWordSuggestion()">🚀 Öneriyi Paylaş</button>
+    </div>
+  </div>
+</div>
+
+<!-- SINIFIMA PUAN AKTARMA MODALI -->
+<div class="modal-overlay" id="rewardStudentModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h2 class="modal-title">🏅 Öğrenciye Teşvik Puanı Ver</h2>
+      <button class="modal-close" onclick="closeModal('rewardStudentModal')">✕</button>
+    </div>
+    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:16px;">
+      Bu güzel Türkçe önerisi için "Sınıfım" modülündeki bir öğrencinize ders katılım puanı ve gözlem notu ekleyin:
+    </p>
+
+    <div class="form-group">
+      <label class="form-label">Öğrenci Seçin</label>
+      <select id="rewardStudentSelect" class="form-control"></select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Ödül Puanı</label>
+      <input type="number" id="rewardPointsInput" class="form-control" value="15" min="5" max="50" style="width:100px;" />
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeModal('rewardStudentModal')">İptal</button>
+      <button class="btn btn-primary" onclick="confirmRewardStudent()">✅ Puanı Sınıfıma İşle</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <strong>📚 DüzgünÖğretmenlik</strong> — Yabancı Sözcüklere Türkçe Öneriler Platformu
+</footer>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let currentFilter = 'all';
+  let targetWordForReward = null;
+
+  function init() {
+    renderStats();
+    renderWords();
+    populateStudentSelect();
+  }
+
+  function renderStats() {
+    const all = WordStore.getAll();
+    const totalWords = all.length;
+    const studentProposals = all.filter(w => !w.isOfficial).length;
+    const officialCount = all.filter(w => w.isOfficial).length;
+    const totalLikes = all.reduce((sum, w) => sum + (w.likes || 0), 0);
+
+    document.getElementById('wordStats').innerHTML = `
+      <div class="stat-card card">
+        <span class="stat-icon">📖</span>
+        <div class="stat-number">${totalWords}</div>
+        <div class="stat-label">Toplam Sözcük</div>
+      </div>
+      <div class="stat-card card">
+        <span class="stat-icon">🎓</span>
+        <div class="stat-number">${studentProposals}</div>
+        <div class="stat-label">Öğrenci & Öğretmen Önerisi</div>
+      </div>
+      <div class="stat-card card">
+        <span class="stat-icon">🏛️</span>
+        <div class="stat-number">${officialCount}</div>
+        <div class="stat-label">TDK Resmi Karşılığı</div>
+      </div>
+      <div class="stat-card card">
+        <span class="stat-icon">❤️</span>
+        <div class="stat-number">${totalLikes}</div>
+        <div class="stat-label">Toplam Beğeni & Destek</div>
+      </div>
+    `;
+  }
+
+  function renderWords() {
+    const query = (document.getElementById('wordSearchInput').value || '').toLowerCase().trim();
+    let list = WordStore.getAll();
+
+    if (currentFilter === 'student') list = list.filter(w => !w.isOfficial);
+    else if (currentFilter === 'official') list = list.filter(w => w.isOfficial);
+    else if (currentFilter === 'popular') list = [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+
+    if (query) {
+      list = list.filter(w =>
+        (w.foreign || '').toLowerCase().includes(query) ||
+        (w.turkish || '').toLowerCase().includes(query) ||
+        (w.example || '').toLowerCase().includes(query) ||
+        (w.proposedBy || '').toLowerCase().includes(query)
+      );
+    }
+
+    const grid = document.getElementById('wordGrid');
+    if (!list.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <span class="empty-icon">🔍</span>
+          <h3>Aradığınız sözcük bulunamadı</h3>
+          <p>İlk öneriyi siz paylaşarak Türkçe karşılıklar sözlüğümüze katkıda bulunabilirsiniz!</p>
+          <button class="btn btn-primary mt-16" onclick="openModal('newWordModal')">💡 İlk Öneriyi Siz Yapın</button>
+        </div>
+      `;
+      return;
+    }
+
+    const isTeacher = AuthStore.isLoggedIn();
+
+    grid.innerHTML = list.map(w => {
+      const cardType = w.isOfficial ? 'official' : 'student';
+      const proposerClass = w.isOfficial ? 'proposer-tag tdk' : 'proposer-tag';
+      const proposerIcon = w.isOfficial ? '🏛️' : '✍️';
+
+      return `
+        <div class="word-card ${cardType}">
+          <div>
+            <div class="foreign-title">
+              <span>${escapeHtml(w.foreign)}</span>
+              <span class="origin-badge">${escapeHtml(w.origin || 'Yabancı')}</span>
+            </div>
+
+            <div class="turkish-result-box">
+              <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">
+                Önerilen Türkçe Karşılık:
+              </div>
+              <div class="turkish-word">🇹🇷 ${escapeHtml(w.turkish)}</div>
+              ${w.example ? `<div class="word-example">"${escapeHtml(w.example)}"</div>` : ''}
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:6px;">
+              <span class="${proposerClass}">
+                <span>${proposerIcon}</span>
+                <span>${escapeHtml(w.proposedBy || 'Öğrenci Önerisi')}</span>
+              </span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">🗓️ ${timeAgo(w.createdAt)}</span>
+            </div>
+
+            <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:12px;">
+              <button class="like-btn" onclick="upvoteWord('${w.id}')" title="Bu öneriyi beğendim">
+                <span>❤️</span>
+                <span id="likes_${w.id}">${w.likes || 0}</span>
+                <span>Beğen</span>
+              </button>
+              ${isTeacher ? `
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-outline btn-sm" onclick="openRewardModal('${w.id}')" title="Bu öneriyi yapan öğrenciye Sınıfım'da puan ver">
+                  🏅 Puan Ver
+                </button>
+                <button class="icon-btn danger" onclick="deleteWord('${w.id}')" title="Sil">🗑️</button>
+              </div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function setWordFilter(type, btn) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderWords();
+  }
+
+  function upvoteWord(id) {
+    const newCount = WordStore.upvote(id);
+    const badge = document.getElementById(`likes_${id}`);
+    if (badge) badge.textContent = newCount;
+    SoundEffects.click();
+    renderStats();
+  }
+
+  function submitWordSuggestion() {
+    const foreign = document.getElementById('inputForeign').value.trim();
+    const turkish = document.getElementById('inputTurkish').value.trim();
+
+    if (!foreign || !turkish) {
+      showToast('Lütfen yabancı kelimeyi ve Türkçe karşılığını yazın!', 'warning');
+      return;
+    }
+
+    const origin = document.getElementById('inputOrigin').value.trim() || 'İngilizce';
+    const example = document.getElementById('inputExample').value.trim();
+    const proposer = document.getElementById('inputProposer').value.trim() || 'Öğrenci Önerisi';
+
+    WordStore.addWord({
+      foreign,
+      origin,
+      turkish,
+      example,
+      proposedBy: proposer,
+      isOfficial: false
+    });
+
+    closeModal('newWordModal');
+    document.getElementById('inputForeign').value = '';
+    document.getElementById('inputTurkish').value = '';
+    document.getElementById('inputExample').value = '';
+    document.getElementById('inputProposer').value = '';
+
+    renderStats();
+    renderWords();
+    launchConfetti();
+    SoundEffects.correct();
+    showToast('Harika öneriniz için teşekkürler! Sözlüğe eklendi.', 'success');
+  }
+
+  function deleteWord(id) {
+    if (!AuthStore.isLoggedIn()) return;
+    if (confirm('Bu sözcük önerisini kaldırmak istediğinizden emin misiniz?')) {
+      WordStore.delete(id);
+      renderStats();
+      renderWords();
+      showToast('Sözcük kaldırıldı.', 'info');
+    }
+  }
+
+  function populateStudentSelect() {
+    if (!AuthStore.isLoggedIn()) return;
+    const select = document.getElementById('rewardStudentSelect');
+    const students = StudentStore.getAll();
+    if (!students.length) {
+      select.innerHTML = '<option value="">(Kayıtlı öğrenci bulunamadı)</option>';
+      return;
+    }
+    select.innerHTML = students.map(s => `
+      <option value="${s.id}">${s.name} (${s.className} - No: ${s.number})</option>
+    `).join('');
+  }
+
+  function openRewardModal(wordId) {
+    if (!AuthStore.isLoggedIn()) return;
+    targetWordForReward = WordStore.getById(wordId);
+    if (!targetWordForReward) return;
+    openModal('rewardStudentModal');
+  }
+
+  function confirmRewardStudent() {
+    const studentId = document.getElementById('rewardStudentSelect').value;
+    if (!studentId) {
+      showToast('Lütfen bir öğrenci seçin!', 'warning');
+      return;
+    }
+    const points = parseInt(document.getElementById('rewardPointsInput').value) || 15;
+
+    StudentStore.addPoint(studentId, points, `Türkçe Sözcük Önerisi ("${targetWordForReward.foreign}" -> "${targetWordForReward.turkish}")`);
+    StudentStore.addNote(studentId, `Türkçe dersi sözcük zenginleştirme çalışmasında "${targetWordForReward.foreign}" yabancı kelimesine "${targetWordForReward.turkish}" önerisinde bulundu.`);
+
+    closeModal('rewardStudentModal');
+    showToast(`Öğrenciye +${points} puan ve gözlem notu başarıyla işlendi!`, 'success');
+    SoundEffects.correct();
+    launchConfetti();
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  init();
+</script>
+</body>
+</html>

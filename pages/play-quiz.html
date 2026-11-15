@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Deneme - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+</head>
+<body style="background: var(--bg);">
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="history.back()">← Geri</button>
+  </div>
+</nav>
+
+<div class="quiz-wrapper" id="quizWrapper">
+
+  <!-- YÜKLENİYOR -->
+  <div id="loadingScreen" class="text-center" style="padding:80px 20px;">
+    <div style="font-size:4rem; margin-bottom:16px;">⏳</div>
+    <h2>Yükleniyor...</h2>
+  </div>
+
+  <!-- GİRİŞ EKRANI -->
+  <div id="startScreen" class="hidden">
+    <div class="quiz-header">
+      <div style="font-size:3rem; margin-bottom:12px;">📝</div>
+      <h1 style="font-size:2rem; font-weight:900; margin-bottom:8px;" id="quizTitle"></h1>
+      <p style="color:var(--text-muted);" id="quizDesc"></p>
+    </div>
+    <div class="card text-center" style="padding:40px; margin-bottom:24px;">
+      <div id="quizMeta" style="display:flex; justify-content:center; gap:32px; flex-wrap:wrap; margin-bottom:32px;"></div>
+      <div class="form-group" style="max-width:280px; margin:0 auto 24px;">
+        <label class="form-label">Adınız Soyadınız</label>
+        <input type="text" class="form-control" id="playerName" placeholder="Öğrenci adı..." style="text-align:center;" />
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="startQuiz()">▶️ Mini Denemeyi Başlat</button>
+    </div>
+  </div>
+
+  <!-- SORU EKRANI -->
+  <div id="questionScreen" class="hidden">
+    <div class="quiz-progress-info">
+      <span id="progressLabel">Soru 1 / 1</span>
+      <span id="scoreLabel">Puan: 0</span>
+    </div>
+    <div class="progress-bar mb-24">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+
+    <!-- ZAMANLAYICI -->
+    <div class="timer-circle" id="timerCircle">
+      <span id="timerNum">30</span>
+    </div>
+
+    <div class="quiz-question-box">
+      <div class="quiz-question-number" id="questionNumber"></div>
+      <div class="quiz-question-text" id="questionText"></div>
+    </div>
+
+    <div class="quiz-options" id="quizOptions"></div>
+
+    <div class="quiz-feedback" id="quizFeedback"></div>
+
+    <div class="quiz-next-btn">
+      <button class="btn btn-primary hidden" id="nextBtn" onclick="nextQuestion()">
+        Sonraki Soru →
+      </button>
+    </div>
+  </div>
+
+  <!-- SONUÇ EKRANI -->
+  <div id="resultScreen" class="hidden">
+    <div class="quiz-result">
+      <div class="result-score-circle">
+        <span class="score-num" id="finalPercent">0%</span>
+        <span class="score-label">BAŞARI</span>
+      </div>
+      <h2 class="result-title" id="resultTitle">Tebrikler!</h2>
+      <p class="result-subtitle" id="resultSubtitle"></p>
+      <div class="result-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-num green" id="correctCount">0</div>
+          <div class="breakdown-label">Doğru</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num red" id="wrongCount">0</div>
+          <div class="breakdown-label">Yanlış</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num" id="totalCount" style="color:var(--primary);">0</div>
+          <div class="breakdown-label">Toplam Soru</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-lg" onclick="restartQuiz()">🔄 Tekrar Çöz</button>
+        <a href="../index.html" class="btn btn-outline btn-lg">🏠 Ana Sayfa</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let questions = [];
+  let currentIndex = 0;
+  let score = 0;
+  let correctAnswers = 0;
+  let answered = false;
+  let timerInterval = null;
+  let timeLeft = 30;
+  let playerName = '';
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const code = params.get('code');
+
+    if (id) {
+      activity = ActivityStore.getById(id);
+    } else if (code) {
+      const all = ActivityStore.getAll();
+      activity = all.find(a => a.code === code.toUpperCase() && (a.type === 'minideneme' || a.type === 'quiz'));
+    }
+
+    document.getElementById('loadingScreen').classList.add('hidden');
+
+    if (!activity) {
+      document.getElementById('quizWrapper').innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">😕</span>
+          <h3>Mini deneme bulunamadı</h3>
+          <p>Lütfen geçerli bir bağlantı veya sınıf kodu kullanın.</p>
+          <a href="../index.html" class="btn btn-primary mt-16">Ana Sayfaya Dön</a>
+        </div>`;
+      return;
+    }
+
+    document.getElementById('quizTitle').textContent = activity.title;
+    document.getElementById('quizDesc').textContent = activity.description || '';
+    const gradeHtml = activity.grade ? `
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:#1e40af;">${activity.grade}. Sınıf</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">${activity.theme || 'Maarif Modeli'}</div>
+      </div>
+    ` : '';
+
+    document.getElementById('quizMeta').innerHTML = `
+      ${gradeHtml}
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:var(--primary);">${activity.questions?.length || 0}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Soru</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:var(--primary);">${activity.settings?.timePerQuestion || 30}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Sn / Soru</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:var(--primary);">${activity.playCount || 0}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Çözülme</div>
+      </div>
+    `;
+
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  function startQuiz() {
+    playerName = document.getElementById('playerName').value.trim() || 'Öğrenci';
+    questions = [...(activity.questions || [])];
+
+    if (questions.length === 0) {
+      showToast('Bu denemede henüz soru yok!', 'warning');
+      return;
+    }
+
+    activity.playCount = (activity.playCount || 0) + 1;
+    ActivityStore.save(activity);
+
+    currentIndex = 0;
+    score = 0;
+    correctAnswers = 0;
+
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('questionScreen').classList.remove('hidden');
+
+    showQuestion();
+  }
+
+  function showQuestion() {
+    answered = false;
+    const q = questions[currentIndex];
+    const total = questions.length;
+    const letters = ['A','B','C','D'];
+
+    document.getElementById('progressLabel').textContent = `Soru ${currentIndex + 1} / ${total}`;
+    document.getElementById('scoreLabel').textContent = `Puan: ${score}`;
+    document.getElementById('progressFill').style.width = `${((currentIndex) / total) * 100}%`;
+    document.getElementById('questionNumber').textContent = `SORU ${currentIndex + 1}`;
+    
+    let imgHtml = q.image ? `
+      <div class="activity-media-box" style="margin:16px auto; max-width:540px;">
+        <img src="${q.image}" alt="Soru Görseli" onclick="openLightbox('${q.image}')" title="Büyütmek için tıklayın" style="max-height:260px; cursor:zoom-in; border-radius:10px;" />
+      </div>` : '';
+    
+    document.getElementById('questionText').innerHTML = `
+      <div>${q.text}</div>
+      ${imgHtml}
+    `;
+    document.getElementById('nextBtn').classList.add('hidden');
+    document.getElementById('quizFeedback').classList.remove('show', 'correct', 'wrong');
+
+    const container = document.getElementById('quizOptions');
+    container.innerHTML = (q.options || []).map((opt, i) => `
+      <button class="quiz-option" onclick="selectAnswer(${i})">
+        <span class="option-letter">${letters[i]}</span>
+        <span>${opt}</span>
+      </button>
+    `).join('');
+
+    timeLeft = activity.settings?.timePerQuestion || 30;
+    updateTimer();
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        if (!answered) timeUp();
+      }
+    }, 1000);
+  }
+
+  function updateTimer() {
+    const el = document.getElementById('timerNum');
+    const circle = document.getElementById('timerCircle');
+    el.textContent = timeLeft;
+    circle.classList.remove('warning', 'danger');
+    if (timeLeft <= 5) circle.classList.add('danger');
+    else if (timeLeft <= 10) circle.classList.add('warning');
+  }
+
+  function timeUp() {
+    answered = true;
+    SoundEffects.wrong();
+    const q = questions[currentIndex];
+    const opts = document.querySelectorAll('.quiz-option');
+    opts.forEach(o => o.classList.add('answered'));
+    if (opts[q.correct]) opts[q.correct].classList.add('correct');
+
+    const feedback = document.getElementById('quizFeedback');
+    feedback.textContent = '⏱️ Süre doldu! Doğru yanıt: ' + q.options[q.correct];
+    feedback.className = 'quiz-feedback wrong show';
+
+    document.getElementById('nextBtn').classList.remove('hidden');
+  }
+
+  function selectAnswer(optIndex) {
+    if (answered) return;
+    answered = true;
+    clearInterval(timerInterval);
+
+    const q = questions[currentIndex];
+    const isCorrect = optIndex === q.correct;
+    const opts = document.querySelectorAll('.quiz-option');
+
+    opts.forEach(o => o.classList.add('answered'));
+
+    if (isCorrect) {
+      SoundEffects.correct();
+      opts[optIndex].classList.add('correct');
+      score += Math.max(10, Math.round((timeLeft / (activity.settings?.timePerQuestion || 30)) * 100));
+      correctAnswers++;
+    } else {
+      SoundEffects.wrong();
+      opts[optIndex].classList.add('wrong');
+      if (opts[q.correct]) opts[q.correct].classList.add('correct');
+    }
+
+    if (activity.settings?.showFeedback !== false) {
+      const feedback = document.getElementById('quizFeedback');
+      if (isCorrect) {
+        feedback.textContent = '✅ Harika! Doğru cevap!';
+        if (q.explanation) feedback.textContent += ' ' + q.explanation;
+        feedback.className = 'quiz-feedback correct show';
+      } else {
+        let msg = `❌ Yanlış yanıt. Doğru seçenek: ${q.options[q.correct]}`;
+        if (q.explanation) msg += ' — ' + q.explanation;
+        feedback.textContent = msg;
+        feedback.className = 'quiz-feedback wrong show';
+      }
+    }
+
+    document.getElementById('scoreLabel').textContent = `Puan: ${score}`;
+    document.getElementById('nextBtn').classList.remove('hidden');
+  }
+
+  function nextQuestion() {
+    currentIndex++;
+    if (currentIndex >= questions.length) {
+      showResult();
+    } else {
+      showQuestion();
+    }
+  }
+
+  function showResult() {
+    clearInterval(timerInterval);
+    document.getElementById('questionScreen').classList.add('hidden');
+    document.getElementById('resultScreen').classList.remove('hidden');
+
+    const total = questions.length;
+    const percent = Math.round((correctAnswers / total) * 100);
+
+    document.getElementById('finalPercent').textContent = percent + '%';
+    document.getElementById('correctCount').textContent = correctAnswers;
+    document.getElementById('wrongCount').textContent = total - correctAnswers;
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('progressFill').style.width = '100%';
+
+    let title, subtitle;
+    if (percent >= 90) { title = '🏆 Mükemmel Başarı!'; subtitle = `${playerName}, tüm soruları harika kavradın!`; launchConfetti(); SoundEffects.win(); }
+    else if (percent >= 70) { title = '🌟 Çok Başarılı!'; subtitle = `${playerName}, güzel bir performans sergiledin!`; SoundEffects.win(); }
+    else if (percent >= 50) { title = '👍 Fena Değil!'; subtitle = `${playerName}, konuyu biraz daha tekrar edebilirsin.`; SoundEffects.correct(); }
+    else { title = '💪 Tekrar Çalışmalısın!'; subtitle = `${playerName}, eksiklerini gözden geçirip tekrar dene!`; }
+
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultSubtitle').textContent = subtitle;
+  }
+
+  function restartQuiz() {
+    document.getElementById('resultScreen').classList.add('hidden');
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çarkıfelek Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .editor-container { max-width: 800px; margin: 32px auto; padding: 0 16px; }
+    .editor-topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 64px;
+      z-index: 50;
+    }
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+    .color-swatch {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .item-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 800;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem;" id="saveStatus">✅ Kaydedildi</span>
+    <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Önizle</a>
+  </div>
+</nav>
+
+<div class="editor-topbar">
+  <div style="flex:1; min-width:200px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Çarkıfelek başlığı..." style="font-size:1.1rem; font-weight:800;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span id="itemCount" class="badge badge-primary">0 Dilim</span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default;"></span>
+  </div>
+</div>
+
+<div class="editor-container">
+
+  <div class="settings-panel card mb-24">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">⚙️ Çark Ayarları</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Gelen dilimi çarktan çıkar</div>
+        <div class="setting-desc">Çark durduğunda çıkan isim/konu bir daha gelmesin</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="settingRemove" onchange="markDirty()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Açıklama / Yönerge</div>
+        <div class="setting-desc">Öğrencilere gösterilecek yönerge</div>
+      </div>
+      <input type="text" class="form-control" id="activityDesc" placeholder="Yönerge..." style="max-width:300px;" oninput="markDirty()" />
+    </div>
+  </div>
+
+  <div class="card mb-24">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+      <h3 style="font-size:1rem; font-weight:800;">🎡 Çark Dilimleri (Öğrenci / Konu / Soru)</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="addBulkItems()">📋 Toplu Ekle</button>
+        <button class="btn btn-primary btn-sm" onclick="addItem()">➕ Dilim Ekle</button>
+      </div>
+    </div>
+
+    <div id="itemsList"></div>
+
+    <button class="add-question-btn" onclick="addItem()" style="margin-top:12px;">
+      ➕ Yeni Dilim Ekle
+    </button>
+  </div>
+
+  <div class="card text-center">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">👁️ Çark Önizlemesi</h3>
+    <canvas id="previewWheel" width="300" height="300" style="border-radius:50%; box-shadow: 0 4px 20px rgba(0,0,0,0.15);"></canvas>
+    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:12px;">Dilim ekledikçe çark otomatik güncellenir</p>
+  </div>
+
+</div>
+
+<!-- TOPLU EKLEME PENCERESİ -->
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📋 Toplu Dilim Ekle</h2>
+      <button class="modal-close" onclick="closeModal('bulkModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Her satıra bir isim veya konu yazın</label>
+      <textarea class="form-control" id="bulkText" rows="8" placeholder="Ali&#10;Ayşe&#10;Mehmet&#10;Zeynep&#10;Fatma"></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('bulkModal')">İptal</button>
+      <button class="btn btn-primary" onclick="processBulk()">➕ Ekle</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let isDirty = false;
+
+  const WHEEL_COLORS = [
+    '#6C63FF','#FF6584','#43C6AC','#FFB347','#9B59B6',
+    '#3498DB','#E74C3C','#2ECC71','#F39C12','#1ABC9C',
+    '#E91E63','#00BCD4','#8BC34A','#FF5722','#607D8B'
+  ];
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    if (id) activity = ActivityStore.getById(id);
+    if (!activity) {
+      activity = ActivityStore.createNew('wheel');
+      ActivityStore.save(activity);
+      window.history.replaceState({}, '', `?id=${activity.id}`);
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('activityDesc').value = activity.description || '';
+    document.getElementById('settingRemove').checked = activity.settings?.removeOnSpin || false;
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-wheel.html?id=${activity.id}`;
+
+    if (!activity.items) activity.items = [];
+    renderItems();
+    drawPreview();
+    updateCount();
+  }
+
+  function renderItems() {
+    const container = document.getElementById('itemsList');
+    if (activity.items.length === 0) {
+      container.innerHTML = `<div class="empty-state" style="padding:30px;">
+        <span class="empty-icon">🎡</span>
+        <h3>Henüz dilim eklenmedi</h3>
+        <p>Çarka ekleyeceğiniz öğrenci veya konu adlarını yazın.</p>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = activity.items.map((item, i) => `
+      <div class="item-row">
+        <span class="item-num">${i + 1}</span>
+        <div class="color-swatch" style="background:${WHEEL_COLORS[i % WHEEL_COLORS.length]};"></div>
+        <input type="text" class="form-control" value="${item}"
+          placeholder="Dilim adı / Öğrenci..."
+          oninput="updateItem(${i}, this.value)" />
+        <button class="icon-btn danger" onclick="removeItem(${i})">🗑️</button>
+      </div>
+    `).join('');
+  }
+
+  function addItem(value = '') {
+    activity.items.push(value);
+    renderItems();
+    drawPreview();
+    updateCount();
+    markDirty();
+
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('#itemsList .form-control');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }, 50);
+  }
+
+  function removeItem(i) {
+    activity.items.splice(i, 1);
+    renderItems();
+    drawPreview();
+    updateCount();
+    markDirty();
+  }
+
+  function updateItem(i, val) {
+    activity.items[i] = val;
+    drawPreview();
+    markDirty();
+  }
+
+  function updateCount() {
+    document.getElementById('itemCount').textContent = `${activity.items.length} Dilim`;
+  }
+
+  function addBulkItems() {
+    document.getElementById('bulkText').value = '';
+    openModal('bulkModal');
+  }
+
+  function processBulk() {
+    const lines = document.getElementById('bulkText').value
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    lines.forEach(line => activity.items.push(line));
+    closeModal('bulkModal');
+    renderItems();
+    drawPreview();
+    updateCount();
+    markDirty();
+    showToast(`${lines.length} dilim eklendi!`, 'success');
+  }
+
+  function drawPreview() {
+    const canvas = document.getElementById('previewWheel');
+    const ctx = canvas.getContext('2d');
+    const items = activity.items.filter(i => i.trim());
+    const n = items.length;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const r = cx - 8;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (n === 0) {
+      ctx.fillStyle = '#eee';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#999';
+      ctx.font = '14px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Dilim ekleyin', cx, cy);
+      return;
+    }
+
+    const slice = (Math.PI * 2) / n;
+
+    for (let i = 0; i < n; i++) {
+      const start = i * slice - Math.PI / 2;
+      const end = start + slice;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, start, end);
+      ctx.closePath();
+      ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length];
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(start + slice / 2);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${Math.min(14, 90 / n + 8)}px Nunito, sans-serif`;
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 2;
+      const label = items[i].length > 12 ? items[i].substring(0, 12) + '…' : items[i];
+      ctx.fillText(label, r - 10, 5);
+      ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function markDirty() {
+    isDirty = true;
+    document.getElementById('saveStatus').textContent = '⏳ Kaydedilmedi';
+    document.getElementById('saveStatus').style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Çarkıfelek';
+    activity.description = document.getElementById('activityDesc').value.trim();
+    activity.settings = { removeOnSpin: document.getElementById('settingRemove').checked };
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    document.getElementById('saveStatus').textContent = '✅ Kaydedildi';
+    document.getElementById('saveStatus').style.color = 'var(--success)';
+    showToast('Çarkıfelek kaydedildi!', 'success');
+  }
+
+  setInterval(() => { if (isDirty) saveActivity(); }, 30000);
+  window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  init();
+</script>
+</body>
+</html>

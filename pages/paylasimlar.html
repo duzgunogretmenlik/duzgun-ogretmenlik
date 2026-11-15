@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Öğretmen Paylaşımları - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .share-tabs-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 14px;
+    }
+    .share-tab-btn {
+      border: 2px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      font-family: var(--font);
+      font-weight: 800;
+      font-size: 0.94rem;
+      padding: 10px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .share-tab-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .share-tab-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+    .share-tab-btn.admin-tab.active {
+      background: #D97706;
+      border-color: #D97706;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .status-pending {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FCD34D;
+    }
+    .status-approved {
+      background: #DCFCE7;
+      color: #166534;
+      border: 1px solid #86EFAC;
+    }
+    .status-rejected {
+      background: #FEE2E2;
+      color: #B91C1C;
+      border: 1px solid #FCA5A5;
+    }
+    .share-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: var(--transition);
+      border-top: 4px solid var(--primary);
+    }
+    .share-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+    .teacher-note-box {
+      background: #F8FAFC;
+      border-left: 3px solid #0D9488;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      color: #334155;
+      margin: 10px 0;
+      line-height: 1.45;
+    }
+    .reject-reason-box {
+      background: #FEF2F2;
+      border-left: 3px solid #DC2626;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      color: #991B1B;
+      margin: 10px 0;
+      line-height: 1.45;
+    }
+    .preview-item-box {
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+    .info-notice-banner {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      color: #1E40AF;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    .admin-notice-banner {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- GEZİNTİ ÇUBUĞU (NAVBAR) -->
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">📋 Öğretmen Paneli</a></li>
+    <li><a href="sinifim.html">👥 Sınıfım</a></li>
+    <li><a href="paylasimlar.html" class="active">🤝 Paylaşımlar</a></li>
+    <li><a href="turkce-oneriler.html">🗣️ Türkçe Öneriler</a></li>
+    <li><a href="join.html">🎮 Etkinliğe Gir</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <button type="button" class="btn btn-primary btn-sm" onclick="openShareSubmitModal()">📤 İçerik Paylaş</button>
+  </div>
+</nav>
+
+<!-- KARŞILAMA BAŞLIĞI -->
+<div class="hero-small" style="background: linear-gradient(135deg, #0F766E 0%, #0D9488 55%, #14B8A6 100%);">
+  <div>
+    <h1>🤝 Öğretmen İçerik Paylaşım Merkezi</h1>
+    <p>
+      Meslektaşlarınızın hazırladığı ve <strong>Türkçe Öğretmeni</strong> onayından geçmiş dersleri inceleyip kendi derslerinize ekleyin veya kendi etkinliğinizi onaya gönderin.
+    </p>
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button type="button" class="btn btn-sm" style="background:#fff; color:#0F766E; font-weight:900;" onclick="openShareSubmitModal()">
+      📤 Kendi Etkinliğini Paylaş
+    </button>
+  </div>
+</div>
+
+<!-- ANA İÇERİK -->
+<div class="section">
+
+  <!-- İSTATİSTİKLER -->
+  <div class="grid-4 mb-24" id="shareStats"></div>
+
+  <!-- SEKMELER -->
+  <div class="share-tabs-bar">
+    <button type="button" class="share-tab-btn active" id="tabPoolBtn" onclick="switchShareTab('pool')">
+      🌐 Paylaşım Havuzu
+    </button>
+    <button type="button" class="share-tab-btn" id="tabMineBtn" onclick="switchShareTab('mine')">
+      📤 Paylaştıklarım ve Onay Durumu
+    </button>
+    <button type="button" class="share-tab-btn admin-tab" id="tabAdminBtn" style="display:none;" onclick="switchShareTab('admin')">
+      🛡️ Yönetici Onay Kuyruğu <span id="adminTabBadge" style="background:rgba(255,255,255,0.25); padding:1px 8px; border-radius:999px; font-size:0.78rem;">0</span>
+    </button>
+  </div>
+
+  <!-- 1. SEKME: ONAYLI PAYLAŞIM HAVUZU -->
+  <div id="poolSection">
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+      <div class="search-box" style="flex:1; min-width:240px; margin-bottom:0;">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="form-control" id="poolSearch" placeholder="Paylaşılan ders ara (başlık, tema, öğretmen adı, kazanım)..." oninput="renderPool()" />
+      </div>
+      <select class="form-control" id="poolGradeFilter" style="width:auto; min-width:150px;" onchange="renderPool()">
+        <option value="all">🎓 Tüm Sınıflar</option>
+        <option value="5">5. Sınıf</option>
+        <option value="6">6. Sınıf</option>
+        <option value="7">7. Sınıf</option>
+        <option value="8">8. Sınıf (LGS)</option>
+      </select>
+      <select class="form-control" id="poolTypeFilter" style="width:auto; min-width:180px;" onchange="renderPool()">
+        <option value="all">📚 Tüm Etkinlik Türleri</option>
+        <option value="sezdirme">🔍 Sezdirme Dersi</option>
+        <option value="minideneme">📝 Mini Deneme</option>
+        <option value="presentation">📊 Sunum</option>
+        <option value="blank">✏️ Boşluk Doldurma</option>
+        <option value="wheel">🎡 Çarkıfelek</option>
+        <option value="matching">🔗 Eşleştirme</option>
+        <option value="flashcard">🃏 Hafıza Kartları</option>
+        <option value="parolla">🔤 Parolla</option>
+      </select>
+    </div>
+
+    <div class="grid-3" id="poolGrid"></div>
+  </div>
+
+  <!-- 2. SEKME: BENİM PAYLAŞTIKLARIM -->
+  <div id="mineSection" style="display:none;">
+    <div class="info-notice-banner">
+      ℹ️ <strong>Yayın Kuralı:</strong> Öğretmenlerin paylaştığı içerikler doğrudan yayınlanmaz. Gönderdiğiniz her ders öncelikle yönetici hesabı (<strong>Türkçe Öğretmeni</strong>) onayına düşer; onaylandığında tüm öğretmenler tarafından kullanılabilir hale gelir.
+    </div>
+    <div class="grid-3" id="mineGrid"></div>
+  </div>
+
+  <!-- 3. SEKME: YÖNETİCİ ONAY PANELİ (YALNIZCA TÜRKÇE ÖĞRETMENİ) -->
+  <div id="adminSection" style="display:none;">
+    <div class="admin-notice-banner">
+      🛡️ <strong>Yönetici Yetki Alanı (Yalnızca Türkçe Öğretmeni):</strong> Diğer öğretmenlerin gönderdiği içerikler sizin onayınız olmadan Paylaşım Havuzu'nda görünmez. İçerikleri inceleyip deneyebilir, uygun gördüklerinizi onaylayabilir veya gerekçeli olarak reddedebilirsiniz.
+    </div>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;" id="adminStatusFilter">
+      <button type="button" class="filter-btn active" data-status="pending" onclick="setAdminFilter('pending', this)">⏳ Onay Bekleyenler</button>
+      <button type="button" class="filter-btn" data-status="approved" onclick="setAdminFilter('approved', this)">✅ Onaylananlar</button>
+      <button type="button" class="filter-btn" data-status="rejected" onclick="setAdminFilter('rejected', this)">❌ Reddedilenler</button>
+      <button type="button" class="filter-btn" data-status="all" onclick="setAdminFilter('all', this)">📋 Tümü</button>
+    </div>
+
+    <div class="grid-2" id="adminGrid"></div>
+  </div>
+
+</div>
+
+<!-- ETKİNLİK PAYLAŞMA MODALI -->
+<div class="modal-overlay" id="submitShareModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 class="modal-title">📤 Etkinliğini Öğretmenlerle Paylaş</h2>
+      <button type="button" class="modal-close" onclick="closeModal('submitShareModal')">✕</button>
+    </div>
+
+    <div id="shareEmptyWarning" style="display:none; background:#FEF3C7; border:1px solid #F59E0B; color:#92400E; padding:12px 14px; border-radius:10px; font-size:0.88rem; font-weight:700; margin-bottom:16px;">
+      ⚠️ Henüz kendi oluşturduğunuz bir etkinlik bulunmuyor. Paylaşım yapabilmek için önce Öğretmen Paneli'nden yeni bir etkinlik oluşturmalısınız.
+      <div style="margin-top:10px;">
+        <a href="../index.html" class="btn btn-primary btn-sm">📋 Öğretmen Paneline Git</a>
+      </div>
+    </div>
+
+    <div id="shareFormArea">
+      <div class="form-group">
+        <label class="form-label" for="shareActivitySelect">Paylaşılacak Ders / Etkinlik <span style="color:var(--danger)">*</span></label>
+        <select class="form-control" id="shareActivitySelect"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="shareTeacherNote">Meslektaşlarınıza ve Yöneticiye Not (İsteğe Bağlı)</label>
+        <textarea class="form-control" id="shareTeacherNote" rows="3" placeholder="Örn: 6. sınıflarda uygulama süresi yaklaşık 15 dakika sürdü, grup etkinliği olarak çok verimli oldu..."></textarea>
+      </div>
+
+      <div style="background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; padding:10px 12px; border-radius:10px; font-size:0.84rem; font-weight:700; margin-bottom:18px;">
+        ⏳ Gönderdiğiniz içerik doğrudan yayınlanmaz; <strong>Türkçe Öğretmeni</strong> hesabının inceleyip onaylamasının ardından Paylaşım Havuzu'nda yayınlanır.
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('submitShareModal')">İptal</button>
+        <button type="button" class="btn btn-primary" onclick="submitShareForm()">📤 Onaya Gönder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- İÇERİK DETAY / İNCELEME MODALI -->
+<div class="modal-overlay" id="previewShareModal">
+  <div class="modal" style="max-width:720px; max-height:88vh; display:flex; flex-direction:column;">
+    <div class="modal-header">
+      <h2 class="modal-title" id="previewModalTitle">🔍 Etkinlik İnceleme</h2>
+      <button type="button" class="modal-close" onclick="closeModal('previewShareModal')">✕</button>
+    </div>
+    <div id="previewModalBody" style="overflow-y:auto; padding-right:4px; flex:1;"></div>
+    <div id="previewModalFooter" style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); flex-wrap:wrap;"></div>
+  </div>
+</div>
+
+<!-- REDDETME GEREKÇESİ MODALI (YALNIZCA YÖNETİCİ) -->
+<div class="modal-overlay" id="rejectShareModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 class="modal-title">❌ Paylaşımı Reddet</h2>
+      <button type="button" class="modal-close" onclick="closeModal('rejectShareModal')">✕</button>
+    </div>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">
+      İçeriği hazırlayan öğretmenin görebileceği kısa bir açıklama/düzenleme önerisi yazabilirsiniz:
+    </p>
+    <div class="form-group">
+      <label class="form-label" for="rejectReasonInput">Red Gerekçesi</label>
+      <textarea class="form-control" id="rejectReasonInput" rows="3" placeholder="Örn: Sorulardaki yazım hataları düzeltildikten sonra tekrar paylaşabilirsiniz."></textarea>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+      <button type="button" class="btn btn-outline" onclick="closeModal('rejectShareModal')">Vazgeç</button>
+      <button type="button" class="btn btn-danger" onclick="confirmRejectShare()">❌ Reddet</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <strong>📚 DüzgünÖğretmenlik</strong> — Öğretmenler Arası İçerik Paylaşım Merkezi
+</footer>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let currentShareTab = 'pool';
+  let currentAdminStatusFilter = 'pending';
+  let rejectTargetShareId = null;
+
+  function esc(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getPlayUrlForShared(item) {
+    const type = item.type === 'quiz' ? 'minideneme' : item.type;
+    const map = {
+      sezdirme:     `play-sezdirme.html?id=${item.id}`,
+      minideneme:   `play-quiz.html?id=${item.id}`,
+      presentation: `play-presentation.html?id=${item.id}`,
+      blank:        `play-blank.html?id=${item.id}`,
+      wheel:        `play-wheel.html?id=${item.id}`,
+      matching:     `play-matching.html?id=${item.id}`,
+      flashcard:    `play-flashcard.html?id=${item.id}`,
+      parolla:      `play-parolla.html?id=${item.id}`
+    };
+    return map[type] || `play-quiz.html?id=${item.id}`;
+  }
+
+  function summarizeSnapshotCount(snap) {
+    if (!snap) return 'İçerik mevcut';
+    const t = snap.type === 'quiz' ? 'minideneme' : snap.type;
+    if (t === 'sezdirme') return `${(snap.steps || []).length} Sezdirme Adımı`;
+    if (t === 'minideneme') return `${(snap.questions || []).length} Soru`;
+    if (t === 'presentation') return `${(snap.slides || []).length} Slayt`;
+    if (t === 'blank') return `${(snap.questions || []).length} Cümle`;
+    if (t === 'wheel') return `${(snap.items || []).length} Kavram/Öğe`;
+    if (t === 'matching') return `${(snap.pairs || []).length} Eşleştirme Çifti`;
+    if (t === 'flashcard') return `${(snap.cards || []).length} Kart`;
+    if (t === 'parolla') return `${(snap.questions || []).length} Harf Sorusu`;
+    return 'Etkinlik İçeriği';
+  }
+
+  function statusBadgeHtml(status) {
+    if (status === 'approved') {
+      return `<span class="status-pill status-approved">✅ Yayında</span>`;
+    }
+    if (status === 'rejected') {
+      return `<span class="status-pill status-rejected">❌ Reddedildi</span>`;
+    }
+    return `<span class="status-pill status-pending">⏳ Onay Bekliyor</span>`;
+  }
+
+  function renderStats() {
+    const isAdmin = AuthStore.isAdmin();
+    const approved = SharedActivityStore.getApproved();
+    const mine = SharedActivityStore.getMySubmissions();
+    const pendingCount = SharedActivityStore.getPendingCount();
+    const totalUsage = approved.reduce((sum, item) => sum + (item.usageCount || 0), 0);
+
+    const adminTabBtn = document.getElementById('tabAdminBtn');
+    const adminBadge = document.getElementById('adminTabBadge');
+    if (adminTabBtn) {
+      adminTabBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+    if (adminBadge && isAdmin) {
+      adminBadge.textContent = String(pendingCount);
+    }
+
+    const fourthCard = isAdmin
+      ? `
+        <div class="stat-card card" style="cursor:pointer; border-left:4px solid #F59E0B;" onclick="switchShareTab('admin')">
+          <span class="stat-icon">🛡️</span>
+          <div class="stat-number" style="color:${pendingCount > 0 ? '#D97706' : 'var(--text)'};">${pendingCount}</div>
+          <div class="stat-label">Onayınızı Bekleyen İçerik</div>
+        </div>`
+      : `
+        <div class="stat-card card" style="cursor:default; border-left:4px solid #0D9488;">
+          <span class="stat-icon">🛡️</span>
+          <div class="stat-number" style="font-size:1.15rem;">Onaylı</div>
+          <div class="stat-label">Türkçe Öğretmeni Kontrolü</div>
+        </div>`;
+
+    document.getElementById('shareStats').innerHTML = `
+      <div class="stat-card card" style="cursor:pointer;" onclick="switchShareTab('pool')">
+        <span class="stat-icon">🌐</span>
+        <div class="stat-number">${approved.length}</div>
+        <div class="stat-label">Yayındaki Paylaşımlar</div>
+      </div>
+      <div class="stat-card card" style="cursor:pointer;" onclick="switchShareTab('mine')">
+        <span class="stat-icon">📤</span>
+        <div class="stat-number">${mine.length}</div>
+        <div class="stat-label">Benim Paylaştıklarım</div>
+      </div>
+      <div class="stat-card card" style="cursor:default;">
+        <span class="stat-icon">📥</span>
+        <div class="stat-number">${totalUsage}</div>
+        <div class="stat-label">Toplam Ders Kopyası</div>
+      </div>
+      ${fourthCard}
+    `;
+  }
+
+  function switchShareTab(tab) {
+    if (tab === 'admin' && !AuthStore.isAdmin()) {
+      tab = 'pool';
+      showToast('Yönetici onay kuyruğuna yalnızca Türkçe Öğretmeni hesabı erişebilir!', 'warning');
+    }
+    currentShareTab = tab;
+
+    document.getElementById('poolSection').style.display = tab === 'pool' ? 'block' : 'none';
+    document.getElementById('mineSection').style.display = tab === 'mine' ? 'block' : 'none';
+    document.getElementById('adminSection').style.display = (tab === 'admin' && AuthStore.isAdmin()) ? 'block' : 'none';
+
+    document.getElementById('tabPoolBtn').classList.toggle('active', tab === 'pool');
+    document.getElementById('tabMineBtn').classList.toggle('active', tab === 'mine');
+    document.getElementById('tabAdminBtn').classList.toggle('active', tab === 'admin');
+
+    renderCurrentTab();
+  }
+
+  function renderCurrentTab() {
+    renderStats();
+    AuthStore.syncNavbarAndRoleUI();
+    if (currentShareTab === 'pool') renderPool();
+    else if (currentShareTab === 'mine') renderMine();
+    else if (currentShareTab === 'admin' && AuthStore.isAdmin()) renderAdminQueue();
+  }
+
+  function renderPool() {
+    const query = (document.getElementById('poolSearch').value || '').trim().toLowerCase();
+    const grade = document.getElementById('poolGradeFilter').value;
+    const type = document.getElementById('poolTypeFilter').value;
+    const isAdmin = AuthStore.isAdmin();
+
+    let list = SharedActivityStore.getApproved();
+
+    if (grade !== 'all') {
+      list = list.filter(item => String(item.grade) === String(grade));
+    }
+    if (type !== 'all') {
+      list = list.filter(item => item.type === type || (type === 'minideneme' && item.type === 'quiz'));
+    }
+    if (query) {
+      list = list.filter(item =>
+        (item.title || '').toLowerCase().includes(query) ||
+        (item.description || '').toLowerCase().includes(query) ||
+        (item.theme || '').toLowerCase().includes(query) ||
+        (item.outcome || '').toLowerCase().includes(query) ||
+        (item.authorName || '').toLowerCase().includes(query)
+      );
+    }
+
+    const grid = document.getElementById('poolGrid');
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <span class="empty-icon">🤝</span>
+          <h3>Paylaşım Havuzunda Eşleşen Ders Bulunamadı</h3>
+          <p>Filtreleri değiştirebilir veya kendi hazırladığınız bir etkinliği paylaşarak havuzu zenginleştirebilirsiniz.</p>
+          <button type="button" class="btn btn-primary" style="margin-top:14px;" onclick="openShareSubmitModal()">📤 Etkinlik Paylaş</button>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(item => {
+      const icon = typeIcon(item.type);
+      const label = typeLabel(item.type);
+      const color = typeColor(item.type);
+      const countText = summarizeSnapshotCount(item.activitySnapshot);
+      const playUrl = getPlayUrlForShared(item);
+      return `
+        <div class="share-card" style="border-top-color:${color};">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px;">
+              <span style="font-size:0.76rem; font-weight:800; background:${color}1A; color:${color}; padding:4px 10px; border-radius:999px;">
+                ${icon} ${esc(label)}
+              </span>
+              <span style="font-size:0.75rem; font-weight:800; background:#F1F5F9; color:#334155; padding:4px 10px; border-radius:999px;">
+                📥 ${item.usageCount || 0} kullanım
+              </span>
+            </div>
+
+            <h3 style="font-size:1.08rem; font-weight:900; color:var(--text); margin-bottom:6px; line-height:1.35;">${esc(item.title)}</h3>
+            <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:10px; line-height:1.45;">
+              ${esc(item.description || 'Açıklama belirtilmemiş.')}
+            </p>
+
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+              <span style="font-size:0.75rem; background:#EFF6FF; color:#1E40AF; padding:3px 8px; border-radius:6px; font-weight:700;">🎓 ${esc(item.grade)}. Sınıf</span>
+              <span style="font-size:0.75rem; background:#ECFDF5; color:#065F46; padding:3px 8px; border-radius:6px; font-weight:700;">🏷️ ${esc(item.theme || 'Türkçe')}</span>
+              <span style="font-size:0.75rem; background:#F3E8FF; color:#6B21A8; padding:3px 8px; border-radius:6px; font-weight:700;">📦 ${esc(countText)}</span>
+            </div>
+
+            ${item.teacherNote ? `<div class="teacher-note-box">💬 <strong>Öğretmen Notu:</strong> ${esc(item.teacherNote)}</div>` : ''}
+
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">
+              👩‍🏫 Paylaşan: <strong>${esc(item.authorName)}</strong> · 🕐 ${timeAgo(item.reviewedAt || item.submittedAt)}
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+            <button type="button" class="btn btn-outline btn-sm" style="flex:1; justify-content:center;" onclick="openPreviewModal('${item.id}')">🔍 İncele</button>
+            <a href="${playUrl}" target="_blank" class="btn btn-outline btn-sm" style="flex:1; justify-content:center;">▶️ Önizle</a>
+            <button type="button" class="btn btn-primary btn-sm" style="flex-basis:100%; justify-content:center;" onclick="handleImportShared('${item.id}')">📥 Derslerime Ekle</button>
+            ${isAdmin ? `<button type="button" class="btn btn-danger btn-sm" style="flex-basis:100%; justify-content:center;" onclick="handleDeleteShare('${item.id}')">🗑️ Havuzdan Kaldır</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderMine() {
+    const list = SharedActivityStore.getMySubmissions();
+    const grid = document.getElementById('mineGrid');
+
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <span class="empty-icon">📤</span>
+          <h3>Henüz Paylaşıma Gönderdiğiniz İçerik Yok</h3>
+          <p>Hazırladığınız özgün etkinlikleri göndererek diğer Türkçe öğretmenleriyle paylaşabilirsiniz. Tüm gönderimler Türkçe Öğretmeni onayından geçer.</p>
+          <button type="button" class="btn btn-primary" style="margin-top:14px;" onclick="openShareSubmitModal()">📤 İlk İçeriğini Paylaş</button>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(item => {
+      const icon = typeIcon(item.type);
+      const label = typeLabel(item.type);
+      const color = typeColor(item.type);
+      const playUrl = getPlayUrlForShared(item);
+      return `
+        <div class="share-card" style="border-top-color:${color};">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+              <span style="font-size:0.76rem; font-weight:800; background:${color}1A; color:${color}; padding:4px 10px; border-radius:999px;">
+                ${icon} ${esc(label)}
+              </span>
+              ${statusBadgeHtml(item.status)}
+            </div>
+
+            <h3 style="font-size:1.06rem; font-weight:900; margin-bottom:6px;">${esc(item.title)}</h3>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+              <span style="font-size:0.75rem; background:#EFF6FF; color:#1E40AF; padding:3px 8px; border-radius:6px; font-weight:700;">🎓 ${esc(item.grade)}. Sınıf</span>
+              <span style="font-size:0.75rem; background:#F1F5F9; color:#334155; padding:3px 8px; border-radius:6px; font-weight:700;">📥 ${item.usageCount || 0} kullanım</span>
+            </div>
+
+            ${item.teacherNote ? `<div class="teacher-note-box">💬 ${esc(item.teacherNote)}</div>` : ''}
+            ${item.status === 'rejected' && item.rejectionReason ? `<div class="reject-reason-box">❌ <strong>Yönetici Notu:</strong> ${esc(item.rejectionReason)}</div>` : ''}
+            ${item.status === 'pending' ? `<div style="font-size:0.8rem; color:#92400E; font-weight:700; margin-top:6px;">⏳ Türkçe Öğretmeni onayı bekleniyor...</div>` : ''}
+
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;">🕐 Gönderim: ${timeAgo(item.submittedAt)}</div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+            <button type="button" class="btn btn-outline btn-sm" style="flex:1; justify-content:center;" onclick="openPreviewModal('${item.id}')">🔍 İncele</button>
+            <a href="${playUrl}" target="_blank" class="btn btn-outline btn-sm" style="flex:1; justify-content:center;">▶️ Önizle</a>
+            <button type="button" class="btn btn-danger btn-sm" style="flex-basis:100%; justify-content:center;" onclick="handleDeleteShare('${item.id}')">🗑️ Paylaşımı Kaldır</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function setAdminFilter(status, btn) {
+    currentAdminStatusFilter = status;
+    document.querySelectorAll('#adminStatusFilter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAdminQueue();
+  }
+
+  function renderAdminQueue() {
+    if (!AuthStore.isAdmin()) return;
+
+    let list = SharedActivityStore.getAllForAdmin();
+    if (currentAdminStatusFilter !== 'all') {
+      list = list.filter(item => item.status === currentAdminStatusFilter);
+    }
+
+    const grid = document.getElementById('adminGrid');
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <span class="empty-icon">🛡️</span>
+          <h3>Bu Kategoride Paylaşım Kaydı Yok</h3>
+          <p>Diğer öğretmenlerin gönderdiği dersler burada Türkçe Öğretmeni onayınıza düşer.</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(item => {
+      const icon = typeIcon(item.type);
+      const label = typeLabel(item.type);
+      const color = typeColor(item.type);
+      const countText = summarizeSnapshotCount(item.activitySnapshot);
+      const playUrl = getPlayUrlForShared(item);
+      return `
+        <div class="share-card" style="border-top-color:${item.status === 'pending' ? '#F59E0B' : color};">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+              <span style="font-size:0.78rem; font-weight:800; background:${color}1A; color:${color}; padding:4px 10px; border-radius:999px;">
+                ${icon} ${esc(label)} · ${esc(countText)}
+              </span>
+              ${statusBadgeHtml(item.status)}
+            </div>
+
+            <h3 style="font-size:1.1rem; font-weight:900; margin-bottom:6px;">${esc(item.title)}</h3>
+            <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:10px;">${esc(item.description || 'Açıklama yok.')}</p>
+
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+              <span style="font-size:0.75rem; background:#EFF6FF; color:#1E40AF; padding:3px 8px; border-radius:6px; font-weight:700;">🎓 ${esc(item.grade)}. Sınıf</span>
+              <span style="font-size:0.75rem; background:#ECFDF5; color:#065F46; padding:3px 8px; border-radius:6px; font-weight:700;">🏷️ ${esc(item.theme || 'Türkçe')}</span>
+              <span style="font-size:0.75rem; background:#F3E8FF; color:#6B21A8; padding:3px 8px; border-radius:6px; font-weight:700;">👩‍🏫 ${esc(item.authorName)} (@${esc(item.authorUsername || '')})</span>
+            </div>
+
+            ${item.teacherNote ? `<div class="teacher-note-box">💬 <strong>Öğretmen Notu:</strong> ${esc(item.teacherNote)}</div>` : ''}
+            ${item.status === 'rejected' && item.rejectionReason ? `<div class="reject-reason-box">❌ <strong>Red Gerekçesi:</strong> ${esc(item.rejectionReason)}</div>` : ''}
+
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:6px;">🕐 Gönderim: ${timeAgo(item.submittedAt)}</div>
+          </div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+            <button type="button" class="btn btn-outline btn-sm" style="flex:1; justify-content:center;" onclick="openPreviewModal('${item.id}')">🔍 İçeriği İncele</button>
+            <a href="${playUrl}" target="_blank" class="btn btn-outline btn-sm" style="flex:1; justify-content:center;">▶️ Oynatıcıda Dene</a>
+            ${item.status !== 'approved' ? `<button type="button" class="btn btn-primary btn-sm" style="flex:1; justify-content:center; background:#16A34A;" onclick="handleAdminApprove('${item.id}')">✅ Onayla & Yayınla</button>` : ''}
+            ${item.status !== 'rejected' ? `<button type="button" class="btn btn-outline btn-sm" style="flex:1; justify-content:center; color:#DC2626; border-color:#DC2626;" onclick="openRejectModal('${item.id}')">❌ Reddet</button>` : ''}
+            <button type="button" class="btn btn-danger btn-sm" onclick="handleDeleteShare('${item.id}')" title="Kaydı Sil">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function openShareSubmitModal(preselectActivityId = '') {
+    const myCustom = ActivityStore.getAll().filter(a => !ActivityStore.isSeedActivity(a));
+    const emptyWarn = document.getElementById('shareEmptyWarning');
+    const formArea = document.getElementById('shareFormArea');
+    const selectEl = document.getElementById('shareActivitySelect');
+
+    if (myCustom.length === 0) {
+      emptyWarn.style.display = 'block';
+      formArea.style.display = 'none';
+    } else {
+      emptyWarn.style.display = 'none';
+      formArea.style.display = 'block';
+      selectEl.innerHTML = myCustom.map(a => `
+        <option value="${esc(a.id)}">${typeIcon(a.type)} ${esc(a.title)} (${esc(a.grade)}. Sınıf - ${esc(typeLabel(a.type))})</option>
+      `).join('');
+      if (preselectActivityId && myCustom.some(a => a.id === preselectActivityId)) {
+        selectEl.value = preselectActivityId;
+      }
+      document.getElementById('shareTeacherNote').value = '';
+    }
+    openModal('submitShareModal');
+  }
+
+  function submitShareForm() {
+    const activityId = document.getElementById('shareActivitySelect').value;
+    const note = document.getElementById('shareTeacherNote').value;
+    const res = SharedActivityStore.submitActivity(activityId, note);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    closeModal('submitShareModal');
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    showToast('İçeriğiniz Türkçe Öğretmeni onayına gönderildi!', 'success');
+    switchShareTab('mine');
+  }
+
+  function handleImportShared(shareId) {
+    const res = SharedActivityStore.importToMyActivities(shareId);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    showToast(`"${res.activity.title}" kendi derslerinize eklendi! (Kod: ${res.activity.code})`, 'success');
+    renderCurrentTab();
+  }
+
+  function handleAdminApprove(shareId) {
+    if (!AuthStore.isAdmin()) {
+      showToast('Bu işlem için yalnızca Türkçe Öğretmeni yönetici hesabı yetkilidir!', 'error');
+      return;
+    }
+    const res = SharedActivityStore.approve(shareId);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    showToast(`"${res.item.title}" onaylandı ve Paylaşım Havuzu'nda yayınlandı!`, 'success');
+    closeModal('previewShareModal');
+    renderCurrentTab();
+  }
+
+  function openRejectModal(shareId) {
+    if (!AuthStore.isAdmin()) {
+      showToast('Bu işlem için yalnızca Türkçe Öğretmeni yönetici hesabı yetkilidir!', 'error');
+      return;
+    }
+    rejectTargetShareId = shareId;
+    document.getElementById('rejectReasonInput').value = '';
+    openModal('rejectShareModal');
+  }
+
+  function confirmRejectShare() {
+    if (!AuthStore.isAdmin() || !rejectTargetShareId) return;
+    const reason = document.getElementById('rejectReasonInput').value;
+    const res = SharedActivityStore.reject(rejectTargetShareId, reason);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    rejectTargetShareId = null;
+    closeModal('rejectShareModal');
+    closeModal('previewShareModal');
+    showToast('Paylaşım reddedildi ve hazırlayan öğretmene not iletildi.', 'info');
+    renderCurrentTab();
+  }
+
+  function handleDeleteShare(shareId) {
+    if (!confirm('Bu paylaşım kaydını kaldırmak istediğinize emin misiniz?')) return;
+    const res = SharedActivityStore.unpublishOrDelete(shareId);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    showToast('Paylaşım kaydı kaldırıldı.', 'success');
+    renderCurrentTab();
+  }
+
+  function renderSnapshotDetails(snap) {
+    if (!snap) return '<p>Önizleme verisi bulunamadı.</p>';
+    const t = snap.type === 'quiz' ? 'minideneme' : snap.type;
+
+    if (t === 'minideneme') {
+      const qs = snap.questions || [];
+      return qs.map((q, idx) => `
+        <div class="preview-item-box">
+          <div style="font-weight:800; margin-bottom:6px;">${idx + 1}. ${esc(q.text)}</div>
+          <ul style="margin:0 0 6px 18px; padding:0;">
+            ${(q.options || []).map((opt, oi) => `
+              <li style="margin:3px 0; ${oi === q.correct ? 'color:#15803D; font-weight:800;' : ''}">
+                ${esc(opt)} ${oi === q.correct ? '✅' : ''}
+              </li>`).join('')}
+          </ul>
+          ${q.explanation ? `<div style="font-size:0.82rem; color:var(--text-muted);">💡 ${esc(q.explanation)}</div>` : ''}
+        </div>
+      `).join('') || '<p>Soru bulunmuyor.</p>';
+    }
+
+    if (t === 'sezdirme') {
+      const steps = snap.steps || [];
+      return steps.map((st, idx) => `
+        <div class="preview-item-box">
+          <div style="font-weight:800; color:var(--primary); margin-bottom:4px;">${idx + 1}. ${esc(st.title || st.stepType || 'Adım')}</div>
+          ${st.prompt ? `<div style="margin-bottom:6px;">${esc(st.prompt)}</div>` : ''}
+          ${st.type === 'dedektif' ? `
+            ${st.caseBrief ? `<div style="margin-bottom:6px;">${esc(st.caseBrief)}</div>` : ''}
+            <div style="font-size:0.86rem; color:var(--text-muted); margin-bottom:4px;">
+              📻 <strong>${(st.dialogues || []).length}</strong> Telsiz Mesajı · 🎭 <strong>${(st.suspects || []).length}</strong> Şüpheli Eşkâli
+            </div>
+            ${st.question ? `<div style="font-weight:700;">❓ ${esc(st.question)}</div>` : ''}
+          ` : ''}
+          ${Array.isArray(st.examples) && st.examples.length ? `<div><strong>Örnekler:</strong> ${st.examples.map(e => esc(typeof e === 'string' ? e : (e.text || JSON.stringify(e)))).join(' · ')}</div>` : ''}
+        </div>
+      `).join('') || '<p>Sezdirme adımı bulunmuyor.</p>';
+    }
+
+    if (t === 'blank') {
+      return (snap.questions || []).map((q, idx) => `
+        <div class="preview-item-box">
+          <strong>${idx + 1}.</strong> ${esc(q.rawText || '')}
+        </div>
+      `).join('') || '<p>Cümle bulunmuyor.</p>';
+    }
+
+    if (t === 'matching') {
+      return (snap.pairs || []).map((p, idx) => `
+        <div class="preview-item-box">
+          <strong>${idx + 1}.</strong> ${esc(p.left)} ↔️ <span style="color:#0F766E; font-weight:700;">${esc(p.right)}</span>
+        </div>
+      `).join('') || '<p>Eşleştirme çifti yok.</p>';
+    }
+
+    if (t === 'flashcard') {
+      return (snap.cards || []).map((c, idx) => `
+        <div class="preview-item-box">
+          <strong>${idx + 1}. Ön:</strong> ${esc(c.front)} <br/>
+          <strong>Arka:</strong> ${esc(c.back)}
+        </div>
+      `).join('') || '<p>Kart yok.</p>';
+    }
+
+    if (t === 'wheel') {
+      return `<div class="preview-item-box">${(snap.items || []).map(it => `<span style="display:inline-block; margin:4px; padding:4px 10px; background:#EFF6FF; border-radius:999px; font-weight:700;">${esc(it)}</span>`).join('')}</div>`;
+    }
+
+    if (t === 'presentation') {
+      return (snap.slides || []).map((s, idx) => `
+        <div class="preview-item-box">
+          <strong>Slayt ${idx + 1}: ${esc(s.title || '')}</strong>
+          <div style="margin-top:4px;">${esc(s.content || s.subtitle || '')}</div>
+        </div>
+      `).join('') || '<p>Slayt yok.</p>';
+    }
+
+    if (t === 'parolla') {
+      return (snap.questions || []).map(q => `
+        <div class="preview-item-box">
+          <strong>[${esc(q.letter)}]</strong> ${esc(q.question)} → <strong style="color:#15803D;">${esc(q.answer)}</strong>
+        </div>
+      `).join('') || '<p>Parolla sorusu yok.</p>';
+    }
+
+    return '<p>Önizleme içeriği hazır.</p>';
+  }
+
+  function openPreviewModal(shareId) {
+    const item = SharedActivityStore.getById(shareId);
+    if (!item) return;
+    const isAdmin = AuthStore.isAdmin();
+    const currentUser = AuthStore.getCurrentUser();
+    if (item.status !== 'approved' && !isAdmin && (!currentUser || item.authorId !== currentUser.id)) {
+      showToast('Bu paylaşımı görüntüleme yetkiniz yok.', 'error');
+      return;
+    }
+
+    document.getElementById('previewModalTitle').textContent = `${typeIcon(item.type)} ${item.title}`;
+    document.getElementById('previewModalBody').innerHTML = `
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center;">
+        ${statusBadgeHtml(item.status)}
+        <span style="font-size:0.8rem; background:#EFF6FF; color:#1E40AF; padding:4px 10px; border-radius:999px; font-weight:700;">🎓 ${esc(item.grade)}. Sınıf</span>
+        <span style="font-size:0.8rem; background:#ECFDF5; color:#065F46; padding:4px 10px; border-radius:999px; font-weight:700;">🏷️ ${esc(item.theme || 'Türkçe')}</span>
+        <span style="font-size:0.82rem; color:var(--text-muted);">👩‍🏫 Hazırlayan: <strong>${esc(item.authorName)}</strong></span>
+      </div>
+      ${item.teacherNote ? `<div class="teacher-note-box">💬 <strong>Öğretmen Notu:</strong> ${esc(item.teacherNote)}</div>` : ''}
+      ${item.status === 'rejected' && item.rejectionReason ? `<div class="reject-reason-box">❌ <strong>Red Gerekçesi:</strong> ${esc(item.rejectionReason)}</div>` : ''}
+      <h4 style="font-size:0.95rem; font-weight:900; margin:14px 0 10px;">📋 İçerik Detayları (${esc(summarizeSnapshotCount(item.activitySnapshot))})</h4>
+      ${renderSnapshotDetails(item.activitySnapshot)}
+    `;
+
+    const playUrl = getPlayUrlForShared(item);
+    document.getElementById('previewModalFooter').innerHTML = `
+      <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('previewShareModal')">Kapat</button>
+      <a href="${playUrl}" target="_blank" class="btn btn-outline btn-sm">▶️ Oynatıcıda Aç</a>
+      ${(item.status === 'approved' || isAdmin) ? `<button type="button" class="btn btn-primary btn-sm" onclick="handleImportShared('${item.id}')">📥 Derslerime Ekle</button>` : ''}
+      ${isAdmin && item.status !== 'approved' ? `<button type="button" class="btn btn-primary btn-sm" style="background:#16A34A;" onclick="handleAdminApprove('${item.id}')">✅ Onayla & Yayınla</button>` : ''}
+      ${isAdmin && item.status !== 'rejected' ? `<button type="button" class="btn btn-danger btn-sm" onclick="openRejectModal('${item.id}')">❌ Reddet</button>` : ''}
+    `;
+
+    openModal('previewShareModal');
+  }
+
+  function initPaylasimlarPage() {
+    renderStats();
+    const params = new URLSearchParams(window.location.search);
+    const reqTab = params.get('tab');
+    const shareId = params.get('share');
+
+    if (reqTab === 'admin' && AuthStore.isAdmin()) {
+      switchShareTab('admin');
+    } else if (reqTab === 'mine') {
+      switchShareTab('mine');
+    } else {
+      switchShareTab('pool');
+    }
+
+    if (shareId) {
+      openShareSubmitModal(shareId);
+    }
+  }
+
+  initPaylasimlarPage();
+</script>
+</body>
+</html>

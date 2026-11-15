@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parolla Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .editor-container { max-width: 920px; margin: 32px auto; padding: 0 16px; }
+    .editor-topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 64px; z-index: 50;
+    }
+    .letter-row {
+      background: #fff;
+      border-radius: var(--radius-sm);
+      border: 2px solid var(--border);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .letter-row:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(108,99,255,0.08); }
+    .letter-row.newly-added {
+      animation: highlightPulse 1.5s ease-out;
+      border-color: #2ECC71 !important;
+    }
+    @keyframes highlightPulse {
+      0% { background: #E8F8F5; transform: scale(1.01); }
+      100% { background: #fff; transform: scale(1); }
+    }
+    .letter-input-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FF8C00, #E67E22);
+      color: #fff;
+      text-align: center;
+      font-weight: 900;
+      font-size: 1.3rem;
+      border: 3px solid #E67E22;
+      outline: none;
+      box-shadow: 0 4px 10px rgba(230,126,34,0.3);
+      cursor: pointer;
+      font-family: var(--font);
+      transition: var(--transition);
+    }
+    .letter-input-circle:focus {
+      background: #fff;
+      color: #E67E22;
+      border-color: #E67E22;
+    }
+    .alphabet-btn {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 4px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+    }
+    .alphabet-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(108,99,255,0.3);
+    }
+    .alphabet-btn.missing {
+      border: 1.5px dashed #BDC3C7;
+      background: #FAFAFA;
+      color: #7F8C8D;
+    }
+    .alphabet-btn.missing:hover {
+      border-color: #2ECC71;
+      background: #E8F8F5;
+      color: #27AE60;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+<!-- GEZİNTİ ÇUBUĞU (NAVBAR) -->
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem; font-weight:700;" id="saveStatus">✅ Kaydedildi</span>
+    <button class="btn btn-outline btn-sm" onclick="openAddQuestionModal()">➕ Hızlı Soru Ekle</button>
+    <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Önizle</a>
+  </div>
+</nav>
+
+<!-- ÜST BİLGİ VE BAŞLIK -->
+<div class="editor-topbar">
+  <div style="flex:1; min-width:220px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Parolla etkinliği başlığı..." style="font-size:1.15rem; font-weight:800;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span id="questionCount" class="badge badge-primary" style="font-size:0.9rem; padding:6px 12px;">0 Soru</span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default;"></span>
+  </div>
+</div>
+
+<div class="editor-container">
+
+  <!-- PAROLLA AYARLARI -->
+  <div class="settings-panel card mb-24">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">⚙️ Parolla Ayarları</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Toplam Süre (Geri Sayım)</div>
+        <div class="setting-desc">Öğrencinin tüm harfleri yanıtlaması için verilen toplam süre</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="number" id="settingTimeLimit" class="form-control" value="180" min="30" max="600" style="width:90px; text-align:center;" oninput="markDirty()" />
+        <span style="color:var(--text-muted); font-size:0.9rem;">saniye</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">"Pas" geçmeye izin ver</div>
+        <div class="setting-desc">Öğrenci bilemediği harfi pas geçip tur sonunda tekrar dönebilsin</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="settingAllowPass" checked onchange="markDirty()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Açıklama / Yönerge</div>
+        <div class="setting-desc">Öğrencilere oyun başlangıcında gösterilecek kısa yönerge</div>
+      </div>
+      <input type="text" class="form-control" id="activityDesc" placeholder="Yönerge..." style="max-width:320px;" oninput="markDirty()" />
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">🎓 Sınıf Düzeyi</div>
+        <div class="setting-desc">Maarif Modeli sınıf kademesi</div>
+      </div>
+      <select id="activityGrade" class="form-control" style="max-width:180px;" onchange="markDirty()">
+        <option value="5">5. Sınıf</option>
+        <option value="6">6. Sınıf</option>
+        <option value="7">7. Sınıf</option>
+        <option value="8">8. Sınıf (LGS)</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">🏷️ Maarif Teması / Ünite</div>
+        <div class="setting-desc">Örn: Türk Hikâye Geleneği ve Destanlar</div>
+      </div>
+      <input type="text" id="activityTheme" class="form-control" placeholder="Tema adı..." style="max-width:320px;" oninput="markDirty()" />
+    </div>
+  </div>
+
+  <!-- SORULAR VE HARFLER BÖLÜMÜ -->
+  <div class="card mb-24">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h3 style="font-size:1.1rem; font-weight:900;">🔤 Harfler ve Sorular</h3>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">
+          Öğrenciye soru okunur ve o harfle başlayan cevabı bulması istenir. İstediğiniz harfi ekleyebilir, silebilir ve düzenleyebilirsiniz.
+        </p>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="sortQuestionsAlphabetically()" title="Soruları A'dan Z'ye alfabetik sıraya dizer">🔤 A-Z Sırala</button>
+        <button class="btn btn-outline btn-sm" onclick="loadDefaultTurkishQuestions()">📋 29 Müfredat Sorusunu Yükle</button>
+        <button class="btn btn-outline btn-sm text-danger" onclick="clearAllQuestions()">🗑️ Temizle</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddQuestionModal()">➕ Soru Ekle</button>
+      </div>
+    </div>
+
+    <!-- HIZLI ALFABE ÇİZELGESİ -->
+    <div style="background:#F8F9FE; border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:20px;">
+      <div style="font-size:0.8rem; font-weight:800; color:var(--text); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span>💡 <strong>Alfabe Durumu:</strong> Mor harfler hazır sorulardır (tıklayarak soruya gidin), kesikli çizgili harflere tıklayarak o harfe anında yeni soru ekleyin!</span>
+        <span id="alphabetStats" class="badge badge-info" style="font-size:0.75rem;"></span>
+      </div>
+      <div id="alphabetBar" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- SORU LİSTESİ -->
+    <div id="questionsList"></div>
+
+    <!-- YENİ SORU EKLEME BUTONLARI -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px;">
+      <button class="btn btn-outline" onclick="addQuestionDirect()" style="padding:12px; font-weight:800; justify-content:center;">
+        ➕ Hızlı Satır Ekle
+      </button>
+      <button class="btn btn-primary" onclick="openAddQuestionModal()" style="padding:12px; font-weight:800; justify-content:center;">
+        📝 Pencereli Yeni Soru Ekle
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- YENİ SORU EKLEME MODALI -->
+<div class="modal-overlay" id="addQuestionModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Yeni Parolla Sorusu Ekle</h2>
+      <button class="modal-close" onclick="closeModal('addQuestionModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Harf Seçin veya Yazın <span style="color:var(--danger)">*</span></label>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <input type="text" id="modalLetterInput" class="letter-input-circle" maxlength="2" value="A" oninput="this.value = this.value.toUpperCase()" />
+          <div style="flex:1;">
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:6px;">Hızlı harf seçimi:</div>
+            <div id="modalAlphabetQuickSelect" style="display:flex; gap:4px; flex-wrap:wrap; max-height:80px; overflow-y:auto; padding:4px; border:1px solid var(--border); border-radius:6px; background:#fff;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Soru Metni <span style="color:var(--danger)">*</span></label>
+        <textarea id="modalQuestionInput" class="form-control" rows="3" placeholder="Öğrenciye yöneltilecek soruyu yazın... (Örn: Bir durumu olduğundan çok daha büyük ya da küçük gösterme sanatı)"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Doğru Cevap <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="modalAnswerInput" class="form-control" placeholder="Doğru cevap (Seçilen harfle başlamalıdır, Örn: Abartma)" style="font-weight:700; color:var(--primary);" />
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+        <button class="btn btn-outline" onclick="closeModal('addQuestionModal')">Vazgeç</button>
+        <button class="btn btn-primary" onclick="submitModalQuestion()">✅ Listeye Ekle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let isDirty = false;
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    if (id) activity = ActivityStore.getById(id);
+    if (!activity) {
+      activity = ActivityStore.createNew('parolla');
+      if (typeof DEFAULT_PAROLLA_QUESTIONS !== 'undefined') {
+        activity.questions = JSON.parse(JSON.stringify(DEFAULT_PAROLLA_QUESTIONS));
+      }
+      ActivityStore.save(activity);
+      window.history.replaceState({}, '', `?id=${activity.id}`);
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('activityDesc').value = activity.description || '';
+    document.getElementById('activityGrade').value = activity.grade || '7';
+    document.getElementById('activityTheme').value = activity.theme || '';
+    document.getElementById('settingTimeLimit').value = activity.settings?.timeLimit || 180;
+    document.getElementById('settingAllowPass').checked = activity.settings?.allowPass !== false;
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-parolla.html?id=${activity.id}`;
+
+    if (!activity.questions || !Array.isArray(activity.questions) || activity.questions.length === 0) {
+      if (typeof DEFAULT_PAROLLA_QUESTIONS !== 'undefined') {
+        activity.questions = JSON.parse(JSON.stringify(DEFAULT_PAROLLA_QUESTIONS));
+      } else {
+        activity.questions = [];
+      }
+    }
+
+    renderAlphabetBar();
+    renderQuestions();
+    updateCount();
+  }
+
+  // DOM üzerindeki tüm soru girdilerini activity nesnesiyle senkronize et
+  function syncQuestionsFromDOM() {
+    const rows = document.querySelectorAll('#questionsList .letter-row');
+    if (rows.length === 0) return;
+    const synced = [];
+    rows.forEach(row => {
+      const lInput = row.querySelector('.letter-input-circle');
+      const qInput = row.querySelector('.question-input');
+      const aInput = row.querySelector('.answer-input');
+      if (lInput && qInput && aInput) {
+        synced.push({
+          letter: (lInput.value || '?').trim().toUpperCase(),
+          question: qInput.value.trim(),
+          answer: aInput.value.trim()
+        });
+      }
+    });
+    activity.questions = synced;
+  }
+
+  // Üst alfabe çubuğunu çiz
+  function renderAlphabetBar() {
+    const bar = document.getElementById('alphabetBar');
+    const existing = (activity.questions || []).map(q => (q.letter || '').toUpperCase());
+
+    const alphabetList = typeof TURKISH_ALPHABET !== 'undefined' ? TURKISH_ALPHABET : ['A','B','C','Ç','D','E','F','G','Ğ','H','I','İ','J','K','L','M','N','O','Ö','P','R','S','Ş','T','U','Ü','V','Y','Z'];
+
+    bar.innerHTML = alphabetList.map(letter => {
+      const count = existing.filter(l => l === letter).length;
+      if (count > 0) {
+        return `
+          <button type="button" class="alphabet-btn active" onclick="handleAlphabetClick('${letter}')"
+            title="${letter} harfi için ${count} soru var. Tıklayarak soruya gidin.">
+            ${letter}${count > 1 ? `<span style="font-size:0.65rem; margin-left:2px; opacity:0.9;">(${count})</span>` : ''}
+          </button>
+        `;
+      } else {
+        return `
+          <button type="button" class="alphabet-btn missing" onclick="handleAlphabetClick('${letter}')"
+            title="${letter} harfi eksik. Tıklayarak anında ${letter} sorusu ekleyin.">
+            ${letter} <span style="font-size:0.7rem; margin-left:2px;">+</span>
+          </button>
+        `;
+      }
+    }).join('');
+
+    const readyCount = alphabetList.filter(l => existing.includes(l)).length;
+    document.getElementById('alphabetStats').textContent = `${readyCount} / ${alphabetList.length} Harf Hazır`;
+  }
+
+  // Alfabe harfine tıklandığında
+  function handleAlphabetClick(letter) {
+    syncQuestionsFromDOM();
+    const idx = (activity.questions || []).findIndex(q => (q.letter || '').toUpperCase() === letter);
+    if (idx >= 0) {
+      // Zaten soru var, o soruya yumuşak kaydır ve odaklan
+      const el = document.getElementById(`qrow_${idx}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('newly-added');
+        setTimeout(() => el.classList.remove('newly-added'), 1500);
+        const qInput = el.querySelector('.question-input');
+        if (qInput) qInput.focus();
+      }
+    } else {
+      // Soru yok, doğrudan bu harfle yeni soru ekle!
+      addQuestionDirect(letter);
+    }
+  }
+
+  // Soruları listeye çiz
+  function renderQuestions() {
+    const container = document.getElementById('questionsList');
+    if (!activity.questions || activity.questions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:40px 20px;">
+          <span class="empty-icon">🔤</span>
+          <h3>Henüz Parolla sorusu eklenmedi</h3>
+          <p>Yeni bir soru ekleyebilir veya 29 harflik hazır Türkçe müfredat sorularını tek tıkla yükleyebilirsiniz.</p>
+          <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="loadDefaultTurkishQuestions()">📋 29 Müfredat Sorusunu Yükle</button>
+            <button class="btn btn-primary" onclick="openAddQuestionModal()">➕ Yeni Soru Ekle</button>
+          </div>
+        </div>
+      `;
+      renderAlphabetBar();
+      return;
+    }
+
+    container.innerHTML = activity.questions.map((q, i) => `
+      <div class="letter-row" id="qrow_${i}">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; flex-shrink:0;">
+          <input type="text" maxlength="2" class="letter-input-circle"
+            value="${escapeHtml(q.letter || '')}"
+            placeholder="?"
+            title="Harfi değiştirmek için yazın"
+            oninput="this.value = this.value.toUpperCase(); updateQ(${i}, 'letter', this.value);" />
+          <span style="font-size:0.65rem; color:var(--text-muted); font-weight:800;">HARF</span>
+        </div>
+        <div style="flex:2; min-width:180px;">
+          <label style="font-size:0.75rem; font-weight:800; color:var(--text-muted); display:block; margin-bottom:4px;">Soru Metni:</label>
+          <input type="text" class="form-control question-input" value="${escapeHtml(q.question || '')}" placeholder="Soru metnini yazın..." oninput="updateQ(${i}, 'question', this.value)" />
+        </div>
+        <div style="flex:1; min-width:140px;">
+          <label style="font-size:0.75rem; font-weight:800; color:var(--text-muted); display:block; margin-bottom:4px;">Doğru Cevap:</label>
+          <input type="text" class="form-control answer-input" value="${escapeHtml(q.answer || '')}" placeholder="Doğru Cevap..." oninput="updateQ(${i}, 'answer', this.value)" style="font-weight:700; color:var(--primary);" />
+        </div>
+        <div style="display:flex; gap:4px; align-items:center; margin-top:18px;">
+          <button class="icon-btn" onclick="moveQ(${i}, -1)" title="Yukarı taşı">↑</button>
+          <button class="icon-btn" onclick="moveQ(${i}, 1)" title="Aşağı taşı">↓</button>
+          <button class="icon-btn danger" onclick="removeQ(${i})" title="Harfi Sil">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+
+    renderAlphabetBar();
+  }
+
+  function updateQ(idx, field, val) {
+    if (activity.questions && activity.questions[idx]) {
+      activity.questions[idx][field] = val;
+    }
+    if (field === 'letter') renderAlphabetBar();
+    markDirty();
+  }
+
+  // Doğrudan listeye yeni soru satırı ekle
+  function addQuestionDirect(preferredLetter = null) {
+    syncQuestionsFromDOM();
+    if (!activity.questions) activity.questions = [];
+
+    const alphabetList = typeof TURKISH_ALPHABET !== 'undefined' ? TURKISH_ALPHABET : ['A','B','C','Ç','D','E','F','G','Ğ','H','I','İ','J','K','L','M','N','O','Ö','P','R','S','Ş','T','U','Ü','V','Y','Z'];
+
+    let targetLetter = (typeof preferredLetter === 'string' && preferredLetter.trim()) ? preferredLetter.trim().toUpperCase() : null;
+
+    if (!targetLetter) {
+      const existing = activity.questions.map(q => (q.letter || '').toUpperCase());
+      targetLetter = alphabetList.find(l => !existing.includes(l));
+      if (!targetLetter) targetLetter = 'A';
+    }
+
+    const newQuestion = {
+      letter: targetLetter,
+      question: '',
+      answer: ''
+    };
+
+    activity.questions.push(newQuestion);
+    renderQuestions();
+    updateCount();
+    markDirty();
+
+    showToast(`"${targetLetter}" harfi için yeni soru satırı eklendi!`, 'success');
+
+    setTimeout(() => {
+      const newIdx = activity.questions.length - 1;
+      const row = document.getElementById(`qrow_${newIdx}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.classList.add('newly-added');
+        const qInput = row.querySelector('.question-input');
+        if (qInput) qInput.focus();
+      }
+    }, 100);
+  }
+
+  // Pencereli soru ekleme modalı
+  function openAddQuestionModal(defaultLetter = null) {
+    syncQuestionsFromDOM();
+    const alphabetList = typeof TURKISH_ALPHABET !== 'undefined' ? TURKISH_ALPHABET : ['A','B','C','Ç','D','E','F','G','Ğ','H','I','İ','J','K','L','M','N','O','Ö','P','R','S','Ş','T','U','Ü','V','Y','Z'];
+
+    const existing = (activity.questions || []).map(q => (q.letter || '').toUpperCase());
+    let pick = defaultLetter;
+    if (!pick) {
+      pick = alphabetList.find(l => !existing.includes(l)) || 'A';
+    }
+
+    document.getElementById('modalLetterInput').value = pick;
+    document.getElementById('modalQuestionInput').value = '';
+    document.getElementById('modalAnswerInput').value = '';
+
+    // Hızlı harf seçici butonları
+    const quickBar = document.getElementById('modalAlphabetQuickSelect');
+    quickBar.innerHTML = alphabetList.map(l => `
+      <button type="button" onclick="selectModalLetter('${l}')" style="
+        width:24px; height:24px; border-radius:4px; border:1px solid ${existing.includes(l) ? '#ccc' : '#2ECC71'};
+        background:${existing.includes(l) ? '#F5F5F5' : '#E8F8F5'};
+        color:${existing.includes(l) ? '#888' : '#27AE60'};
+        font-weight:800; font-size:0.75rem; cursor:pointer;">
+        ${l}
+      </button>
+    `).join('');
+
+    openModal('addQuestionModal');
+    setTimeout(() => document.getElementById('modalQuestionInput').focus(), 150);
+  }
+
+  function selectModalLetter(letter) {
+    document.getElementById('modalLetterInput').value = letter;
+  }
+
+  function submitModalQuestion() {
+    const letter = (document.getElementById('modalLetterInput').value || '').trim().toUpperCase();
+    const question = document.getElementById('modalQuestionInput').value.trim();
+    const answer = document.getElementById('modalAnswerInput').value.trim();
+
+    if (!letter) {
+      showToast('Lütfen bir harf belirtin!', 'warning');
+      document.getElementById('modalLetterInput').focus();
+      return;
+    }
+    if (!question) {
+      showToast('Lütfen soru metnini yazın!', 'warning');
+      document.getElementById('modalQuestionInput').focus();
+      return;
+    }
+    if (!answer) {
+      showToast('Lütfen doğru cevabı yazın!', 'warning');
+      document.getElementById('modalAnswerInput').focus();
+      return;
+    }
+
+    syncQuestionsFromDOM();
+    activity.questions.push({ letter, question, answer });
+    closeModal('addQuestionModal');
+
+    renderQuestions();
+    updateCount();
+    markDirty();
+
+    showToast(`"${letter}" harfi sorusu başarıyla eklendi!`, 'success');
+
+    setTimeout(() => {
+      const newIdx = activity.questions.length - 1;
+      const row = document.getElementById(`qrow_${newIdx}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.classList.add('newly-added');
+      }
+    }, 100);
+  }
+
+  function removeQ(idx) {
+    syncQuestionsFromDOM();
+    const target = activity.questions[idx];
+    const letterName = target ? target.letter : '';
+    activity.questions.splice(idx, 1);
+    renderQuestions();
+    updateCount();
+    markDirty();
+    showToast(`"${letterName}" harfi silindi.`, 'info');
+  }
+
+  function moveQ(idx, dir) {
+    syncQuestionsFromDOM();
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= activity.questions.length) return;
+    const tmp = activity.questions[idx];
+    activity.questions[idx] = activity.questions[newIdx];
+    activity.questions[newIdx] = tmp;
+    renderQuestions();
+    markDirty();
+  }
+
+  function sortQuestionsAlphabetically() {
+    syncQuestionsFromDOM();
+    if (!activity.questions || activity.questions.length <= 1) return;
+    const trCollator = new Intl.Collator('tr');
+    activity.questions.sort((a, b) => trCollator.compare(a.letter || '', b.letter || ''));
+    renderQuestions();
+    markDirty();
+    showToast('Sorular Türk alfabesi sırasına göre dizildi!', 'success');
+  }
+
+  function loadDefaultTurkishQuestions() {
+    if (confirm('Mevcut sorular yerine A\'dan Z\'ye 29 hazır Türkçe müfredat sorusu yüklensin mi?')) {
+      if (typeof DEFAULT_PAROLLA_QUESTIONS !== 'undefined') {
+        activity.questions = JSON.parse(JSON.stringify(DEFAULT_PAROLLA_QUESTIONS));
+      }
+      renderQuestions();
+      updateCount();
+      markDirty();
+      showToast('29 Türkçe Parolla sorusu yüklendi!', 'success');
+    }
+  }
+
+  function clearAllQuestions() {
+    if (confirm('Tüm soruları silip sıfırdan başlamak istediğinize emin misiniz?')) {
+      activity.questions = [];
+      renderQuestions();
+      updateCount();
+      markDirty();
+      showToast('Tüm sorular temizlendi.', 'info');
+    }
+  }
+
+  function updateCount() {
+    const count = (activity.questions || []).length;
+    document.getElementById('questionCount').textContent = `${count} Soru`;
+  }
+
+  function markDirty() {
+    isDirty = true;
+    document.getElementById('saveStatus').textContent = '⏳ Kaydedilmedi';
+    document.getElementById('saveStatus').style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    syncQuestionsFromDOM();
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Parolla';
+    activity.description = document.getElementById('activityDesc').value.trim();
+    activity.grade = document.getElementById('activityGrade').value;
+    activity.theme = document.getElementById('activityTheme').value.trim();
+    activity.settings = {
+      timeLimit: parseInt(document.getElementById('settingTimeLimit').value) || 180,
+      allowPass: document.getElementById('settingAllowPass').checked
+    };
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    document.getElementById('saveStatus').textContent = '✅ Kaydedildi';
+    document.getElementById('saveStatus').style.color = 'var(--success)';
+    showToast('Parolla etkinliği başarıyla kaydedildi!', 'success');
+  }
+
+  // Klavye kısayolu: Ctrl + S ile kaydet
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      saveActivity();
+    }
+  });
+
+  setInterval(() => { if (isDirty) saveActivity(); }, 30000);
+  window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  init();
+</script>
+</body>
+</html>

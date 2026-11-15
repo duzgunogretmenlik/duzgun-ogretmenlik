@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hafıza Kartları Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .editor-container { max-width: 860px; margin: 32px auto; padding: 0 16px; }
+    .editor-topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 64px; z-index: 50;
+    }
+    .card-block {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border: 2px solid transparent;
+      transition: var(--transition);
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+    .card-block:hover { border-color: var(--primary-light); }
+    .card-side-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .front-side { border-left: 3px solid var(--primary); padding-left: 10px; }
+    .back-side  { border-left: 3px solid var(--accent); padding-left: 10px; }
+    .add-btn {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      font-weight: 700;
+      background: transparent;
+      width: 100%;
+      font-family: var(--font);
+    }
+    .add-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .turkish-templates {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .tpl-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 2px solid var(--border);
+      background: #fff;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+    }
+    .tpl-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    @media (max-width: 600px) {
+      .card-block { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem;" id="saveStatus">✅ Kaydedildi</span>
+    <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Önizle</a>
+  </div>
+</nav>
+
+<div class="editor-topbar">
+  <div style="flex:1; min-width:200px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Hafıza kartları başlığı..."
+      style="font-size:1.1rem; font-weight:800;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span id="cardCount" class="badge badge-primary">0 Kart</span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default;"></span>
+  </div>
+</div>
+
+<div class="editor-container">
+
+  <div class="settings-panel card mb-24">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">⚙️ Ayarlar</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Kartları karıştır</div>
+        <div class="setting-desc">Her seferinde farklı sırada göster</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="settingShuffle" checked onchange="markDirty()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Açıklama / Yönerge</div>
+        <div class="setting-desc">Öğrenciye gösterilecek açıklama</div>
+      </div>
+      <input type="text" class="form-control" id="activityDesc" placeholder="Yönerge metni..." style="max-width:300px;" oninput="markDirty()" />
+    </div>
+  </div>
+
+  <!-- TÜRKÇE HAZIR İÇERİK -->
+  <div class="card mb-24">
+    <div style="font-size:0.85rem; font-weight:800; color:var(--text-muted); margin-bottom:12px;">📋 TÜRKÇE HAZIR İÇERİK — Hızlı Ekle</div>
+    <div class="turkish-templates">
+      <button class="tpl-btn" onclick="addTemplate('edebisanatlar')">🎭 Edebi Sanatlar</button>
+      <button class="tpl-btn" onclick="addTemplate('sozcukturleri')">📚 Sözcük Türleri</button>
+      <button class="tpl-btn" onclick="addTemplate('noktalama')">✍️ Noktalama İşaretleri</button>
+      <button class="tpl-btn" onclick="addTemplate('siirterimleri')">🎵 Şiir Terimleri</button>
+      <button class="tpl-btn" onclick="addTemplate('yazimkurallari')">📝 Yazım Kuralları</button>
+    </div>
+  </div>
+
+  <!-- KART LİSTESİ -->
+  <div class="card mb-24">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h3 style="font-size:1rem; font-weight:800; margin-bottom:4px;">🃏 Kartlar</h3>
+        <div style="font-size:0.8rem; color:var(--text-muted);">
+          <span style="color:var(--primary); font-weight:700;">■</span> Ön yüz (başlık/kavram) &nbsp;
+          <span style="color:var(--accent); font-weight:700;">■</span> Arka yüz (açıklama/anlam)
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="addBulkCards()">📋 Toplu Ekle</button>
+        <button class="btn btn-primary btn-sm" onclick="addCard()">➕ Kart Ekle</button>
+      </div>
+    </div>
+
+    <div id="cardsList"></div>
+
+    <button class="add-btn" onclick="addCard()" style="margin-top:12px;">
+      ➕ Yeni Kart Ekle
+    </button>
+  </div>
+
+</div>
+
+<!-- TOPLU EKLEME -->
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📋 Toplu Kart Ekle</h2>
+      <button class="modal-close" onclick="closeModal('bulkModal')">✕</button>
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">Her satıra: <code>Ön Yüz | Arka Yüz</code> şeklinde yazın.</p>
+    <div class="form-group">
+      <textarea class="form-control" id="bulkText" rows="10"
+        placeholder="Teşbih | Benzetme sanatı. Bir şeyi başka bir şeye benzeterek anlatma.&#10;İstiare | Benzetmeli ad aktarma sanatıdır."></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('bulkModal')">İptal</button>
+      <button class="btn btn-primary" onclick="processBulk()">➕ Ekle</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let isDirty = false;
+
+  const TEMPLATES = {
+    edebisanatlar: [
+      { front: 'Teşbih (Benzetme)', back: 'Bir varlığı başka bir varlığa benzeterek anlatma sanatıdır.\nÖrnek: "Asker gibi dimdik durdu."' },
+      { front: 'İstiare', back: 'Benzetme ilişkisiyle bir kavramın başka kavramın adıyla anılması.\nÖrnek: "Fırtına gibi geçip gitti." (açık)' },
+      { front: 'Kişileştirme (Teşhis)', back: 'İnsan dışı varlıklara insana özgü nitelikler yükleme.\nÖrnek: "Rüzgâr fısıldadı kulağıma."' },
+      { front: 'Tezat (Karşıtlık)', back: 'Birbirine zıt kavramları bir arada kullanma.\nÖrnek: "Ağlarken güldüm, gülerken ağladım."' },
+      { front: 'Aliterasyon', back: 'Dizede aynı ünsüzlerin tekrar edilmesi.\nÖrnek: "Sarı yapraklar sararır, sürüklenir."' },
+      { front: 'Mübalağa (Abartma)', back: 'Bir şeyi olduğundan çok büyük ya da küçük gösterme.\nÖrnek: "Gözyaşlarımdan deniz oluştu."' }
+    ],
+    sozcukturleri: [
+      { front: 'İsim (Ad)', back: 'Varlıkları, kavramları karşılayan sözcüklerdir.\nÖrnek: masa, kalem, sevgi, özgürlük' },
+      { front: 'Sıfat (Önad)', back: 'İsimleri niteleyen ve belirten sözcüklerdir.\nÖrnek: güzel çiçek, beş kalem, bu kitap' },
+      { front: 'Zamir (Adıl)', back: 'İsimlerin yerine kullanılan sözcüklerdir.\nÖrnek: ben, sen, o, biz, hepsi' },
+      { front: 'Zarf (Belirteç)', back: 'Fiilleri, sıfatları ve zarfları niteleyen sözcükler.\nÖrnek: hızlı koştu, çok güzel, az önce' },
+      { front: 'Fiil (Eylem)', back: 'İş, oluş ve durum bildiren sözcüklerdir.\nÖrnek: gitmek, uyumak, büyümek' },
+      { front: 'Bağlaç (İlgeç)', back: 'Sözcük ve cümleleri birbirine bağlayan sözcükler.\nÖrnek: ve, ile, ama, fakat, ya da' }
+    ],
+    noktalama: [
+      { front: 'Nokta (.)', back: 'Tam cümlenin sonuna konur.\nSayıların yazımında da kullanılır: 1., 2.' },
+      { front: 'Virgül (,)', back: 'Sıralama, bağlaç yerine kullanılan duraklamalarda konur.\nÖrnek: "Kalemi, defteri, kitabı aldı."' },
+      { front: 'Noktalı Virgül (;)', back: 'Birbirine bağlı cümleleri ayırmada kullanılır.\nÖrnek: "Hava çok sıcaktı; pencereyi açtım."' },
+      { front: 'İki Nokta (:)', back: 'Açıklama, örnek ve alıntı başlamadan önce konur.' },
+      { front: 'Soru İşareti (?)', back: 'Soru cümlelerinin sonuna konur.\nÖrnek: "Bu kitabı okudun mu?"' },
+      { front: 'Ünlem (!)', back: 'Duygu, heyecan, bağırma cümlelerinin sonuna konur.\nÖrnek: "Ne güzel bir gün!"' }
+    ],
+    siirterimleri: [
+      { front: 'Dize (Mısra)', back: 'Şiirin her bir satırına denir.' },
+      { front: 'Beyit', back: 'Birbirine uyaklı iki dizeden oluşan birime denir.' },
+      { front: 'Kıta / Bent', back: 'İkiden fazla dizenin oluşturduğu birime denir.' },
+      { front: 'Redif', back: 'Dize sonlarındaki aynı görevdeki ek ya da sözcüklere denir.' },
+      { front: 'Kafiye (Uyak)', back: 'Dize sonlarındaki ses benzerliğidir.\nTam, yarım, zengin, tunç uyak türleri vardır.' },
+      { front: 'Hece Ölçüsü', back: 'Şiirde dizelerdeki hece sayısının eşit tutulması esasına dayanır.' }
+    ],
+    yazimkurallari: [
+      { front: 'Büyük Harf Kullanımı', back: 'Özel isimler, cümle başları, unvanlar büyük harfle başlar.\nÖrnek: Türkiye, Ankara, Atatürk' },
+      { front: 'de / da Bağlacı', back: 'Bağlaç her zaman ayrı yazılır ve ünlü uyumuna uymaz.\nÖrnek: Sen de gel, o da gitsin.' },
+      { front: 'ki Bağlacı', back: 'Bağlaç olarak kullanılan "ki" ayrı yazılır.\nÖrnek: Biliyorum ki geleceksin.' },
+      { front: 'Kesme İşareti', back: 'Özel isimlere ve kısaltmalara ek geldiğinde kullanılır.\nÖrnek: Türkiye\'de, TDK\'nın' },
+      { front: 'Sayıların Yazımı', back: 'Sayılar Türkçede ayrı ayrı yazılır.\nÖrnek: iki bin yirmi altı' }
+    ]
+  };
+
+  function addTemplate(key) {
+    const cards = TEMPLATES[key] || [];
+    cards.forEach(c => activity.cards.push({ id: generateId(), front: c.front, back: c.back }));
+    renderCards();
+    updateCount();
+    markDirty();
+    showToast(`${cards.length} kart eklendi!`, 'success');
+  }
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) activity = ActivityStore.getById(id);
+    if (!activity) {
+      activity = ActivityStore.createNew('flashcard');
+      ActivityStore.save(activity);
+      window.history.replaceState({}, '', `?id=${activity.id}`);
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('activityDesc').value = activity.description || '';
+    document.getElementById('settingShuffle').checked = activity.settings?.shuffle !== false;
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-flashcard.html?id=${activity.id}`;
+
+    if (!activity.cards) activity.cards = [];
+    renderCards();
+    updateCount();
+  }
+
+  function renderCards() {
+    const container = document.getElementById('cardsList');
+    if (activity.cards.length === 0) {
+      container.innerHTML = `<div class="empty-state" style="padding:30px;">
+        <span class="empty-icon">🃏</span>
+        <h3>Henüz kart yok</h3>
+        <p>Kart eklemek için yukarıdaki şablonları kullanın veya manuel ekleyin.</p>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = activity.cards.map((c, i) => `
+      <div class="card-block">
+        <div class="front-side">
+          <div class="card-side-label">🎴 Ön Yüz — Kart ${i + 1}</div>
+          <input type="text" class="form-control" value="${c.front}"
+            placeholder="Kavram / Terim / Soru..."
+            oninput="updateCard('${c.id}', 'front', this.value)" style="margin-bottom:8px;" />
+          
+          ${c.frontImage ? `
+            <div style="display:flex; align-items:center; gap:8px;">
+              <img src="${c.frontImage}" style="width:40px; height:40px; object-fit:cover; border-radius:6px; cursor:zoom-in;" onclick="openLightbox(this.src)" />
+              <span style="font-size:0.75rem; color:var(--text-muted); flex:1;">Ön görsel eklendi</span>
+              <button class="icon-btn danger" onclick="removeCardImage('${c.id}', 'frontImage')" title="Görseli kaldır">✕</button>
+            </div>
+          ` : `
+            <label style="cursor:pointer; font-size:0.75rem; color:var(--primary); font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+              <span>📷 Ön Yüze Görsel Ekle</span>
+              <input type="file" accept="image/*" style="display:none;" onchange="handleCardImage('${c.id}', 'frontImage', event)" />
+            </label>
+          `}
+        </div>
+        <div class="back-side">
+          <div class="card-side-label">📖 Arka Yüz — Açıklama</div>
+          <textarea class="form-control" rows="2"
+            placeholder="Tanım / Açıklama / Cevap..."
+            oninput="updateCard('${c.id}', 'back', this.value)" style="margin-bottom:8px;"
+          >${c.back || ''}</textarea>
+
+          ${c.backImage ? `
+            <div style="display:flex; align-items:center; gap:8px;">
+              <img src="${c.backImage}" style="width:40px; height:40px; object-fit:cover; border-radius:6px; cursor:zoom-in;" onclick="openLightbox(this.src)" />
+              <span style="font-size:0.75rem; color:var(--text-muted); flex:1;">Arka görsel eklendi</span>
+              <button class="icon-btn danger" onclick="removeCardImage('${c.id}', 'backImage')" title="Görseli kaldır">✕</button>
+            </div>
+          ` : `
+            <label style="cursor:pointer; font-size:0.75rem; color:var(--primary); font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+              <span>📷 Arka Yüze Görsel Ekle</span>
+              <input type="file" accept="image/*" style="display:none;" onchange="handleCardImage('${c.id}', 'backImage', event)" />
+            </label>
+          `}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; align-self:center;">
+          <button class="icon-btn" onclick="moveCard('${c.id}', -1)" title="Yukarı">↑</button>
+          <button class="icon-btn" onclick="moveCard('${c.id}', 1)" title="Aşağı">↓</button>
+          <button class="icon-btn danger" onclick="removeCard('${c.id}')" title="Sil">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function addCard() {
+    activity.cards.push({ id: generateId(), front: '', back: '' });
+    renderCards();
+    updateCount();
+    markDirty();
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('.card-block input');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }, 50);
+  }
+
+  async function handleCardImage(cId, side, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      showToast('Görsel işleniyor...', 'info');
+      const dataUrl = await compressImage(file, 600, 600, 0.75);
+      if (dataUrl) {
+        const c = activity.cards.find(x => x.id === cId);
+        if (c) {
+          c[side] = dataUrl;
+          renderCards();
+          markDirty();
+          showToast('Kart görseli eklendi!', 'success');
+        }
+      }
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  function removeCardImage(cId, side) {
+    const c = activity.cards.find(x => x.id === cId);
+    if (c) {
+      c[side] = null;
+      renderCards();
+      markDirty();
+      showToast('Görsel kaldırıldı.', 'info');
+    }
+  }
+
+  function removeCard(id) {
+    activity.cards = activity.cards.filter(c => c.id !== id);
+    renderCards();
+    updateCount();
+    markDirty();
+  }
+
+  function moveCard(id, dir) {
+    const idx = activity.cards.findIndex(c => c.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= activity.cards.length) return;
+    const tmp = activity.cards[idx];
+    activity.cards[idx] = activity.cards[newIdx];
+    activity.cards[newIdx] = tmp;
+    renderCards();
+    markDirty();
+  }
+
+  function updateCard(id, side, val) {
+    const c = activity.cards.find(c => c.id === id);
+    if (c) { c[side] = val; markDirty(); }
+  }
+
+  function updateCount() {
+    document.getElementById('cardCount').textContent = `${activity.cards.length} Kart`;
+  }
+
+  function addBulkCards() {
+    document.getElementById('bulkText').value = '';
+    openModal('bulkModal');
+  }
+
+  function processBulk() {
+    const lines = document.getElementById('bulkText').value
+      .split('\n').map(l => l.trim()).filter(l => l.includes('|'));
+    let added = 0;
+    lines.forEach(line => {
+      const parts = line.split('|');
+      if (parts.length >= 2) {
+        activity.cards.push({ id: generateId(), front: parts[0].trim(), back: parts.slice(1).join('|').trim() });
+        added++;
+      }
+    });
+    closeModal('bulkModal');
+    renderCards();
+    updateCount();
+    markDirty();
+    showToast(`${added} kart eklendi!`, 'success');
+  }
+
+  function markDirty() {
+    isDirty = true;
+    document.getElementById('saveStatus').textContent = '⏳ Kaydedilmedi';
+    document.getElementById('saveStatus').style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Hafıza Kartları';
+    activity.description = document.getElementById('activityDesc').value.trim();
+    activity.settings = { shuffle: document.getElementById('settingShuffle').checked };
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    document.getElementById('saveStatus').textContent = '✅ Kaydedildi';
+    document.getElementById('saveStatus').style.color = 'var(--success)';
+    showToast('Hafıza Kartları kaydedildi!', 'success');
+  }
+
+  setInterval(() => { if (isDirty) saveActivity(); }, 30000);
+  window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  init();
+</script>
+</body>
+</html>

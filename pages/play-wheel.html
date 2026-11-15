@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çarkıfelek - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+</head>
+<body style="background: var(--bg);">
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="history.back()">← Geri</button>
+  </div>
+</nav>
+
+<div class="wheel-wrapper">
+  <div id="loadingScreen" class="text-center" style="padding:60px;">
+    <div style="font-size:4rem;">⏳</div>
+    <h2>Yükleniyor...</h2>
+  </div>
+
+  <div id="mainContent" class="hidden">
+    <div class="quiz-header">
+      <div style="font-size:2.5rem; margin-bottom:8px;">🎡</div>
+      <h1 style="font-size:1.8rem; font-weight:900; margin-bottom:4px;" id="wheelTitle"></h1>
+      <p style="color:var(--text-muted);" id="wheelDesc"></p>
+    </div>
+
+    <div class="wheel-container">
+      <canvas id="wheelCanvas" width="400" height="400"></canvas>
+      <div class="wheel-pointer">◀</div>
+    </div>
+
+    <div class="wheel-result-display">
+      <div class="wheel-result-text hidden" id="resultText"></div>
+    </div>
+
+    <div>
+      <button class="btn btn-primary wheel-spin-btn" id="spinBtn" onclick="spinWheel()">
+        🎲 Çarkı Çevir!
+      </button>
+    </div>
+
+    <div class="wheel-items-list" id="itemsList">
+      <h4 style="font-weight:800; margin-bottom:12px; font-size:0.9rem;">📋 Çarktaki Dilimler</h4>
+      <div id="itemsContent"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let items = [];
+  let spinning = false;
+  let currentAngle = 0;
+
+  const WHEEL_COLORS = [
+    '#6C63FF','#FF6584','#43C6AC','#FFB347','#9B59B6',
+    '#3498DB','#E74C3C','#2ECC71','#F39C12','#1ABC9C',
+    '#E91E63','#00BCD4','#8BC34A','#FF5722','#607D8B'
+  ];
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const code = params.get('code');
+
+    if (id) {
+      activity = ActivityStore.getById(id);
+    } else if (code) {
+      const all = ActivityStore.getAll();
+      activity = all.find(a => a.code === code.toUpperCase() && a.type === 'wheel');
+    }
+
+    document.getElementById('loadingScreen').classList.add('hidden');
+
+    if (!activity || !activity.items || activity.items.length === 0) {
+      document.getElementById('mainContent').innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">😕</span>
+          <h3>Çarkıfelek bulunamadı</h3>
+          <p>Lütfen geçerli bir bağlantı veya sınıf kodu kullanın.</p>
+          <a href="../index.html" class="btn btn-primary mt-16">Ana Sayfaya Dön</a>
+        </div>`;
+      document.getElementById('mainContent').classList.remove('hidden');
+      return;
+    }
+
+    items = activity.items.filter(i => i.trim());
+    document.getElementById('wheelTitle').textContent = activity.title;
+    document.getElementById('wheelDesc').textContent = activity.description || '';
+    document.getElementById('mainContent').classList.remove('hidden');
+
+    drawWheel(currentAngle);
+    renderItemsList();
+
+    activity.playCount = (activity.playCount || 0) + 1;
+    ActivityStore.save(activity);
+  }
+
+  function drawWheel(rotation) {
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const n = items.length;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const r = cx - 10;
+    const slice = (Math.PI * 2) / n;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#eee';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    for (let i = 0; i < n; i++) {
+      const start = rotation + i * slice - Math.PI / 2;
+      const end = start + slice;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, start, end);
+      ctx.closePath();
+      ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length];
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(start + slice / 2);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#fff';
+      const fontSize = Math.min(16, 100 / n + 8);
+      ctx.font = `bold ${fontSize}px Nunito, sans-serif`;
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 3;
+      const label = items[i].length > 14 ? items[i].substring(0, 14) + '…' : items[i];
+      ctx.fillText(label, r - 14, fontSize / 3);
+      ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🎯', cx, cy);
+  }
+
+  function spinWheel() {
+    if (spinning || items.length === 0) return;
+    spinning = true;
+
+    const btn = document.getElementById('spinBtn');
+    btn.disabled = true;
+    btn.textContent = '🌀 Çark Dönüyor...';
+
+    document.getElementById('resultText').classList.add('hidden');
+
+    const extraSpins = (5 + Math.floor(Math.random() * 5)) * Math.PI * 2;
+    const targetAngle = currentAngle + extraSpins + Math.random() * Math.PI * 2;
+    const duration = 3000 + Math.random() * 1500;
+    const startTime = performance.now();
+    const startAngle = currentAngle;
+    let lastTickAngle = currentAngle;
+    const slice = (Math.PI * 2) / (items.length || 1);
+
+    function easeOut(t) {
+      return 1 - Math.pow(1 - t, 4);
+    }
+
+    function animate(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeOut(progress);
+
+      currentAngle = startAngle + (targetAngle - startAngle) * easedProgress;
+      drawWheel(currentAngle);
+
+      // Dilim geçişlerinde tık sesi
+      if (Math.abs(currentAngle - lastTickAngle) >= slice * 0.95) {
+        lastTickAngle = currentAngle;
+        SoundEffects.spin();
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        currentAngle = targetAngle % (Math.PI * 2);
+        spinning = false;
+        btn.disabled = false;
+        btn.textContent = '🎲 Tekrar Çevir!';
+        showResult();
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  function showResult() {
+    const n = items.length;
+    const slice = (Math.PI * 2) / n;
+
+    const normalizedAngle = (((-currentAngle) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const index = Math.floor(normalizedAngle / slice) % n;
+    const selected = items[index];
+
+    const resultEl = document.getElementById('resultText');
+    resultEl.textContent = '🎉 ' + selected + '!';
+    resultEl.classList.remove('hidden');
+
+    launchConfetti();
+    SoundEffects.win();
+
+    if (activity.settings?.removeOnSpin) {
+      items.splice(index, 1);
+      if (items.length > 0) {
+        setTimeout(() => {
+          currentAngle = 0;
+          drawWheel(0);
+          renderItemsList();
+        }, 2000);
+      }
+    }
+  }
+
+  function renderItemsList() {
+    const container = document.getElementById('itemsContent');
+    container.innerHTML = items.map((item, i) => `
+      <div class="wheel-item-row">
+        <div class="wheel-color-dot" style="background:${WHEEL_COLORS[i % WHEEL_COLORS.length]};"></div>
+        <span style="font-weight:600;">${item}</span>
+      </div>
+    `).join('');
+  }
+
+  init();
+</script>
+</body>
+</html>

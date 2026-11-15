@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kelime Eşleştirme - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .matching-wrapper { max-width: 900px; margin: 0 auto; padding: 32px 16px; }
+
+    .matching-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin: 32px 0;
+    }
+
+    @media (max-width: 600px) {
+      .matching-grid { grid-template-columns: 1fr; }
+    }
+
+    .matching-col-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .match-item {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .match-item:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .match-item.selected { border-color: var(--primary); background: var(--primary-light); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(108,99,255,0.2); }
+    .match-item.matched { border-color: var(--success); background: #E8F5E9; color: #2e7d32; cursor: default; transform: none; }
+    .match-item.wrong-flash { border-color: var(--danger); background: #FFEBEE; animation: wrongShake 0.4s ease; }
+
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .match-item.disabled { opacity: 0.4; cursor: default; }
+
+    .timer-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .timer-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 6px;
+      transition: width 1s linear;
+    }
+
+    .matching-score {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .score-item { text-align: center; }
+    .score-num { font-size: 1.8rem; font-weight: 900; }
+    .score-lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; }
+
+    .result-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .matching-hint {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 16px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body style="background: var(--bg);">
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="history.back()">← Geri</button>
+  </div>
+</nav>
+
+<div class="matching-wrapper">
+
+  <!-- YÜKLEME -->
+  <div id="loadingScreen" class="text-center" style="padding:80px;">
+    <div style="font-size:4rem;">⏳</div>
+    <h2>Yükleniyor...</h2>
+  </div>
+
+  <!-- GİRİŞ -->
+  <div id="startScreen" class="hidden">
+    <div class="quiz-header">
+      <div style="font-size:3rem; margin-bottom:12px;">🔗</div>
+      <h1 style="font-size:2rem; font-weight:900; margin-bottom:8px;" id="actTitle"></h1>
+      <p style="color:var(--text-muted);" id="actDesc"></p>
+    </div>
+    <div class="card text-center" style="padding:40px;">
+      <div id="metaInfo" style="display:flex; justify-content:center; gap:32px; margin-bottom:32px;"></div>
+      <div class="form-group" style="max-width:280px; margin:0 auto 24px;">
+        <label class="form-label">Adınız</label>
+        <input type="text" class="form-control" id="playerName" placeholder="Adınızı girin..." style="text-align:center;" />
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="startGame()">▶️ Başlat</button>
+    </div>
+  </div>
+
+  <!-- OYUN -->
+  <div id="gameScreen" class="hidden">
+    <div class="matching-score">
+      <div class="score-item">
+        <div class="score-num" id="correctDisplay" style="color:var(--success);">0</div>
+        <div class="score-lbl">Doğru Eşleşme</div>
+      </div>
+      <div class="score-item">
+        <div class="score-num" id="attemptDisplay" style="color:var(--primary);">0</div>
+        <div class="score-lbl">Deneme</div>
+      </div>
+      <div class="score-item" id="timerBox">
+        <div class="score-num" id="timerDisplay" style="color:var(--warning);">0:00</div>
+        <div class="score-lbl">Geçen Süre</div>
+      </div>
+    </div>
+
+    <div class="progress-bar mb-16">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+
+    <div class="matching-grid">
+      <div>
+        <div class="matching-col-title">📌 Kavramlar</div>
+        <div id="leftCol"></div>
+      </div>
+      <div>
+        <div class="matching-col-title">💡 Anlamlar</div>
+        <div id="rightCol"></div>
+      </div>
+    </div>
+
+    <p class="matching-hint">Önce sol sütundan, sonra sağ sütundan seçerek eşleştirin.</p>
+  </div>
+
+  <!-- SONUÇ -->
+  <div id="resultScreen" class="hidden">
+    <div class="result-card">
+      <div class="result-score-circle">
+        <span class="score-num" id="finalScore">0</span>
+        <span class="score-label">PUAN</span>
+      </div>
+      <h2 class="result-title" id="resultTitle">Tebrikler!</h2>
+      <p class="result-subtitle" id="resultSubtitle"></p>
+      <div class="result-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-num green" id="finalCorrect">0</div>
+          <div class="breakdown-label">Doğru</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num" id="finalTotal" style="color:var(--primary);">0</div>
+          <div class="breakdown-label">Toplam Çift</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num" id="finalTime" style="color:var(--warning);">0</div>
+          <div class="breakdown-label">Saniye</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-lg" onclick="restartGame()">🔄 Tekrar Oyna</button>
+        <a href="../index.html" class="btn btn-outline btn-lg">🏠 Ana Sayfa</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let pairs = [];
+  let selectedLeft = null;
+  let selectedRight = null;
+  let matchedCount = 0;
+  let attempts = 0;
+  let startTime = null;
+  let timerInterval = null;
+  let playerName = '';
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const code = params.get('code');
+
+    if (id) activity = ActivityStore.getById(id);
+    else if (code) {
+      const all = ActivityStore.getAll();
+      activity = all.find(a => a.code === code.toUpperCase() && a.type === 'matching');
+    }
+
+    document.getElementById('loadingScreen').classList.add('hidden');
+
+    if (!activity || !activity.pairs || activity.pairs.length === 0) {
+      document.getElementById('startScreen').outerHTML = `
+        <div class="empty-state"><span class="empty-icon">😕</span>
+        <h3>Etkinlik bulunamadı</h3>
+        <a href="../index.html" class="btn btn-primary mt-16">Ana Sayfaya Dön</a></div>`;
+      return;
+    }
+
+    document.getElementById('actTitle').textContent = activity.title;
+    document.getElementById('actDesc').textContent = activity.description || 'Kavramları doğru anlamlarıyla eşleştirin.';
+
+    const pairCount = activity.pairs.length;
+    document.getElementById('metaInfo').innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:var(--primary);">${pairCount}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Eşleştirme Çifti</div>
+      </div>`;
+
+    if (!activity.settings?.showTimer) {
+      document.getElementById('timerBox').style.display = 'none';
+    }
+
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  function startGame() {
+    playerName = document.getElementById('playerName').value.trim() || 'Öğrenci';
+    pairs = activity.pairs.filter(p => p.left && p.right).map(p => ({ ...p, matched: false }));
+
+    if (pairs.length === 0) {
+      showToast('Bu etkinlikte eşleştirme çifti yok!', 'warning');
+      return;
+    }
+
+    activity.playCount = (activity.playCount || 0) + 1;
+    ActivityStore.save(activity);
+
+    matchedCount = 0;
+    attempts = 0;
+    selectedLeft = null;
+    selectedRight = null;
+    startTime = Date.now();
+
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameScreen').classList.remove('hidden');
+
+    if (activity.settings?.showTimer !== false) {
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    renderBoard();
+  }
+
+  function updateTimer() {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }
+
+  function renderBoard() {
+    const leftItems = [...pairs].sort(() => Math.random() - 0.5);
+    const rightItems = [...pairs].sort(() => Math.random() - 0.5);
+
+    document.getElementById('leftCol').innerHTML = leftItems.map(p => {
+      let content = p.image ? `
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="${p.image}" style="width:36px; height:36px; border-radius:6px; object-fit:cover;" />
+          <span>${p.left}</span>
+        </div>` : p.left;
+      return `<div class="match-item ${p.matched ? 'matched' : ''}" id="left_${p.id}" onclick="selectItem('left', '${p.id}')">${content}</div>`;
+    }).join('');
+
+    document.getElementById('rightCol').innerHTML = rightItems.map(p =>
+      `<div class="match-item ${p.matched ? 'matched' : ''}" id="right_${p.id}" onclick="selectItem('right', '${p.id}')">${p.right}</div>`
+    ).join('');
+
+    updateProgress();
+  }
+
+  function selectItem(side, id) {
+    const pair = pairs.find(p => p.id === id);
+    if (!pair || pair.matched) return;
+    SoundEffects.click();
+
+    if (side === 'left') {
+      // Önceki seçimi kaldır
+      if (selectedLeft) {
+        document.getElementById(`left_${selectedLeft}`)?.classList.remove('selected');
+      }
+      selectedLeft = id;
+      document.getElementById(`left_${id}`).classList.add('selected');
+    } else {
+      if (selectedRight) {
+        document.getElementById(`right_${selectedRight}`)?.classList.remove('selected');
+      }
+      selectedRight = id;
+      document.getElementById(`right_${id}`).classList.add('selected');
+    }
+
+    // İki seçim de yapıldıysa kontrol et
+    if (selectedLeft && selectedRight) {
+      checkMatch();
+    }
+  }
+
+  function checkMatch() {
+    attempts++;
+    document.getElementById('attemptDisplay').textContent = attempts;
+
+    const leftEl = document.getElementById(`left_${selectedLeft}`);
+    const rightEl = document.getElementById(`right_${selectedRight}`);
+
+    if (selectedLeft === selectedRight) {
+      // ✅ Doğru eşleşme
+      SoundEffects.correct();
+      const pair = pairs.find(p => p.id === selectedLeft);
+      pair.matched = true;
+      matchedCount++;
+
+      leftEl.classList.remove('selected');
+      rightEl.classList.remove('selected');
+      leftEl.classList.add('matched');
+      rightEl.classList.add('matched');
+      leftEl.innerHTML = '✅ ' + leftEl.textContent;
+      rightEl.innerHTML = '✅ ' + rightEl.textContent;
+
+      document.getElementById('correctDisplay').textContent = matchedCount;
+      updateProgress();
+
+      if (matchedCount === pairs.length) {
+        clearInterval(timerInterval);
+        SoundEffects.win();
+        setTimeout(showResult, 600);
+      }
+    } else {
+      // ❌ Yanlış eşleşme
+      SoundEffects.wrong();
+      leftEl.classList.remove('selected');
+      rightEl.classList.remove('selected');
+      leftEl.classList.add('wrong-flash');
+      rightEl.classList.add('wrong-flash');
+      setTimeout(() => {
+        leftEl.classList.remove('wrong-flash');
+        rightEl.classList.remove('wrong-flash');
+      }, 500);
+    }
+
+    selectedLeft = null;
+    selectedRight = null;
+  }
+
+  function updateProgress() {
+    const pct = pairs.length > 0 ? (matchedCount / pairs.length) * 100 : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+
+  function showResult() {
+    document.getElementById('gameScreen').classList.add('hidden');
+    document.getElementById('resultScreen').classList.remove('hidden');
+
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const accuracy = attempts > 0 ? Math.round((matchedCount / attempts) * 100) : 100;
+    const score = Math.max(0, matchedCount * 10 - (attempts - matchedCount) * 3 + Math.max(0, 60 - elapsed));
+
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('finalCorrect').textContent = matchedCount;
+    document.getElementById('finalTotal').textContent = pairs.length;
+    document.getElementById('finalTime').textContent = elapsed;
+
+    let title, subtitle;
+    if (accuracy >= 90) { title = '🏆 Mükemmel!'; subtitle = `${playerName}, hatasız eşleştirdin!`; launchConfetti(); }
+    else if (accuracy >= 70) { title = '🌟 Çok İyi!'; subtitle = `${playerName}, güzel iş!`; }
+    else { title = '💪 Tekrar Dene!'; subtitle = `${playerName}, daha iyi yapabilirsin!`; }
+
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultSubtitle').textContent = subtitle;
+  }
+
+  function restartGame() {
+    clearInterval(timerInterval);
+    document.getElementById('resultScreen').classList.add('hidden');
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kelime Eşleştirme Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .editor-container { max-width: 860px; margin: 32px auto; padding: 0 16px; }
+    .editor-topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 64px; z-index: 50;
+    }
+    .pair-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+    .pair-arrow { color: var(--primary); font-weight: 900; font-size: 1.2rem; text-align: center; }
+    .pair-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .help-box {
+      background: var(--primary-light);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      font-size: 0.85rem;
+      color: var(--primary-dark);
+      margin-bottom: 20px;
+      border-left: 4px solid var(--primary);
+    }
+    .add-btn {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      font-weight: 700;
+      background: transparent;
+      width: 100%;
+      font-family: var(--font);
+    }
+    .add-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .turkish-templates {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .tpl-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 2px solid var(--border);
+      background: #fff;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+    }
+    .tpl-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem;" id="saveStatus">✅ Kaydedildi</span>
+    <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Önizle</a>
+  </div>
+</nav>
+
+<div class="editor-topbar">
+  <div style="flex:1; min-width:200px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Eşleştirme etkinliği başlığı..."
+      style="font-size:1.1rem; font-weight:800;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span id="pairCount" class="badge badge-primary">0 Çift</span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default;"></span>
+  </div>
+</div>
+
+<div class="editor-container">
+
+  <div class="settings-panel card mb-24">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">⚙️ Ayarlar</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Süre sayacı göster</div>
+        <div class="setting-desc">Eşleştirme süresini takip et</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="settingTimer" checked onchange="markDirty()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Açıklama</div>
+        <div class="setting-desc">Öğrenciye gösterilecek yönerge</div>
+      </div>
+      <input type="text" class="form-control" id="activityDesc" placeholder="Yönerge metni..." style="max-width:300px;" oninput="markDirty()" />
+    </div>
+  </div>
+
+  <div class="help-box">
+    💡 <strong>Sol sütuna</strong> kavramı / sözcüğü, <strong>sağ sütuna</strong> anlamını veya karşılığını yazın. Öğrenciler bu iki sütunu eşleştirecek.
+  </div>
+
+  <!-- TÜRKÇE HAZIR İÇERİK ŞABLONLARI -->
+  <div class="card mb-24">
+    <div style="font-size:0.85rem; font-weight:800; color:var(--text-muted); margin-bottom:12px;">📋 TÜRKÇE HAZIR İÇERİK — Hızlı Ekle</div>
+    <div class="turkish-templates">
+      <button class="tpl-btn" onclick="addTurkishTemplate('deyimler')">🗣️ Deyimler</button>
+      <button class="tpl-btn" onclick="addTurkishTemplate('atasozleri')">📜 Atasözleri</button>
+      <button class="tpl-btn" onclick="addTurkishTemplate('edebisanatlar')">🎭 Edebi Sanatlar</button>
+      <button class="tpl-btn" onclick="addTurkishTemplate('sozcukturleri')">📚 Sözcük Türleri</button>
+      <button class="tpl-btn" onclick="addTurkishTemplate('esdeyimler')">🔄 Eş Anlamlılar</button>
+      <button class="tpl-btn" onclick="addTurkishTemplate('zitanlamlilar')">↔️ Zıt Anlamlılar</button>
+    </div>
+  </div>
+
+  <div class="card mb-24">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+      <h3 style="font-size:1rem; font-weight:800;">🔗 Eşleştirme Çiftleri</h3>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="addBulkPairs()">📋 Toplu Ekle</button>
+        <button class="btn btn-primary btn-sm" onclick="addPair()">➕ Çift Ekle</button>
+      </div>
+    </div>
+
+    <!-- BAŞLIK SATIRI -->
+    <div style="display:grid; grid-template-columns: 1fr auto 1fr auto; gap:10px; margin-bottom:8px; padding:0 4px;">
+      <div style="font-size:0.8rem; font-weight:800; color:var(--text-muted);">SOL SÜTUN (Kavram/Sözcük)</div>
+      <div></div>
+      <div style="font-size:0.8rem; font-weight:800; color:var(--text-muted);">SAĞ SÜTUN (Anlam/Karşılık)</div>
+      <div></div>
+    </div>
+
+    <div id="pairsList"></div>
+
+    <button class="add-btn" onclick="addPair()" style="margin-top:12px;">
+      ➕ Yeni Çift Ekle
+    </button>
+  </div>
+
+  <!-- ÖNIZLEME -->
+  <div class="card text-center mb-24">
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:16px;">👁️ Öğrenci Görünümü Önizlemesi</h3>
+    <div id="previewArea" style="text-align:left;"></div>
+  </div>
+
+</div>
+
+<!-- TOPLU EKLEME AÇILIR PENCERESİ -->
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📋 Toplu Çift Ekle</h2>
+      <button class="modal-close" onclick="closeModal('bulkModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Her satıra: <code>Sol | Sağ</code> şeklinde yazın</label>
+      <textarea class="form-control" id="bulkText" rows="10"
+        placeholder="Teşbih | Benzetme sanatı&#10;İstiare | Benzetmeli ad aktarma&#10;Tezat | Zıtlık sanatı"></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('bulkModal')">İptal</button>
+      <button class="btn btn-primary" onclick="processBulk()">➕ Ekle</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let isDirty = false;
+
+  // Türkçe hazır içerik şablonları
+  const TURKISH_TEMPLATES = {
+    deyimler: [
+      { left: 'Ağzı sıkı', right: 'Sır saklamayı bilen kişi' },
+      { left: 'Kulak kabartmak', right: 'Gizlice dinlemek' },
+      { left: 'Dili tutulmak', right: 'Konuşamaz hale gelmek' },
+      { left: 'Kılı kırk yarmak', right: 'Çok titiz ve dikkatli olmak' },
+      { left: 'Gözü açık', right: 'Uyanık ve zeki olan' }
+    ],
+    atasozleri: [
+      { left: 'Damlaya damlaya...', right: '...göl olur.' },
+      { left: 'Taşıma su ile...', right: '...değirmen dönmez.' },
+      { left: 'Boş çuval...', right: '...ayakta durmaz.' },
+      { left: 'Dost başa...', right: '...düşman aya bakar.' },
+      { left: 'Bugünün işini...', right: '...yarına bırakma.' }
+    ],
+    edebisanatlar: [
+      { left: 'Teşbih', right: 'Benzetme sanatı' },
+      { left: 'İstiare', right: 'Benzetmeli ad aktarma' },
+      { left: 'Kişileştirme', right: 'İnsan dışı varlıklara insani özellik verme' },
+      { left: 'Tezat', right: 'Zıt kavramları bir arada kullanma' },
+      { left: 'Aliterasyon', right: 'Aynı ünsüzleri tekrarlama' }
+    ],
+    sozcukturleri: [
+      { left: 'İsim', right: 'Varlıkları karşılayan sözcük' },
+      { left: 'Sıfat', right: 'İsmi niteleyen sözcük' },
+      { left: 'Zarf', right: 'Fili niteleyen sözcük' },
+      { left: 'Zamir', right: 'İsmin yerine geçen sözcük' },
+      { left: 'Bağlaç', right: 'Sözcük ve cümleleri bağlayan sözcük' }
+    ],
+    esdeyimler: [
+      { left: 'Güzel', right: 'Alımlı / Hoş' },
+      { left: 'Büyük', right: 'İri / Kocaman' },
+      { left: 'Kızgın', right: 'Öfkeli / Sinirli' },
+      { left: 'Hızlı', right: 'Çevik / Süratli' },
+      { left: 'Zeki', right: 'Akıllı / Anlayışlı' }
+    ],
+    zitanlamlilar: [
+      { left: 'Güzel', right: 'Çirkin' },
+      { left: 'Büyük', right: 'Küçük' },
+      { left: 'Hızlı', right: 'Yavaş' },
+      { left: 'Aydınlık', right: 'Karanlık' },
+      { left: 'Sıcak', right: 'Soğuk' }
+    ]
+  };
+
+  function addTurkishTemplate(key) {
+    const pairs = TURKISH_TEMPLATES[key] || [];
+    pairs.forEach(p => {
+      activity.pairs.push({ id: generateId(), left: p.left, right: p.right });
+    });
+    renderPairs();
+    updatePreview();
+    updateCount();
+    markDirty();
+    showToast(`${pairs.length} çift eklendi!`, 'success');
+  }
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) activity = ActivityStore.getById(id);
+    if (!activity) {
+      activity = ActivityStore.createNew('matching');
+      ActivityStore.save(activity);
+      window.history.replaceState({}, '', `?id=${activity.id}`);
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('activityDesc').value = activity.description || '';
+    document.getElementById('settingTimer').checked = activity.settings?.showTimer !== false;
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-matching.html?id=${activity.id}`;
+
+    if (!activity.pairs) activity.pairs = [];
+    renderPairs();
+    updatePreview();
+    updateCount();
+  }
+
+  function renderPairs() {
+    const container = document.getElementById('pairsList');
+    if (activity.pairs.length === 0) {
+      container.innerHTML = `<div class="empty-state" style="padding:30px;">
+        <span class="empty-icon">🔗</span>
+        <h3>Çift yok</h3>
+        <p>Sol-sağ eşleştirme çiftleri ekleyin.</p>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = activity.pairs.map((p, i) => `
+      <div class="pair-row">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="text" class="form-control" value="${p.left}"
+            placeholder="Sol: Kavram / Sözcük..."
+            oninput="updatePair('${p.id}', 'left', this.value)" />
+          ${p.image ? `
+            <div style="position:relative; flex-shrink:0;">
+              <img src="${p.image}" style="width:36px; height:36px; border-radius:6px; object-fit:cover; border:1px solid var(--border); cursor:zoom-in;" onclick="openLightbox(this.src)" />
+              <button style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:var(--danger); color:#fff; border:none; font-size:10px; cursor:pointer;" onclick="removePairImage('${p.id}')">✕</button>
+            </div>
+          ` : `
+            <label style="cursor:pointer; font-size:1.1rem; padding:6px; border-radius:6px; background:var(--primary-light); color:var(--primary); display:flex; align-items:center;" title="Bu kavrama görsel ekle">
+              📷
+              <input type="file" accept="image/*" style="display:none;" onchange="handlePairImage('${p.id}', event)" />
+            </label>
+          `}
+        </div>
+        <div class="pair-arrow">↔</div>
+        <input type="text" class="form-control" value="${p.right}"
+          placeholder="Sağ: Anlam / Karşılık..."
+          oninput="updatePair('${p.id}', 'right', this.value)" />
+        <button class="icon-btn danger" onclick="removePair('${p.id}')">🗑️</button>
+      </div>
+    `).join('');
+  }
+
+  function addPair() {
+    activity.pairs.push({ id: generateId(), left: '', right: '' });
+    renderPairs();
+    updateCount();
+    markDirty();
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('#pairsList input');
+      if (inputs.length) inputs[inputs.length - 2].focus();
+    }, 50);
+  }
+
+  async function handlePairImage(pId, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      showToast('Görsel işleniyor...', 'info');
+      const dataUrl = await compressImage(file, 500, 500, 0.75);
+      if (dataUrl) {
+        const p = activity.pairs.find(x => x.id === pId);
+        if (p) {
+          p.image = dataUrl;
+          renderPairs();
+          updatePreview();
+          markDirty();
+          showToast('Eşleştirme görseli eklendi!', 'success');
+        }
+      }
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+
+  function removePairImage(pId) {
+    const p = activity.pairs.find(x => x.id === pId);
+    if (p) {
+      p.image = null;
+      renderPairs();
+      updatePreview();
+      markDirty();
+      showToast('Görsel kaldırıldı.', 'info');
+    }
+  }
+
+  function removePair(id) {
+    activity.pairs = activity.pairs.filter(p => p.id !== id);
+    renderPairs();
+    updatePreview();
+    updateCount();
+    markDirty();
+  }
+
+  function updatePair(id, side, val) {
+    const p = activity.pairs.find(p => p.id === id);
+    if (p) { p[side] = val; updatePreview(); markDirty(); }
+  }
+
+  function updateCount() {
+    document.getElementById('pairCount').textContent = `${activity.pairs.length} Çift`;
+  }
+
+  function updatePreview() {
+    const container = document.getElementById('previewArea');
+    const pairs = activity.pairs.filter(p => p.left.trim() || p.right.trim());
+    if (pairs.length === 0) {
+      container.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding:20px;">Çift eklediğinizde burada görünecek</p>`;
+      return;
+    }
+
+    const leftItems = [...pairs].sort(() => Math.random() - 0.5);
+    const rightItems = [...pairs].sort(() => Math.random() - 0.5);
+
+    container.innerHTML = `
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:600px; margin:0 auto;">
+        <div>
+          <div style="font-size:0.8rem; font-weight:800; color:var(--text-muted); margin-bottom:8px;">KAVRAMLAR</div>
+          ${leftItems.map(p => `
+            <div style="background:var(--primary-light);color:var(--primary);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-weight:700;font-size:0.9rem;border:2px solid var(--primary);">
+              ${p.left || '...'}
+            </div>`).join('')}
+        </div>
+        <div>
+          <div style="font-size:0.8rem; font-weight:800; color:var(--text-muted); margin-bottom:8px;">ANLAMLAR</div>
+          ${rightItems.map(p => `
+            <div style="background:#fff;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-weight:700;font-size:0.9rem;border:2px solid var(--border);color:var(--text);">
+              ${p.right || '...'}
+            </div>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function addBulkPairs() {
+    document.getElementById('bulkText').value = '';
+    openModal('bulkModal');
+  }
+
+  function processBulk() {
+    const lines = document.getElementById('bulkText').value
+      .split('\n').map(l => l.trim()).filter(l => l.includes('|'));
+    let added = 0;
+    lines.forEach(line => {
+      const parts = line.split('|');
+      if (parts.length >= 2) {
+        activity.pairs.push({ id: generateId(), left: parts[0].trim(), right: parts.slice(1).join('|').trim() });
+        added++;
+      }
+    });
+    closeModal('bulkModal');
+    renderPairs();
+    updatePreview();
+    updateCount();
+    markDirty();
+    showToast(`${added} çift eklendi!`, 'success');
+  }
+
+  function markDirty() {
+    isDirty = true;
+    document.getElementById('saveStatus').textContent = '⏳ Kaydedilmedi';
+    document.getElementById('saveStatus').style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Eşleştirme';
+    activity.description = document.getElementById('activityDesc').value.trim();
+    activity.settings = { showTimer: document.getElementById('settingTimer').checked };
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    document.getElementById('saveStatus').textContent = '✅ Kaydedildi';
+    document.getElementById('saveStatus').style.color = 'var(--success)';
+    showToast('Kelime Eşleştirme kaydedildi!', 'success');
+  }
+
+  setInterval(() => { if (isDirty) saveActivity(); }, 30000);
+  window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  init();
+</script>
+</body>
+</html>

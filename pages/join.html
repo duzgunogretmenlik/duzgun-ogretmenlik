@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Etkinliğe Katıl - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .join-wrapper {
+      min-height: calc(100vh - 64px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      background: linear-gradient(135deg, #6C63FF 0%, #9B59B6 100%);
+    }
+    .join-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    .code-input {
+      font-size: 2rem;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      text-align: center;
+      font-weight: 900;
+      font-family: 'Courier New', monospace;
+      padding: 14px;
+      border: 3px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      width: 100%;
+      margin: 20px 0;
+      transition: var(--transition);
+      color: var(--primary);
+    }
+    .code-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(108,99,255,0.15);
+    }
+    .demo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.85rem;
+      transition: var(--transition);
+      text-align: left;
+      width: 100%;
+      color: var(--text);
+    }
+    .demo-item:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">📋 Öğretmen Paneli</a></li>
+    <li><a href="sinifim.html">👥 Sınıfım</a></li>
+    <li><a href="turkce-oneriler.html">🗣️ Türkçe Öneriler</a></li>
+    <li><a href="join.html" class="active">🎮 Etkinliğe Gir</a></li>
+  </ul>
+</nav>
+
+<div class="join-wrapper">
+  <div class="join-card">
+    <div style="font-size: 3rem; margin-bottom: 8px;">🎮</div>
+    <h1 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 6px;">Etkinliğe Katıl</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Öğretmeninizin paylaştığı 6 haneli sınıf kodunu yazın</p>
+
+    <input type="text" class="code-input" id="codeInput"
+      placeholder="KODU GİRİN"
+      maxlength="6"
+      oninput="this.value = this.value.toUpperCase()"
+      onkeydown="if(event.key==='Enter') joinGame()" />
+
+    <div id="errorMsg" style="color: var(--danger); font-weight: 700; margin-bottom: 16px; display: none;">
+      ❌ Bu koda sahip bir etkinlik bulunamadı.
+    </div>
+
+    <button class="btn btn-primary btn-lg" onclick="joinGame()" style="justify-content: center; width: 100%;">
+      🚀 Başla!
+    </button>
+
+    <div style="margin-top: 32px; padding-top: 20px; border-top: 2px solid var(--border);">
+      <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-muted); margin-bottom: 12px;">
+        💡 Hızlı deneme için örnek Türkçe etkinlikleri:
+      </div>
+      <div id="demoList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  function joinGame() {
+    const code = document.getElementById('codeInput').value.trim().toUpperCase();
+    const errorEl = document.getElementById('errorMsg');
+
+    if (code.length < 3) {
+      errorEl.textContent = '❌ Lütfen geçerli bir sınıf kodu yazın.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const activity = ActivityStore.findByCode(code);
+
+    if (!activity) {
+      errorEl.textContent = '❌ Bu sınıf koduyla etkinlik bulunamadı.';
+      errorEl.style.display = 'block';
+      document.getElementById('codeInput').style.borderColor = 'var(--danger)';
+      return;
+    }
+
+    errorEl.style.display = 'none';
+
+    const urls = {
+      sezdirme:     `play-sezdirme.html?id=${activity.id}`,
+      minideneme:   `play-quiz.html?id=${activity.id}`,
+      presentation: `play-presentation.html?id=${activity.id}`,
+      blank:        `play-blank.html?id=${activity.id}`,
+      wheel:        `play-wheel.html?id=${activity.id}`,
+      matching:     `play-matching.html?id=${activity.id}`,
+      flashcard:    `play-flashcard.html?id=${activity.id}`,
+      parolla:      `play-parolla.html?id=${activity.id}`
+    };
+
+    window.location = urls[activity.type] || `play-quiz.html?id=${activity.id}`;
+  }
+
+  function renderDemos() {
+    const all = ActivityStore.getAll();
+    const container = document.getElementById('demoList');
+    if (!all.length) return;
+
+    container.innerHTML = all.slice(0, 10).map(a => `
+      <button class="demo-item" onclick="document.getElementById('codeInput').value='${a.code}'; joinGame();">
+        <span style="font-size: 1.3rem;">${typeIcon(a.type)}</span>
+        <span style="font-size:0.75rem; background:#eff6ff; color:#1e40af; padding:2px 6px; border-radius:4px; font-weight:800; white-space:nowrap;">${a.grade ? a.grade + '. Sınıf' : 'Genel'}</span>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${a.title}</span>
+        <span style="font-family:monospace; color:var(--primary); font-size:0.9rem; letter-spacing:1px; background:var(--primary-light); padding:2px 8px; border-radius:4px;">${a.code}</span>
+      </button>
+    `).join('');
+  }
+
+  renderDemos();
+</script>
+</body>
+</html>

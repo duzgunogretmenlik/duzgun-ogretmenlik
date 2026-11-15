@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hafıza Kartları - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .flashcard-wrapper { max-width: 760px; margin: 0 auto; padding: 32px 16px; }
+
+    .card-stage {
+      perspective: 1200px;
+      margin: 32px auto;
+      width: 100%;
+      max-width: 560px;
+      height: 300px;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    }
+
+    .card-front {
+      background: linear-gradient(135deg, var(--primary), #9B59B6);
+      color: #fff;
+    }
+
+    .card-back {
+      background: #fff;
+      border: 3px solid var(--accent);
+      color: var(--text);
+      transform: rotateY(180deg);
+    }
+
+    .card-face-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      opacity: 0.7;
+      margin-bottom: 16px;
+    }
+
+    .card-front .card-face-label { color: rgba(255,255,255,0.8); }
+    .card-back .card-face-label  { color: var(--text-muted); }
+
+    .card-main-text {
+      font-size: 1.5rem;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .card-back .card-main-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .card-flip-hint {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .nav-btn-large {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .nav-btn-large.prev { background: var(--border); color: var(--text-muted); }
+    .nav-btn-large.prev:hover { background: #ddd; }
+    .nav-btn-large.next { background: var(--primary); color: #fff; }
+    .nav-btn-large.next:hover { background: var(--primary-dark); transform: scale(1.05); }
+    .nav-btn-large:disabled { opacity: 0.3; cursor: default; transform: none !important; }
+
+    .card-counter {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .self-assess {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .assess-btn {
+      padding: 10px 24px;
+      border-radius: 50px;
+      border: 2px solid;
+      font-family: var(--font);
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .assess-btn.knew {
+      border-color: var(--success);
+      color: var(--success);
+      background: transparent;
+    }
+    .assess-btn.knew:hover { background: var(--success); color: #fff; }
+    .assess-btn.didnt {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: transparent;
+    }
+    .assess-btn.didnt:hover { background: var(--danger); color: #fff; }
+
+    .dots-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .card-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: var(--transition);
+    }
+    .card-dot.current { background: var(--primary); transform: scale(1.3); }
+    .card-dot.knew { background: var(--success); }
+    .card-dot.didnt { background: var(--danger); }
+
+    .summary-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+  </style>
+</head>
+<body style="background: var(--bg);">
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
+    <button class="btn btn-outline btn-sm" onclick="history.back()">← Geri</button>
+  </div>
+</nav>
+
+<div class="flashcard-wrapper">
+
+  <!-- YÜKLEME -->
+  <div id="loadingScreen" class="text-center" style="padding:80px;">
+    <div style="font-size:4rem;">⏳</div>
+    <h2>Yükleniyor...</h2>
+  </div>
+
+  <!-- GİRİŞ EKRANI -->
+  <div id="startScreen" class="hidden">
+    <div class="quiz-header">
+      <div style="font-size:3rem; margin-bottom:12px;">🃏</div>
+      <h1 style="font-size:2rem; font-weight:900; margin-bottom:8px;" id="actTitle"></h1>
+      <p style="color:var(--text-muted);" id="actDesc"></p>
+    </div>
+    <div class="card text-center" style="padding:40px;">
+      <div id="metaInfo" style="display:flex; justify-content:center; gap:32px; margin-bottom:32px;"></div>
+      <div class="form-group" style="max-width:280px; margin:0 auto 24px;">
+        <label class="form-label">Adınız</label>
+        <input type="text" class="form-control" id="playerName" placeholder="Adınızı girin..." style="text-align:center;" />
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="startGame()">▶️ Başlat</button>
+    </div>
+  </div>
+
+  <!-- KART EKRANI -->
+  <div id="gameScreen" class="hidden">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+      <span style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">
+        ✅ Bildi: <span id="knewCount" style="color:var(--success);">0</span> &nbsp;
+        ❌ Bilmedi: <span id="didntCount" style="color:var(--danger);">0</span>
+      </span>
+      <button class="btn btn-outline btn-sm" onclick="shuffleCards()">🔀 Karıştır</button>
+    </div>
+
+    <div class="progress-bar mb-16">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+
+    <!-- KART -->
+    <div class="card-stage" onclick="flipCard()" id="cardStage">
+      <div class="card-inner" id="cardInner">
+        <div class="card-face card-front">
+          <div class="card-face-label">🎴 Ön Yüz — Kavram</div>
+          <div class="card-main-text" id="cardFrontText">...</div>
+          <div class="card-flip-hint">👆 Kartı çevirmek için tıklayın</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-face-label">📖 Arka Yüz — Açıklama</div>
+          <div class="card-main-text" id="cardBackText">...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KENDİNİ DEĞERLENDİR -->
+    <div class="self-assess hidden" id="selfAssess">
+      <div style="width:100%; text-align:center; font-size:0.85rem; font-weight:700; color:var(--text-muted); margin-bottom:4px;">Bu kartı biliyor muydunuz?</div>
+      <button class="assess-btn knew" onclick="assess('knew')">✅ Biliyordum</button>
+      <button class="assess-btn didnt" onclick="assess('didnt')">❌ Bilmiyordum</button>
+    </div>
+
+    <!-- NAVİGASYON -->
+    <div class="card-nav">
+      <button class="nav-btn-large prev" id="prevBtn" onclick="prevCard()" disabled>◀</button>
+      <span class="card-counter" id="cardCounter">1 / 1</span>
+      <button class="nav-btn-large next" id="nextBtn" onclick="nextCard()">▶</button>
+    </div>
+
+    <!-- NOKTALAR -->
+    <div class="dots-row" id="dotsRow"></div>
+
+    <div style="text-align:center; margin-top:24px;">
+      <button class="btn btn-outline btn-sm" onclick="showSummary()">📊 Özete Geç</button>
+    </div>
+
+  </div>
+
+  <!-- ÖZET EKRANI -->
+  <div id="summaryScreen" class="hidden">
+    <div class="summary-card">
+      <div style="font-size:4rem; margin-bottom:16px;" id="summaryEmoji">🏆</div>
+      <h2 class="result-title" id="summaryTitle">Oturum Tamamlandı!</h2>
+      <p class="result-subtitle" id="summarySubtitle"></p>
+      <div class="result-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-num green" id="summaryKnew">0</div>
+          <div class="breakdown-label">Biliyordum</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num red" id="summaryDidnt">0</div>
+          <div class="breakdown-label">Bilmiyordum</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num" id="summaryTotal" style="color:var(--primary);">0</div>
+          <div class="breakdown-label">Toplam Kart</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+        <button class="btn btn-primary btn-lg" onclick="restartGame()">🔄 Tekrar Çalış</button>
+        <button class="btn btn-outline btn-lg" onclick="studyWeak()">❌ Yanlışları Tekrar Et</button>
+        <a href="../index.html" class="btn btn-outline btn-lg">🏠 Ana Sayfa</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let cards = [];
+  let currentIndex = 0;
+  let isFlipped = false;
+  let results = {}; // id -> 'knew' | 'didnt' | null
+  let playerName = '';
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const code = params.get('code');
+
+    if (id) activity = ActivityStore.getById(id);
+    else if (code) {
+      const all = ActivityStore.getAll();
+      activity = all.find(a => a.code === code.toUpperCase() && a.type === 'flashcard');
+    }
+
+    document.getElementById('loadingScreen').classList.add('hidden');
+
+    if (!activity || !activity.cards || activity.cards.length === 0) {
+      document.getElementById('startScreen').outerHTML = `
+        <div class="empty-state"><span class="empty-icon">😕</span>
+        <h3>Etkinlik bulunamadı</h3>
+        <a href="../index.html" class="btn btn-primary mt-16">Ana Sayfaya Dön</a></div>`;
+      return;
+    }
+
+    document.getElementById('actTitle').textContent = activity.title;
+    document.getElementById('actDesc').textContent = activity.description || 'Kartları çevirerek kavramları öğrenin.';
+    document.getElementById('metaInfo').innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-size:1.5rem; font-weight:900; color:var(--primary);">${activity.cards.length}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Kart</div>
+      </div>`;
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  function startGame() {
+    playerName = document.getElementById('playerName').value.trim() || 'Öğrenci';
+    cards = [...activity.cards.filter(c => c.front && c.back)];
+
+    if (activity.settings?.shuffle !== false) shuffleCards();
+    else loadCards();
+
+    activity.playCount = (activity.playCount || 0) + 1;
+    ActivityStore.save(activity);
+
+    results = {};
+    cards.forEach(c => results[c.id] = null);
+
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameScreen').classList.remove('hidden');
+
+    renderCard();
+    renderDots();
+  }
+
+  function shuffleCards() {
+    for (let i = cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+    currentIndex = 0;
+    isFlipped = false;
+    document.getElementById('cardInner').classList.remove('flipped');
+    document.getElementById('selfAssess').classList.add('hidden');
+    renderCard();
+    renderDots();
+    showToast('Kartlar karıştırıldı!', 'info');
+  }
+
+  function loadCards() {
+    cards = [...activity.cards.filter(c => c.front && c.back)];
+  }
+
+  function renderCard() {
+    const card = cards[currentIndex];
+    if (!card) return;
+
+    let frontImgHtml = card.frontImage ? `
+      <div style="margin-bottom:12px;">
+        <img src="${card.frontImage}" style="max-height:110px; max-width:80%; border-radius:10px; object-fit:contain; box-shadow:0 4px 12px rgba(0,0,0,0.2);" />
+      </div>` : '';
+    let backImgHtml = card.backImage ? `
+      <div style="margin-bottom:12px;">
+        <img src="${card.backImage}" style="max-height:110px; max-width:80%; border-radius:10px; object-fit:contain; box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
+      </div>` : '';
+
+    document.getElementById('cardFrontText').innerHTML = frontImgHtml + `<div>${card.front}</div>`;
+    document.getElementById('cardBackText').innerHTML = backImgHtml + `<div>${card.back}</div>`;
+    document.getElementById('cardCounter').textContent = `${currentIndex + 1} / ${cards.length}`;
+    document.getElementById('progressFill').style.width = `${((currentIndex + 1) / cards.length) * 100}%`;
+    document.getElementById('prevBtn').disabled = currentIndex === 0;
+    document.getElementById('nextBtn').disabled = currentIndex === cards.length - 1;
+
+    updateDots();
+    updateScoreboard();
+
+    // Kart çevrilmemişse değerlendirme butonlarını gizle
+    if (!isFlipped) {
+      document.getElementById('selfAssess').classList.add('hidden');
+    } else {
+      document.getElementById('selfAssess').classList.remove('hidden');
+    }
+  }
+
+  function flipCard() {
+    isFlipped = !isFlipped;
+    SoundEffects.flip();
+    document.getElementById('cardInner').classList.toggle('flipped', isFlipped);
+    if (isFlipped) {
+      document.getElementById('selfAssess').classList.remove('hidden');
+    }
+  }
+
+  function assess(val) {
+    if (val === 'knew') SoundEffects.correct();
+    else if (val === 'didnt') SoundEffects.wrong();
+    const card = cards[currentIndex];
+    results[card.id] = val;
+    updateDots();
+    updateScoreboard();
+
+    // Otomatik sonraki karta geç
+    if (currentIndex < cards.length - 1) {
+      setTimeout(() => nextCard(), 400);
+    } else {
+      setTimeout(() => showSummary(), 600);
+    }
+  }
+
+  function nextCard() {
+    if (currentIndex < cards.length - 1) {
+      currentIndex++;
+      isFlipped = false;
+      document.getElementById('cardInner').classList.remove('flipped');
+      document.getElementById('selfAssess').classList.add('hidden');
+      renderCard();
+    }
+  }
+
+  function prevCard() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      isFlipped = false;
+      document.getElementById('cardInner').classList.remove('flipped');
+      document.getElementById('selfAssess').classList.add('hidden');
+      renderCard();
+    }
+  }
+
+  function renderDots() {
+    document.getElementById('dotsRow').innerHTML = cards.map((c, i) =>
+      `<div class="card-dot ${i === currentIndex ? 'current' : ''}" id="dot_${c.id}"></div>`
+    ).join('');
+  }
+
+  function updateDots() {
+    cards.forEach((c, i) => {
+      const dot = document.getElementById(`dot_${c.id}`);
+      if (!dot) return;
+      dot.className = 'card-dot';
+      if (i === currentIndex) dot.classList.add('current');
+      else if (results[c.id] === 'knew') dot.classList.add('knew');
+      else if (results[c.id] === 'didnt') dot.classList.add('didnt');
+    });
+  }
+
+  function updateScoreboard() {
+    const knewC = Object.values(results).filter(v => v === 'knew').length;
+    const didntC = Object.values(results).filter(v => v === 'didnt').length;
+    document.getElementById('knewCount').textContent = knewC;
+    document.getElementById('didntCount').textContent = didntC;
+  }
+
+  function showSummary() {
+    const knewC = Object.values(results).filter(v => v === 'knew').length;
+    const didntC = Object.values(results).filter(v => v === 'didnt').length;
+    const total = cards.length;
+
+    document.getElementById('gameScreen').classList.add('hidden');
+    document.getElementById('summaryScreen').classList.remove('hidden');
+
+    document.getElementById('summaryKnew').textContent = knewC;
+    document.getElementById('summaryDidnt').textContent = didntC;
+    document.getElementById('summaryTotal').textContent = total;
+
+    const pct = total > 0 ? Math.round((knewC / total) * 100) : 0;
+    SoundEffects.win();
+    if (pct >= 80) { document.getElementById('summaryEmoji').textContent = '🏆'; document.getElementById('summaryTitle').textContent = 'Mükemmel!'; launchConfetti(); }
+    else if (pct >= 60) { document.getElementById('summaryEmoji').textContent = '🌟'; document.getElementById('summaryTitle').textContent = 'Çok İyi!'; }
+    else { document.getElementById('summaryEmoji').textContent = '💪'; document.getElementById('summaryTitle').textContent = 'Daha Çok Çalış!'; }
+
+    document.getElementById('summarySubtitle').textContent = `${playerName}, ${total} kartın ${knewC} tanesini bildin. (%${pct})`;
+  }
+
+  function restartGame() {
+    document.getElementById('summaryScreen').classList.add('hidden');
+    document.getElementById('startScreen').classList.remove('hidden');
+  }
+
+  function studyWeak() {
+    // Sadece bilinmeyenleri al
+    const weakCards = cards.filter(c => results[c.id] === 'didnt' || results[c.id] === null);
+    if (weakCards.length === 0) {
+      showToast('Tüm kartları biliyorsunuz! 🎉', 'success');
+      return;
+    }
+    cards = weakCards;
+    currentIndex = 0;
+    isFlipped = false;
+    results = {};
+    cards.forEach(c => results[c.id] = null);
+    document.getElementById('summaryScreen').classList.add('hidden');
+    document.getElementById('gameScreen').classList.remove('hidden');
+    document.getElementById('cardInner').classList.remove('flipped');
+    document.getElementById('selfAssess').classList.add('hidden');
+    renderCard();
+    renderDots();
+    showToast(`${cards.length} kart tekrar çalışılıyor...`, 'info');
+  }
+
+  // Klavye kısayolları
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('gameScreen').classList.contains('hidden')) return;
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+    if (e.key === 'ArrowRight') nextCard();
+    if (e.key === 'ArrowLeft')  prevCard();
+    if (e.key === 'k' || e.key === 'K') { if (isFlipped) assess('knew'); }
+    if (e.key === 'b' || e.key === 'B') { if (isFlipped) assess('didnt'); }
+  });
+
+  init();
+</script>
+</body>
+</html>

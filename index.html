@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DüzgünÖğretmenlik - Öğretmen Paneli</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    .hero-small {
+      background: linear-gradient(135deg, var(--primary) 0%, #0D9488 100%);
+      color: #fff;
+      padding: 22px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .hero-small h1 { font-size: 1.5rem; font-weight: 900; }
+    .hero-small p  { opacity: 0.9; margin-top: 2px; font-size: 0.95rem; }
+
+    .pedagogy-banner {
+      background: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%);
+      border: 2px solid #5EEAD4;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .activity-type-filter {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .filter-btn {
+      padding: 8px 18px;
+      border-radius: 50px;
+      border: 2px solid var(--border);
+      background: #fff;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+    }
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    .grade-filter-bar .filter-btn.active {
+      border-color: #3b82f6;
+      background: #2563eb;
+      color: #fff;
+    }
+    .search-box { position: relative; max-width: 360px; margin-bottom: 24px; }
+    .search-box input { padding-left: 44px; }
+    .search-box .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; color: var(--text-muted); }
+
+    .activity-code-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+    }
+    .activity-code-badge:hover { background: var(--primary); color: #fff; }
+
+    .new-activity-modal .type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .type-select-card {
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: #fff;
+    }
+    .type-select-card:hover { border-color: var(--primary); background: var(--primary-light); }
+    .type-select-card.selected { border-color: var(--primary); background: var(--primary-light); }
+    .type-select-card .ts-icon { font-size: 2rem; margin-bottom: 6px; }
+    .type-select-card .ts-name { font-weight: 800; color: var(--text); font-size: 0.9rem; }
+    .type-select-card .ts-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 3px; }
+
+    /* Türkçe şablon kartları */
+    .template-card {
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: var(--transition);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .template-card:hover { border-color: var(--primary); background: var(--primary-light); }
+    .template-card .t-icon { font-size: 1.6rem; flex-shrink: 0; }
+    .template-card .t-name { font-weight: 800; font-size: 0.9rem; }
+    .template-card .t-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- GEZGEM (NAVBAR) -->
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="index.html" class="active">📋 Panelim</a></li>
+    <li><a href="pages/sinifim.html">👥 Sınıfım</a></li>
+    <li><a href="pages/paylasimlar.html">🤝 Paylaşımlar</a></li>
+    <li><a href="pages/turkce-oneriler.html">🗣️ Türkçe Öneriler</a></li>
+    <li><a href="pages/join.html">🎮 Etkinliğe Gir</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <button class="btn btn-primary teacher-only" onclick="openModal('newActivityModal')">
+      ➕ Yeni Etkinlik
+    </button>
+  </div>
+</nav>
+
+<!-- KARŞILAMA ALANI -->
+<div class="hero-small" id="heroSection">
+  <div style="flex:1; min-width:260px;">
+    <h1 id="heroTitle">👋 Hoş Geldiniz!</h1>
+    <p id="heroSubtitle">Etkinliklerinizi oluşturun ve öğrencilerinizle paylaşın.</p>
+  </div>
+  <div id="heroRightActions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;"></div>
+</div>
+
+<!-- ANA İÇERİK -->
+<div class="section">
+
+  <!-- İSTATİSTİK KARTLARI -->
+  <div class="grid-4 mb-24" id="statCards"></div>
+
+  <!-- SEZDİRME YÖNTEMİ TANITIM VE HIZLI GEÇİŞ ALANI -->
+  <div class="pedagogy-banner">
+    <div style="flex:1; min-width:240px;">
+      <div style="font-size:0.78rem; font-weight:900; color:#0F766E; letter-spacing:1px; text-transform:uppercase;">✨ MEB Türkiye Yüzyılı Maarif Modeli — Tümevarım Yaklaşımı</div>
+      <h3 style="font-size:1.18rem; font-weight:900; color:#134E4A; margin:4px 0;">🔍 Sezdirme Yöntemiyle Ders Anlatımı Materyalleri</h3>
+      <p style="font-size:0.88rem; color:#115E59; margin:0;">
+        Kuralları doğrudan vermek yerine; <strong>Merak Uyandırma → Gözlem → Karşılaştırma → Yönlendirici Sorular → Sınıflandırma → Çıkarım → Kuralın Keşfi</strong> adımlarıyla kuralı öğrencilerinize buldurun.
+      </p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" style="border-color:#0D9488; color:#0F766E; background:#fff;" onclick="filterToSezdirme()">🔍 Sezdirme Derslerini Göster</button>
+      <button class="btn btn-primary btn-sm teacher-only" style="background:#0D9488;" onclick="openNewSezdirmeModal()">➕ Yeni Sezdirme Dersi Hazırla</button>
+    </div>
+  </div>
+
+  <!-- ETKİNLİKLER BAŞLIK -->
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h2 class="section-title" id="activitiesHeading" style="margin-bottom:4px;">Etkinliklerim</h2>
+      <p class="section-subtitle" id="activitiesSubheading" style="margin-bottom:0;">Tüm etkinlikleriniz ve sınıf kodları</p>
+    </div>
+    <div id="teacherToolbarActions" class="teacher-only" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-outline" onclick="restoreDemoActivities()" title="Tüm hazır örnek Türkçe etkinliklerini sıfırlayıp yeniden yükler">🔄 Örnekleri Yükle</button>
+      <button class="btn btn-outline" onclick="openModal('templateModal')">📋 Şablondan Oluştur</button>
+      <button class="btn btn-primary" onclick="openModal('newActivityModal')">➕ Yeni Etkinlik</button>
+    </div>
+  </div>
+
+  <!-- ARAMA -->
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="form-control" id="searchInput" placeholder="Etkinlik ara (başlık, konu, kod veya tema)..." oninput="renderActivities()" />
+  </div>
+
+  <!-- ÖĞRETMENE ÖZEL DERS SAHİPLİĞİ FİLTRESİ -->
+  <div class="teacher-only" id="ownerFilterWrap" style="margin-bottom:12px;">
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <span style="font-size:0.85rem; font-weight:700; color:var(--text-muted); margin-right:4px;">📚 Ders Kaynağı:</span>
+      <div class="owner-filter-bar" id="ownerFilterBar" style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="filter-btn active" data-owner="all" onclick="setOwnerFilter('all', this)">Tümü</button>
+        <button class="filter-btn" data-owner="mine" onclick="setOwnerFilter('mine', this)">👩‍🏫 Kendi Oluşturduklarım</button>
+        <button class="filter-btn" data-owner="seed" onclick="setOwnerFilter('seed', this)">🏛️ Hazır Dersler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAARİF MODELİ SINIF SEVİYESİ FİLTRESİ -->
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+    <span style="font-size:0.85rem; font-weight:700; color:var(--text-muted); margin-right:4px;">🎓 Sınıf Seviyesi:</span>
+    <div class="grade-filter-bar" id="gradeFilter" style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button class="filter-btn active" data-grade="all" onclick="setGradeFilter('all', this)">Tüm Sınıflar</button>
+      <button class="filter-btn" data-grade="5" onclick="setGradeFilter('5', this)">5. Sınıf</button>
+      <button class="filter-btn" data-grade="6" onclick="setGradeFilter('6', this)">6. Sınıf</button>
+      <button class="filter-btn" data-grade="7" onclick="setGradeFilter('7', this)">7. Sınıf</button>
+      <button class="filter-btn" data-grade="8" onclick="setGradeFilter('8', this)">8. Sınıf (LGS)</button>
+    </div>
+  </div>
+
+  <!-- TÜR FİLTRESİ -->
+  <div class="activity-type-filter" id="typeFilter" style="margin-bottom:20px;">
+    <button class="filter-btn active" data-type="all" onclick="setFilter('all', this)">Tüm Türler</button>
+    <button class="filter-btn" data-type="sezdirme" onclick="setFilter('sezdirme', this)" style="border-color:#0D9488; color:#0F766E;">🔍 Sezdirme Dersi (Konu Anlatımı)</button>
+    <button class="filter-btn" data-type="minideneme" onclick="setFilter('minideneme', this)">📝 Mini Deneme</button>
+    <button class="filter-btn" data-type="presentation" onclick="setFilter('presentation', this)">📊 Sunum</button>
+    <button class="filter-btn" data-type="blank" onclick="setFilter('blank', this)">✏️ Boşluk Doldurma</button>
+    <button class="filter-btn" data-type="wheel" onclick="setFilter('wheel', this)">🎡 Çarkıfelek</button>
+    <button class="filter-btn" data-type="matching" onclick="setFilter('matching', this)">🔗 Eşleştirme</button>
+    <button class="filter-btn" data-type="flashcard" onclick="setFilter('flashcard', this)">🃏 Hafıza Kartları</button>
+    <button class="filter-btn" data-type="parolla" onclick="setFilter('parolla', this)">🔤 Parolla</button>
+  </div>
+
+  <!-- ETKİNLİK IZGARASI -->
+  <div class="grid-3" id="activityGrid"></div>
+
+</div>
+
+<!-- YENİ ETKİNLİK AÇILIR PENCERESİ -->
+<div class="modal-overlay" id="newActivityModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Yeni Etkinlik Oluştur</h2>
+      <button class="modal-close" onclick="closeModal('newActivityModal')">✕</button>
+    </div>
+
+    <div class="new-activity-modal">
+      <div class="form-group">
+        <label class="form-label">Etkinlik Türü Seçin</label>
+        <div class="type-grid" id="typeGrid">
+          <div class="type-select-card selected" data-type="sezdirme" onclick="selectType('sezdirme', this)" style="grid-column: 1 / -1; border-color:#0D9488;">
+            <div class="ts-icon">🔍</div>
+            <div class="ts-name">Sezdirme Dersi (Keşfettirerek Konu Anlatımı)</div>
+            <div class="ts-desc">Kuralı doğrudan vermeden; gözlem, karşılaştırma ve çıkarımla öğrenciye buldurun</div>
+          </div>
+          <div class="type-select-card" data-type="minideneme" onclick="selectType('minideneme', this)">
+            <div class="ts-icon">📝</div>
+            <div class="ts-name">Mini Deneme</div>
+            <div class="ts-desc">Çoktan seçmeli sorular</div>
+          </div>
+          <div class="type-select-card" data-type="presentation" onclick="selectType('presentation', this)">
+            <div class="ts-icon">📊</div>
+            <div class="ts-name">Sunum</div>
+            <div class="ts-desc">Etkileşimli slaytlar</div>
+          </div>
+          <div class="type-select-card" data-type="blank" onclick="selectType('blank', this)">
+            <div class="ts-icon">✏️</div>
+            <div class="ts-name">Boşluk Doldurma</div>
+            <div class="ts-desc">Metinde boşluk bırakın</div>
+          </div>
+          <div class="type-select-card" data-type="wheel" onclick="selectType('wheel', this)">
+            <div class="ts-icon">🎡</div>
+            <div class="ts-name">Çarkıfelek</div>
+            <div class="ts-desc">Rastgele seçim çarkı</div>
+          </div>
+          <div class="type-select-card" data-type="matching" onclick="selectType('matching', this)">
+            <div class="ts-icon">🔗</div>
+            <div class="ts-name">Kelime Eşleştirme</div>
+            <div class="ts-desc">Kavram-anlam bağı kur</div>
+          </div>
+          <div class="type-select-card" data-type="flashcard" onclick="selectType('flashcard', this)">
+            <div class="ts-icon">🃏</div>
+            <div class="ts-name">Hafıza Kartları</div>
+            <div class="ts-desc">Çevirmeli öğrenme kartı</div>
+          </div>
+          <div class="type-select-card" data-type="parolla" onclick="selectType('parolla', this)">
+            <div class="ts-icon">🔤</div>
+            <div class="ts-name">Parolla</div>
+            <div class="ts-desc">A'dan Z'ye harf çarkı maratonu</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">🎓 Sınıf Düzeyi</label>
+          <select class="form-control" id="newGrade">
+            <option value="5">5. Sınıf (Maarif Modeli)</option>
+            <option value="6">6. Sınıf (Maarif Modeli)</option>
+            <option value="7">7. Sınıf (Maarif Modeli)</option>
+            <option value="8">8. Sınıf (LGS Hazırlık)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">🏷️ Maarif Teması / Konu</label>
+          <input type="text" class="form-control" id="newTheme" placeholder="Örn: Dilimizin Zenginliği, Oyun Dünyası..." />
+        </div>
+      </div>
+
+      <div class="form-group" id="newSezdirmeModeWrap" style="margin-bottom:14px;">
+        <label class="form-label">🕵️ Sezdirme Ders Akışı Kurgusu</label>
+        <select class="form-control" id="newSezdirmeMode">
+          <option value="standard">Standart 8 Aşamalı Sezdirme Akışı</option>
+          <option value="detective_soyguncu">🕵️ Dedektiflik Kurgu Şablonu — Örnek Vaka (Soyguncu &amp; Eşkâl)</option>
+          <option value="detective_custom">🕵️ Dedektiflik Kurgu Şablonu — Boş Vaka Taslağı</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Başlık <span style="color:var(--danger)">*</span></label>
+        <input type="text" class="form-control" id="newTitle" placeholder="Etkinlik başlığı..." />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Açıklama (isteğe bağlı)</label>
+        <textarea class="form-control" id="newDesc" rows="2" placeholder="Kısa bir açıklama ve kazanım notu..."></textarea>
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
+        <button class="btn btn-outline" onclick="closeModal('newActivityModal')">İptal</button>
+        <button class="btn btn-primary" onclick="createActivity()">Oluştur ve Düzenle →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TÜRKÇE ŞABLON SEÇİCİ -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <h2 class="modal-title">📋 Türkçe Öğretmeni Şablonları</h2>
+      <button class="modal-close" onclick="closeModal('templateModal')">✕</button>
+    </div>
+    <p style="color:var(--text-muted); margin-bottom:20px; font-size:0.9rem;">Hazır şablonla hızlıca başlayın, sonra düzenleyin.</p>
+
+    <div style="display:flex; flex-direction:column; gap:10px;" id="templateList"></div>
+
+    <div style="margin-top:20px; text-align:right;">
+      <button class="btn btn-outline" onclick="closeModal('templateModal')">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<!-- SİLME ONAY PENCERESİ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">🗑️ Etkinliği Sil</h2>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <p style="margin-bottom:24px; color:var(--text-muted);">Bu etkinliği silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('deleteModal')">İptal</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">🗑️ Evet, Sil</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <strong>📚 DüzgünÖğretmenlik</strong> — Kendi Etkinlik Platformunuz
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script>
+  let currentFilter = 'all';
+  let currentGradeFilter = 'all';
+  let currentOwnerFilter = 'all';
+  let deleteTargetId = null;
+  let selectedType = 'sezdirme';
+
+  // ---- TÜRKİYE YÜZYILI MAARİF MODELİ ŞABLONLARI ----
+  const TEMPLATES = [
+    {
+      icon: '🕵️', name: 'Dedektiflik Tarzı Sezdirme: Soyguncu Telsiz Operasyonu', type: 'sezdirme',
+      grade: '5', theme: 'Dilimizin Zenginliği', outcome: 'T.D.5.2',
+      desc: 'Telsiz diyaloğu ve 4 şüpheli eşkâli üzerinden "şey" zamirinden İsim ve Niteleme Sıfatı kavramlarını keşfettiren hazır dedektiflik dersi',
+      data: {
+        grade: '5', theme: 'Dilimizin Zenginliği', outcome: 'T.D.5.2',
+        title: 'Dedektiflik Operasyonu: Şüpheliyi Yakala (İsim ve Sıfat Keşfi)',
+        description: 'Merkez ile dedektif arasındaki telsiz konuşmasındaki ipuçlarını çözerek varlık adlarını (isim) ve niteleyici sözcükleri (sıfat) sezdirme yöntemiyle keşfettiren ders kurgusu.',
+        objective: 'Öğrenciler belirsiz ifadeler yerine varlık adı (isim) ve özellik bildiren sözcükleri (niteleme sıfatı) kullanma ihtiyacını sezerek kendi kuralını keşfeder.'
+      },
+      getSteps: () => createDetectiveSezdirmeSteps('soyguncu')
+    },
+    {
+      icon: '📻', name: 'Dedektiflik Tarzı Sezdirme Şablonu (Uyarlanabilir Vaka)', type: 'sezdirme',
+      grade: '6', theme: 'Dilimizin Zenginliği', outcome: 'DYS.DO.6.2',
+      desc: 'Kendi konunuza (zarf, zamir, yazım, noktalama vb.) uyarlayabileceğiniz hazır telsiz konuşması, şüpheli kartları ve 8 aşamalı keşif şablonu',
+      data: {
+        grade: '6', theme: 'Dilimizin Zenginliği', outcome: 'DYS.DO.6.2',
+        title: 'Dedektiflik Vakası: İpuçlarını Birleştir ve Kuralı Keşfet',
+        description: 'Telsiz konuşması ve şüpheli eleme kurgusuyla başlayan, herhangi bir dil bilgisi veya yazım kuralına uyarlanabilir dedektiflik sezdirme şablonu.',
+        objective: 'Öğrenciler vaka diyaloglarındaki dilsel ipuçlarını inceleyerek hedeflenen dil bilimsel kuralı tümevarım yoluyla keşfeder.'
+      },
+      getSteps: () => createDetectiveSezdirmeSteps('custom')
+    },
+    {
+      icon: '🔍', name: 'Sezdirme Yöntemiyle Dil Bilgisi / Yazım Dersi', type: 'sezdirme',
+      grade: '6', theme: 'Dilimizin Zenginliği', outcome: 'DYS.DO.6.2',
+      desc: 'Kuralı doğrudan söylemeden; Merak → Gözlem → Karşılaştırma → Sınıflandırma → Çıkarım → Kuralın Keşfi akışıyla ders',
+      data: {
+        grade: '6', theme: 'Dilimizin Zenginliği', outcome: 'DYS.DO.6.2',
+        title: 'Sezdirme Yöntemiyle Yeni Konu Keşfi',
+        description: 'Kuralı doğrudan vermeden örneklerden keşfettiren ders akışı',
+        objective: 'Öğrenciler örnek cümlelerdeki ortak örüntüyü fark ederek kuralı kendi cümleleriyle ifade eder.'
+      }
+    },
+    {
+      icon: '📝', name: '8. Sınıf LGS Fiilimsiler & Cümle Ögeleri', type: 'minideneme',
+      grade: '8', theme: 'Akademik Düşünme Dünyası', outcome: 'DYS.DO.8.1',
+      desc: 'LGS sınav formatında fiilimsiler, özne-yüklem ve vurgu soruları',
+      data: {
+        grade: '8', theme: 'Akademik Düşünme Dünyası', outcome: 'DYS.DO.8.1',
+        title: '8. Sınıf LGS Fiilimsiler ve Cümle Ögeleri',
+        description: 'LGS soru formatına uygun yeni nesil Türkçe denemesi',
+        questions: [
+          { id: 't8_1', text: 'Aşağıdaki cümlelerin hangisinde zarf-fiil cümleye durum anlamı katmıştır?', options: ['Koşarak içeri girdi.', 'Güneş batarken ulaştık.', 'Ders başlayınca sustular.', 'Gülünce gözleri kısılırdı.'], correct: 0, explanation: '"Nasıl girdi?" sorusuna "koşarak" zarf-fiili durum yönünden cevap verir.' }
+        ]
+      }
+    },
+    {
+      icon: '📊', name: '6. Sınıf Bağımsızlık Yolu Şiir Sunumu', type: 'presentation',
+      grade: '6', theme: 'Bağımsızlık Yolu', outcome: 'T.O.6.14',
+      desc: 'İstiklal Marşı ve vatan şiirlerini tıkla-keşfet düğmeleriyle çözümleme',
+      data: {
+        grade: '6', theme: 'Bağımsızlık Yolu', outcome: 'T.O.6.14',
+        title: 'Bağımsızlık Yolu: İstiklal Marşı İncelemesi',
+        description: 'Görselli, ahenk analizli ve tıkla-keşfet destekli Maarif sunumu',
+        slides: [
+          { id: 'ts1', type: 'title', title: 'İstiklal Marşı ve Şiirde Anlam', subtitle: '6. Sınıf Türkçe Dersi', image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80' },
+          { id: 'ts2', type: 'poem', title: 'İlk Kıta', poemText: 'Korkma, sönmez bu şafaklarda yüzen al sancak;\nSönmeden yurdumun üstünde tüten en son ocak.', poemAuthor: '— Mehmet Âkif Ersoy' }
+        ]
+      }
+    },
+    {
+      icon: '✏️', name: '5. Sınıf Cümlede Anlam İlişkileri', type: 'blank',
+      grade: '5', theme: 'Oyun Dünyası', outcome: 'T.O.5.20',
+      desc: 'Amaç-sonuç, neden-sonuç ve koşul bağlaçlarını tamamlama şablonu',
+      data: {
+        grade: '5', theme: 'Oyun Dünyası', outcome: 'T.O.5.20',
+        title: '5. Sınıf Cümlede Anlam İlişkileri',
+        description: 'Amaç, neden ve koşul bildiren yapıları pekiştirin',
+        questions: [
+          { id: 'tb1', rawText: 'Oyunda başarılı olmak [amacıyla] taktik geliştirdik.', parts: [{ type: 'text', value: 'Oyunda başarılı olmak ' }, { type: 'blank', answer: 'amacıyla', hint: 'a...' }, { type: 'text', value: ' taktik geliştirdik.' }] }
+        ]
+      }
+    },
+    {
+      icon: '🔤', name: '8. Sınıf Destanlar ve LGS Parollası', type: 'parolla',
+      grade: '8', theme: 'Türk Hikâye Geleneği ve Destanlar', outcome: 'T.O.8.10',
+      desc: 'A\'dan Z\'ye 29 harfte LGS kavramları ve destan kahramanları',
+      data: {
+        grade: '8', theme: 'Türk Hikâye Geleneği ve Destanlar', outcome: 'T.O.8.10',
+        title: '8. Sınıf LGS Türkçe & Destanlar Parollası',
+        description: 'A\'dan Z\'ye 29 harfle LGS Türkçe maratonu',
+        settings: { timeLimit: 180, allowPass: true }
+      }
+    },
+    {
+      icon: '🃏', name: '6. Sınıf Kök ve Yapım Eki Kartları', type: 'flashcard',
+      grade: '6', theme: 'Dilimizin Zenginliği', outcome: 'DYS.DO.6.1',
+      desc: 'İsimden isim, isimden fiil, fiilden isim türetme kuralları',
+      data: {
+        grade: '6', theme: 'Dilimizin Zenginliği', outcome: 'DYS.DO.6.1',
+        title: '6. Sınıf Kök ve Yapım Eki Hafıza Kartları',
+        description: 'Kelimelerin kök ve gövde yapılarını çevirerek öğrenin',
+        cards: [
+          { id: 'tc1', front: 'Fiilden İsim Yapan Ekler', back: '-gı/-gi (sevgi), -ak (durak), -ıcı (yazıcı)' }
+        ]
+      }
+    },
+    {
+      icon: '🔗', name: '7. Sınıf Deyimler ve Anlam Eşleştirme', type: 'matching',
+      grade: '7', theme: 'Hayat Boyu Gelişim', outcome: 'T.Y.7.18',
+      desc: 'Kişisel gelişim ve iletişimle ilgili deyimleri eşleştirme',
+      data: {
+        grade: '7', theme: 'Hayat Boyu Gelişim', outcome: 'T.Y.7.18',
+        title: '7. Sınıf İletişim ve Anlam Eşleştirmesi',
+        description: 'Deyimleri doğru anlamlarıyla eşleştirin',
+        pairs: [
+          { id: 'tp1', left: 'Can kulağıyla dinlemek', right: 'Büyük bir dikkatle dinlemek' },
+          { id: 'tp2', left: 'Gönül almak', right: 'Kırılan birini sevindirip hoşnut etmek' }
+        ]
+      }
+    },
+    {
+      icon: '🎡', name: '5. Sınıf İsim-Fiil Sözcük Çarkı', type: 'wheel',
+      grade: '5', theme: 'Geleneklerimiz', outcome: 'DYS.DO.5.1',
+      desc: 'Öğrencinin sözcük kökünü isim mi fiil mi olduğunu bulduğu sınıf çarkı',
+      data: {
+        grade: '5', theme: 'Geleneklerimiz', outcome: 'DYS.DO.5.1',
+        title: '5. Sınıf İsim ve Fiil Kökü Çarkıfeleği',
+        description: 'Çarkı çevirin ve gelen kökün türünü söyleyin',
+        items: ['Sev- (Fiil)', 'Göz (İsim)', 'Yaz- (Fiil)', 'Su (İsim)', 'Bil- (Fiil)', 'Ev (İsim)']
+      }
+    }
+  ];
+
+  function renderTemplates() {
+    document.getElementById('templateList').innerHTML = TEMPLATES.map((t, i) => `
+      <div class="template-card" onclick="createFromTemplate(${i})">
+        <div class="t-icon">${t.icon}</div>
+        <div>
+          <div class="t-name">${t.name}</div>
+          <div class="t-desc">${t.desc}</div>
+          <div style="display:flex; gap:6px; margin-top:4px; flex-wrap:wrap;">
+            <span style="font-size:0.75rem; background:#eff6ff; color:#1e40af; padding:2px 6px; border-radius:4px; font-weight:700;">🎓 ${t.grade}. Sınıf</span>
+            <span style="font-size:0.75rem; background:#ecfdf5; color:#065f46; padding:2px 6px; border-radius:4px; font-weight:600;">🏷️ ${t.theme}</span>
+            <span style="font-size:0.75rem; color:var(--primary); font-weight:700;">${typeLabel(t.type)}</span>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-left:auto; white-space:nowrap;">Kullan →</button>
+      </div>
+    `).join('');
+  }
+
+  function createFromTemplate(idx) {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    const t = TEMPLATES[idx];
+    const activity = ActivityStore.createNew(t.type, t.grade || '5', t.theme || '');
+    Object.assign(activity, JSON.parse(JSON.stringify(t.data)));
+    if (typeof t.getSteps === 'function') {
+      activity.steps = t.getSteps();
+    }
+    // ID'leri yenile
+    if (activity.questions) activity.questions = activity.questions.map(q => ({ ...q, id: generateId() }));
+    if (activity.pairs)     activity.pairs     = activity.pairs.map(p => ({ ...p, id: generateId() }));
+    if (activity.cards)     activity.cards     = activity.cards.map(c => ({ ...c, id: generateId() }));
+    if (activity.slides)    activity.slides    = activity.slides.map(s => ({ ...s, id: generateId() }));
+    if (activity.steps)     activity.steps     = activity.steps.map(s => ({ ...s, id: generateId() }));
+    ActivityStore.save(activity);
+    closeModal('templateModal');
+    showToast('Şablon oluşturuldu! Editöre yönlendiriliyorsunuz...', 'success');
+    setTimeout(() => window.location = getEditUrl(activity), 800);
+  }
+
+  // ---- İSTATİSTİK KARTLARI ----
+  function renderStats() {
+    const all = ActivityStore.getAll();
+    const total = all.length;
+    const totalPlays = all.reduce((s, a) => s + (a.playCount || 0), 0);
+    const sezdirmeCount = all.filter(a => a.type === 'sezdirme').length;
+    const miniDenemeCount = all.filter(a => a.type === 'minideneme').length;
+
+    document.getElementById('statCards').innerHTML = `
+      <div class="stat-card card" style="cursor:default">
+        <span class="stat-icon">📄</span>
+        <div class="stat-number">${total}</div>
+        <div class="stat-label">Toplam Materyal</div>
+      </div>
+      <div class="stat-card card" style="cursor:pointer; background:linear-gradient(135deg, #0D9488 0%, #0F766E 100%);" onclick="filterToSezdirme()" title="Sezdirme derslerini filtrele">
+        <span class="stat-icon">🔍</span>
+        <div class="stat-number">${sezdirmeCount}</div>
+        <div class="stat-label">Sezdirme Dersleri</div>
+      </div>
+      <div class="stat-card card" style="cursor:default">
+        <span class="stat-icon">📝</span>
+        <div class="stat-number">${miniDenemeCount}</div>
+        <div class="stat-label">Mini Denemeler</div>
+      </div>
+      <div class="stat-card card" style="cursor:default">
+        <span class="stat-icon">🎮</span>
+        <div class="stat-number">${totalPlays}</div>
+        <div class="stat-label">Toplam Uygulama</div>
+      </div>
+    `;
+  }
+
+  // ---- ETKİNLİK KARTI (MAARİF MODELİ ROZETLERİ DAHİL) ----
+  function activityCard(a) {
+    const isTeacher = AuthStore.isLoggedIn();
+    const icon = typeIcon(a.type);
+    const label = typeLabel(a.type);
+    const color = typeColor(a.type);
+    const editUrl = getEditUrl(a);
+    const playUrl = getPlayUrl(a);
+
+    const gradeLabel = a.grade ? `${a.grade}. Sınıf` : 'Genel';
+    const themeBadge = a.theme ? `<span style="font-size:0.75rem; background:#ecfdf5; color:#065f46; padding:3px 8px; border-radius:6px; font-weight:600; display:inline-flex; align-items:center; gap:4px;">🏷️ ${a.theme}</span>` : '';
+    const outcomeBadge = a.outcome ? `<span style="font-size:0.72rem; background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="Öğrenme Çıktısı (Maarif Modeli)">🎯 ${a.outcome}</span>` : '';
+    const ownerBadge = isTeacher
+      ? (ActivityStore.isSeedActivity(a)
+          ? `<span style="font-size:0.72rem; background:#f1f5f9; color:#334155; padding:3px 8px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="Sistemdeki Hazır Ders">🏛️ Hazır Ders</span>`
+          : `<span style="font-size:0.72rem; background:#f3e8ff; color:#6b21a8; padding:3px 8px; border-radius:6px; font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="Sizin Oluşturduğunuz Ders">👩‍🏫 Benim Dersim</span>`)
+      : '';
+
+    return `
+      <div class="card activity-card" style="position:relative; overflow:visible; border-top: 4px solid ${color};">
+        ${isTeacher ? `
+        <div class="activity-card-actions">
+          <button class="icon-btn" title="Düzenle" onclick="window.location='${editUrl}'">✏️</button>
+          <button class="icon-btn danger" title="Sil" onclick="deleteActivity('${a.id}')">🗑️</button>
+        </div>` : ''}
+        <div style="display:flex; align-items:flex-start; gap:14px;">
+          <div style="width:52px;height:52px;border-radius:12px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;">
+            ${icon}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="card-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</div>
+            <div class="card-muted" style="margin-top:2px;">${label}</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+          <span style="font-size:0.75rem; background:#eff6ff; color:#1e40af; padding:3px 8px; border-radius:6px; font-weight:700;">🎓 ${gradeLabel}</span>
+          ${ownerBadge}
+          ${themeBadge}
+          ${outcomeBadge}
+        </div>
+
+        <div style="margin:12px 0;color:var(--text-muted);font-size:0.85rem;min-height:36px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+          ${a.description || '<em>Açıklama yok</em>'}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <button class="activity-code-badge" onclick="copyCode('${a.code}', event)" title="Kodu kopyala">
+            🔑 ${a.code}
+          </button>
+          <span style="font-size:0.8rem;color:var(--text-muted);">🎮 ${a.playCount || 0} oynanma</span>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;">🕐 ${timeAgo(a.updatedAt)}</div>
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+          ${isTeacher ? `<a href="${editUrl}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;">✏️ Düzenle</a>` : ''}
+          ${isTeacher && !ActivityStore.isSeedActivity(a) ? `<button type="button" class="btn btn-outline btn-sm" style="flex:1;justify-content:center; border-color:#0D9488; color:#0F766E;" onclick="shareFromDashboard('${a.id}')">📤 Paylaş</button>` : ''}
+          <a href="${playUrl}" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;" target="_blank">${isTeacher ? '▶️ Başlat' : '▶️ Etkinliği Başlat'}</a>
+        </div>
+      </div>
+    `;
+  }
+
+  function getEditUrl(a) {
+    const map = {
+      sezdirme:     'pages/editor-sezdirme.html',
+      minideneme:   'pages/editor-quiz.html',
+      quiz:         'pages/editor-quiz.html',
+      presentation: 'pages/editor-presentation.html',
+      blank:        'pages/editor-blank.html',
+      wheel:        'pages/editor-wheel.html',
+      matching:     'pages/editor-matching.html',
+      flashcard:    'pages/editor-flashcard.html',
+      parolla:      'pages/editor-parolla.html'
+    };
+    return `${map[a.type] || 'pages/editor-quiz.html'}?id=${a.id}`;
+  }
+
+  function getPlayUrl(a) {
+    const map = {
+      sezdirme:     'pages/play-sezdirme.html',
+      minideneme:   'pages/play-quiz.html',
+      quiz:         'pages/play-quiz.html',
+      presentation: 'pages/play-presentation.html',
+      blank:        'pages/play-blank.html',
+      wheel:        'pages/play-wheel.html',
+      matching:     'pages/play-matching.html',
+      flashcard:    'pages/play-flashcard.html',
+      parolla:      'pages/play-parolla.html'
+    };
+    return `${map[a.type] || 'pages/play-quiz.html'}?id=${a.id}`;
+  }
+
+  function filterToSezdirme() {
+    const btn = document.querySelector('#typeFilter .filter-btn[data-type="sezdirme"]');
+    if (btn) setFilter('sezdirme', btn);
+    document.getElementById('typeFilter')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function openNewSezdirmeModal() {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    openModal('newActivityModal');
+    const card = document.querySelector('#typeGrid .type-select-card[data-type="sezdirme"]');
+    if (card) selectType('sezdirme', card);
+  }
+
+  function renderRoleUI() {
+    const isTeacher = AuthStore.isLoggedIn();
+    const acc = AuthStore.getAccount();
+
+    document.querySelectorAll('.teacher-only').forEach(el => {
+      el.style.display = isTeacher ? '' : 'none';
+    });
+
+    const heroTitle = document.getElementById('heroTitle');
+    const heroSubtitle = document.getElementById('heroSubtitle');
+    const heroRight = document.getElementById('heroRightActions');
+    const heading = document.getElementById('activitiesHeading');
+    const subheading = document.getElementById('activitiesSubheading');
+
+    if (isTeacher) {
+      const isAdminUser = AuthStore.isAdmin();
+      const pendingShareCount = (isAdminUser && typeof SharedActivityStore !== 'undefined') ? SharedActivityStore.getPendingCount() : 0;
+      heroTitle.textContent = `👋 Hoş Geldiniz, ${acc.displayName}!`;
+      heroSubtitle.textContent = isAdminUser
+        ? 'Yönetici Öğretmen Paneli açık — etkinliklerinizi yönetebilir ve paylaşılan öğretmen içeriklerini onaylayabilirsiniz.'
+        : 'Öğretmen Paneli açık — etkinliklerinizi oluşturabilir, düzenleyebilir ve onaylı paylaşım havuzuna gönderebilirsiniz.';
+      const passWarnBtn = acc.isDefaultPassword
+        ? `<button type="button" class="btn btn-sm" style="background:#FEF3C7; color:#92400E; font-weight:800;" onclick="AuthStore.openAccountModal()">⚙️ Şifrenizi Değiştirin (Önerilen)</button>`
+        : `<span style="background:rgba(255,255,255,0.18); padding:6px 14px; border-radius:50px; font-size:0.85rem; font-weight:800;">${isAdminUser ? '🛡️ Yönetici Yetkisi Aktif' : '🔓 Öğretmen Yetkisi Aktif'}</span>`;
+      const pendingBtn = pendingShareCount > 0
+        ? `<a href="pages/paylasimlar.html?tab=admin" class="btn btn-sm" style="background:#FEF3C7; color:#92400E; font-weight:900;">⏳ ${pendingShareCount} Paylaşım Onayınızı Bekliyor</a>`
+        : '';
+      heroRight.innerHTML = `<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">${pendingBtn}${passWarnBtn}</div>`;
+      if (heading) heading.textContent = 'Etkinliklerim';
+      if (subheading) subheading.textContent = 'Tüm etkinlikleriniz ve sınıf kodları';
+    } else {
+      heroTitle.textContent = '📚 Türkçe Dersi Etkileşimli Etkinlik ve Ders Portalı';
+      heroSubtitle.textContent = 'Sınıf seviyenizi seçerek ders ve etkinliklere katılın veya öğretmeninizin paylaştığı 6 haneli etkinlik kodunu girin.';
+      heroRight.innerHTML = `
+        <div style="display:flex; gap:6px; align-items:center; background:rgba(255,255,255,0.16); padding:6px 8px; border-radius:50px;">
+          <input type="text" id="quickJoinCode" maxlength="6" placeholder="6 HANELİ KOD"
+            style="border:none; background:#fff; color:var(--primary-dark); padding:6px 12px; border-radius:50px; font-weight:900; font-family:monospace; letter-spacing:2px; width:136px; text-transform:uppercase; outline:none; text-align:center;"
+            oninput="this.value=this.value.toUpperCase()"
+            onkeydown="if(event.key==='Enter') quickJoinFromHero()" />
+          <button type="button" class="btn btn-sm" style="background:#fff; color:var(--primary); font-weight:900;" onclick="quickJoinFromHero()">🚀 Katıl</button>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <a href="pages/login.html" class="btn btn-outline-white btn-sm" style="border-color:rgba(255,255,255,0.85); color:#fff;">🔐 Öğretmen Girişi</a>
+          <a href="pages/login.html?mode=register" class="btn btn-sm" style="background:#fff; color:var(--primary); font-weight:800;">✨ Öğretmen Kaydı</a>
+        </div>
+      `;
+      if (heading) heading.textContent = 'Türkçe Etkinlikleri ve Sezdirme Dersleri';
+      if (subheading) subheading.textContent = 'Katılmak istediğiniz etkinliği seçin veya kodunu kopyalayın';
+    }
+  }
+
+  function shareFromDashboard(activityId) {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    window.location.href = `pages/paylasimlar.html?share=${encodeURIComponent(activityId)}`;
+  }
+
+  function quickJoinFromHero() {
+    const input = document.getElementById('quickJoinCode');
+    const code = (input?.value || '').trim().toUpperCase();
+    if (code.length < 3) {
+      showToast('Lütfen öğretmeninizin verdiği etkinlik kodunu girin.', 'warning');
+      input?.focus();
+      return;
+    }
+    const found = ActivityStore.findByCode(code);
+    if (!found) {
+      showToast('Bu koda sahip bir etkinlik bulunamadı.', 'error');
+      return;
+    }
+    window.location.href = getPlayUrl(found);
+  }
+
+  // ---- ETKİNLİKLERİ ÇİZ (SAHİPLİK + TÜR + SINIF + ARAMA FİLTRESİ) ----
+  function renderActivities() {
+    const query = (document.getElementById('searchInput').value || '').toLowerCase();
+    let list = ActivityStore.getAll();
+
+    // 0. Sahiplik filtresi (Öğretmen girişinde)
+    if (AuthStore.isLoggedIn()) {
+      if (currentOwnerFilter === 'mine') {
+        list = list.filter(a => !ActivityStore.isSeedActivity(a));
+      } else if (currentOwnerFilter === 'seed') {
+        list = list.filter(a => ActivityStore.isSeedActivity(a));
+      }
+    }
+
+    // 1. Tür filtresi
+    if (currentFilter !== 'all') {
+      list = list.filter(a => a.type === currentFilter || (currentFilter === 'minideneme' && a.type === 'quiz'));
+    }
+
+    // 2. Sınıf filtresi
+    if (currentGradeFilter !== 'all') {
+      list = list.filter(a => String(a.grade) === String(currentGradeFilter));
+    }
+
+    // 3. Arama sorgusu
+    if (query) {
+      list = list.filter(a =>
+        a.title.toLowerCase().includes(query) ||
+        (a.description || '').toLowerCase().includes(query) ||
+        (a.theme || '').toLowerCase().includes(query) ||
+        (a.outcome || '').toLowerCase().includes(query) ||
+        a.code.toLowerCase().includes(query)
+      );
+    }
+
+    const grid = document.getElementById('activityGrid');
+    if (list.length === 0) {
+      const isTeacher = AuthStore.isLoggedIn();
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+        <span class="empty-icon">🔍</span>
+        <h3>Etkinlik bulunamadı</h3>
+        <p>${isTeacher ? 'Arama kriterlerini değiştirin, seçili sınıf filtresini kontrol edin veya hazır Maarif Modeli örneklerini yükleyin.' : 'Arama kriterlerini veya sınıf filtresini değiştirerek diğer etkinliklere göz atabilirsiniz.'}</p>
+        ${isTeacher ? `
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="restoreDemoActivities()">🔄 Maarif Örneklerini Yükle</button>
+          <button class="btn btn-primary" onclick="openModal('newActivityModal')">➕ Yeni Etkinlik Oluştur</button>
+        </div>` : ''}
+      </div>`;
+    } else {
+      grid.innerHTML = list.map(activityCard).join('');
+    }
+  }
+
+  function setFilter(type, btn) {
+    currentFilter = type;
+    document.querySelectorAll('#typeFilter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderActivities();
+  }
+
+  function setGradeFilter(grade, btn) {
+    currentGradeFilter = grade;
+    document.querySelectorAll('#gradeFilter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderActivities();
+  }
+
+  function setOwnerFilter(owner, btn) {
+    currentOwnerFilter = owner;
+    document.querySelectorAll('#ownerFilterBar .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderActivities();
+  }
+
+  function copyCode(code, event) {
+    event.stopPropagation();
+    navigator.clipboard.writeText(code).then(() => {
+      showToast(`"${code}" kodu panoya kopyalandı!`, 'success');
+    }).catch(() => {
+      showToast(`Sınıf kodu: ${code}`, 'info');
+    });
+  }
+
+  // ---- YENİ ETKİNLİK ----
+  function selectType(type, el) {
+    selectedType = type;
+    document.querySelectorAll('.type-select-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const modeWrap = document.getElementById('newSezdirmeModeWrap');
+    if (modeWrap) modeWrap.style.display = (type === 'sezdirme') ? 'block' : 'none';
+  }
+
+  function createActivity() {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    const titleInput = document.getElementById('newTitle');
+    const title = titleInput.value.trim();
+    if (!title) {
+      showToast('Lütfen etkinlik için bir başlık girin!', 'warning');
+      titleInput.focus();
+      return;
+    }
+
+    const grade = document.getElementById('newGrade')?.value || '5';
+    const theme = (document.getElementById('newTheme')?.value || '').trim();
+
+    try {
+      const activity = ActivityStore.createNew(selectedType, grade, theme);
+      activity.title = title;
+      activity.description = document.getElementById('newDesc').value.trim();
+      const modeSel = document.getElementById('newSezdirmeMode');
+      if (selectedType === 'sezdirme' && modeSel && typeof createDetectiveSezdirmeSteps === 'function') {
+        if (modeSel.value === 'detective_soyguncu') {
+          activity.steps = createDetectiveSezdirmeSteps('soyguncu');
+          if (!activity.objective) activity.objective = 'Öğrenciler telsiz diyaloğundaki belirsiz ifadeler yerine isim ve sıfat kullanma ihtiyacını keşfeder.';
+        } else if (modeSel.value === 'detective_custom') {
+          activity.steps = createDetectiveSezdirmeSteps('custom');
+        }
+      }
+      ActivityStore.save(activity);
+
+      closeModal('newActivityModal');
+      titleInput.value = '';
+      document.getElementById('newDesc').value = '';
+      if (document.getElementById('newTheme')) document.getElementById('newTheme').value = '';
+      if (modeSel) modeSel.value = 'standard';
+
+      // Arayüzü anında güncelle
+      renderStats();
+      renderActivities();
+
+      showToast(`"${activity.title}" oluşturuldu! Editöre yönlendiriliyorsunuz...`, 'success');
+      const targetUrl = getEditUrl(activity);
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 500);
+    } catch (err) {
+      console.error('Etkinlik oluşturma hatası:', err);
+      showToast('Etkinlik oluşturulamadı: ' + err.message, 'error');
+    }
+  }
+
+  function restoreDemoActivities() {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    ActivityStore.resetToDefaults();
+    renderStats();
+    renderActivities();
+    showToast('Türkiye Yüzyılı Maarif Modeli (5-8. Sınıf) Türkçe etkinlikleri başarıyla yüklendi!', 'success');
+  }
+
+  function deleteActivity(id) {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    deleteTargetId = id;
+    openModal('deleteModal');
+  }
+
+  function confirmDelete() {
+    if (!AuthStore.isLoggedIn()) { window.location.href = 'pages/login.html'; return; }
+    if (deleteTargetId) {
+      ActivityStore.delete(deleteTargetId);
+      deleteTargetId = null;
+      closeModal('deleteModal');
+      renderStats();
+      renderActivities();
+      showToast('Etkinlik silindi.', 'success');
+    }
+  }
+
+  // ---- BAŞLAT ----
+  function initPage() {
+    renderRoleUI();
+    const tur = new URLSearchParams(window.location.search).get('tur');
+    if (tur) {
+      const btn = document.querySelector(`#typeFilter .filter-btn[data-type="${tur}"]`);
+      if (btn) {
+        currentFilter = tur;
+        document.querySelectorAll('#typeFilter .filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+    }
+    renderStats();
+    renderActivities();
+    renderTemplates();
+  }
+
+  initPage();
+  document.addEventListener('DOMContentLoaded', initPage);
+</script>
+</body>
+</html>

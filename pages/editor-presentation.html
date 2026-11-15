@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sunum Editörü - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .editor-layout { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 128px); }
+    .editor-topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; gap: 12px; flex-wrap: wrap;
+      position: sticky; top: 64px; z-index: 50;
+    }
+    .slide-panel {
+      background: #fff;
+      border-right: 2px solid var(--border);
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .slide-thumb {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex; align-items: center; gap: 10px;
+      background: #fff;
+    }
+    .slide-thumb:hover, .slide-thumb.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .slide-thumb .slide-num {
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .slide-editor-main { padding: 28px; background: var(--bg); overflow-y: auto; }
+    .slide-edit-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow);
+    }
+    .slide-type-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .slide-type-btn {
+      padding: 8px 16px;
+      border-radius: 50px;
+      border: 2px solid var(--border);
+      background: #fff;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+    }
+    .slide-type-btn:hover, .slide-type-btn.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+    .bullet-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .hotspot-edit-row {
+      background: #F8F9FE;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .add-slide-btn {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      font-weight: 700;
+      background: transparent;
+      width: 100%;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      margin-top: 8px;
+    }
+    .add-slide-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    @media (max-width: 800px) {
+      .editor-layout { grid-template-columns: 1fr; }
+      .slide-panel { max-height: 220px; border-right: none; border-bottom: 2px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">← Panele Dön</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <span style="font-size:0.85rem;" id="saveStatus">✅ Kaydedildi</span>
+    <button class="btn btn-primary" onclick="saveActivity()">💾 Kaydet</button>
+    <a id="previewBtn" href="#" target="_blank" class="btn btn-outline">▶️ Sunum Modu</a>
+  </div>
+</nav>
+
+<div class="editor-topbar">
+  <div style="flex:1; min-width:200px;">
+    <input type="text" class="form-control" id="activityTitle" placeholder="Sunum başlığı..."
+      style="font-size:1.1rem; font-weight:800;" oninput="markDirty()" />
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <span id="slideCount" class="badge badge-primary">0 Slayt</span>
+    <span id="codeDisplay" class="activity-code-badge" style="cursor:default;"></span>
+  </div>
+</div>
+
+<div class="editor-layout">
+
+  <!-- SOL PANEL: SLAYT LİSTESİ -->
+  <div class="slide-panel">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <span style="font-weight:800; font-size:0.85rem; color:var(--text-muted);">SLAYTLAR</span>
+      <button class="btn btn-primary btn-sm" onclick="addSlide()">➕</button>
+    </div>
+    <div id="slidesList"></div>
+    <button class="add-slide-btn" onclick="addSlide()">➕ Yeni Slayt Ekle</button>
+  </div>
+
+  <!-- SAĞ PANEL: SLAYT DÜZENLEME -->
+  <div class="slide-editor-main">
+    <div id="noSlide" class="empty-state">
+      <span class="empty-icon">📊</span>
+      <h3>Slayt seçilmedi</h3>
+      <p>Sol panelden bir slayt seçin veya yeni slayt ekleyin.</p>
+      <button class="btn btn-primary mt-16" onclick="addSlide()">➕ İlk Slaytı Ekle</button>
+    </div>
+
+    <div id="slideEditor" class="hidden">
+      <div class="slide-edit-card">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <h3 style="font-size:1.1rem; font-weight:800;" id="currentSlideLabel">Slayt 1 Düzenleme</h3>
+          <div style="display:flex; gap:6px;">
+            <button class="icon-btn" onclick="moveSlide(-1)" title="Yukarı taşı">↑</button>
+            <button class="icon-btn" onclick="moveSlide(1)" title="Aşağı taşı">↓</button>
+            <button class="icon-btn danger" onclick="deleteSlide()" title="Slaytı sil">🗑️</button>
+          </div>
+        </div>
+
+        <!-- SLAYT DÜZENİ SEÇİCİ -->
+        <div>
+          <label class="form-label">Slayt Düzeni ve Etkileşim Türü</label>
+          <div class="slide-type-tabs">
+            <button class="slide-type-btn active" data-type="title" onclick="changeSlideType('title', this)">🎨 Kapak/Başlık</button>
+            <button class="slide-type-btn" data-type="content" onclick="changeSlideType('content', this)">📝 Metin/İçerik</button>
+            <button class="slide-type-btn" data-type="image-text" onclick="changeSlideType('image-text', this)">🖼️ Görsel + Metin</button>
+            <button class="slide-type-btn" data-type="bullets" onclick="changeSlideType('bullets', this)">📋 Maddeli Liste</button>
+            <button class="slide-type-btn" data-type="poem" onclick="changeSlideType('poem', this)">📜 Şiir / Alıntı</button>
+            <button class="slide-type-btn" data-type="interactive" onclick="changeSlideType('interactive', this)">🎯 Tıkla-Keşfet (Hotspot)</button>
+            <button class="slide-type-btn" data-type="accordion" onclick="changeSlideType('accordion', this)">💡 Soru & Sürpriz Cevap</button>
+          </div>
+        </div>
+
+        <!-- BAŞLIK -->
+        <div class="form-group">
+          <label class="form-label">Slayt Başlığı</label>
+          <input type="text" class="form-control" id="slideTitle" placeholder="Slayt başlığı..." oninput="updateCurrentSlide()" />
+        </div>
+
+        <!-- ALT BAŞLIK / KAZANIM -->
+        <div class="form-group" id="subtitleGroup">
+          <label class="form-label">Alt Başlık / Kazanım Notu</label>
+          <input type="text" class="form-control" id="slideSubtitle" placeholder="Alt başlık veya konu kazanımı..." oninput="updateCurrentSlide()" />
+        </div>
+
+        <!-- METİN İÇERİĞİ -->
+        <div class="form-group hidden" id="contentGroup">
+          <label class="form-label">Metin İçeriği</label>
+          <textarea class="form-control" id="slideContent" rows="4" placeholder="Konu anlatımı..." oninput="updateCurrentSlide()"></textarea>
+        </div>
+
+        <!-- GÖRSEL EKLEME ALANI -->
+        <div class="form-group" id="imageUploadGroup">
+          <label class="form-label">🖼️ Slayt Görseli (İsteğe bağlı)</label>
+          <div id="imagePreviewContainer" class="hidden" style="margin-bottom:10px;">
+            <div class="image-preview-container">
+              <img id="imagePreviewImg" class="image-preview-thumb" src="" alt="Görsel Önizleme" onclick="openLightbox(this.src)" />
+              <div class="image-preview-info">
+                <div style="font-weight:700; font-size:0.9rem;">Görsel Eklendi</div>
+                <div style="color:var(--text-muted); font-size:0.75rem;">Önizlemek için görsele tıklayın</div>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="removeImage()">🗑️ Görseli Kaldır</button>
+            </div>
+          </div>
+          <div class="image-uploader-box" id="dropArea">
+            <div class="image-drop-area" onclick="document.getElementById('fileInput').click()">
+              <span class="image-drop-icon">📷</span>
+              <span class="image-drop-text">Bilgisayarınızdan Görsel Seçin veya Sürükleyin</span>
+              <span class="image-drop-subtext">PNG, JPG, WebP formatları desteklenir (otomatik optimize edilir)</span>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileSelect(event)" />
+            <div class="image-url-input-row">
+              <input type="text" class="form-control" id="imageUrlInput" placeholder="Veya internetten görsel bağlantısı (URL) yapıştırın..." />
+              <button class="btn btn-outline btn-sm" onclick="applyImageUrl()">Ekle</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ŞİİR / ALINTI ÖZEL ALANI -->
+        <div class="hidden" id="poemGroup">
+          <div class="form-group">
+            <label class="form-label">Şiir Metni / Edebi Alıntı</label>
+            <textarea class="form-control" id="poemText" rows="5" placeholder="Dizeleri alt alta yazın..." oninput="updateCurrentSlide()"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Şair / Yazar Adı</label>
+            <input type="text" class="form-control" id="poemAuthor" placeholder="Örnek: — Âşık Veysel" oninput="updateCurrentSlide()" />
+          </div>
+        </div>
+
+        <!-- MADDELİ LİSTE ALANI -->
+        <div class="hidden" id="bulletsGroup">
+          <label class="form-label">Madde Maddeli Liste</label>
+          <div id="bulletsList"></div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="addBullet()">➕ Madde Ekle</button>
+        </div>
+
+        <!-- TIKLA-KEŞFET (HOTSPOT) ALANI -->
+        <div class="hidden" id="hotspotGroup">
+          <label class="form-label">🎯 Tıklanabilir İpuçları / Keşif Düğmeleri (Genially Tarzı)</label>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">Öğrenci bu düğmelere tıkladığında detaylı açıklama kartı açılır.</p>
+          <div id="hotspotList"></div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="addHotspot()">➕ Yeni Keşif Düğmesi Ekle</button>
+        </div>
+
+        <!-- AKORDİYON / SORU-CEVAP ALANI -->
+        <div class="hidden" id="accordionGroup">
+          <div class="form-group">
+            <label class="form-label">Düşündürücü Soru / Kavram</label>
+            <input type="text" class="form-control" id="accordionQuestion" placeholder="Öğrencilere sorulacak soru..." oninput="updateCurrentSlide()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tıklanınca Açılacak Cevap / Açıklama</label>
+            <textarea class="form-control" id="accordionAnswer" rows="3" placeholder="Sürpriz cevap veya detaylı açıklama..." oninput="updateCurrentSlide()"></textarea>
+          </div>
+        </div>
+
+        <!-- CANLI ÖNİZLEME -->
+        <div style="margin-top:32px; border-top:2px solid var(--border); padding-top:20px;">
+          <label class="form-label" style="margin-bottom:12px;">👁️ Canlı Önizleme</label>
+          <div id="slidePreview" style="border-radius:14px; overflow:hidden; border:2px solid var(--border); box-shadow:var(--shadow);"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let activity = null;
+  let currentSlideId = null;
+  let isDirty = false;
+
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) activity = ActivityStore.getById(id);
+    if (!activity) {
+      activity = ActivityStore.createNew('presentation');
+      ActivityStore.save(activity);
+      window.history.replaceState({}, '', `?id=${activity.id}`);
+    }
+
+    document.getElementById('activityTitle').value = activity.title || '';
+    document.getElementById('codeDisplay').textContent = '🔑 ' + activity.code;
+    document.getElementById('previewBtn').href = `play-presentation.html?id=${activity.id}`;
+
+    if (!activity.slides) activity.slides = [];
+    renderSlidesList();
+    if (activity.slides.length > 0) selectSlide(activity.slides[0].id);
+    updateCount();
+  }
+
+  function renderSlidesList() {
+    const container = document.getElementById('slidesList');
+    if (activity.slides.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML = activity.slides.map((s, i) => `
+      <div class="slide-thumb ${s.id === currentSlideId ? 'active' : ''}" onclick="selectSlide('${s.id}')">
+        <div class="slide-num">${i + 1}</div>
+        <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          <div>${s.title || 'İsimsiz Slayt'}</div>
+          <div style="font-size:0.7rem; color:var(--text-muted);">${getLayoutName(s.type)}</div>
+        </div>
+        ${s.image ? '<span title="Görsel içeriyor">🖼️</span>' : ''}
+      </div>
+    `).join('');
+  }
+
+  function getLayoutName(type) {
+    const names = {
+      title: 'Kapak',
+      content: 'Metin',
+      'image-text': 'Görsel+Metin',
+      bullets: 'Maddeli',
+      poem: 'Şiir/Alıntı',
+      interactive: 'Keşif',
+      accordion: 'Soru-Cevap'
+    };
+    return names[type] || 'Slayt';
+  }
+
+  function selectSlide(id) {
+    currentSlideId = id;
+    renderSlidesList();
+    const slide = activity.slides.find(s => s.id === id);
+    if (!slide) return;
+
+    const idx = activity.slides.findIndex(s => s.id === id);
+    document.getElementById('noSlide').classList.add('hidden');
+    document.getElementById('slideEditor').classList.remove('hidden');
+    document.getElementById('currentSlideLabel').textContent = `Slayt ${idx + 1} Düzenleme`;
+    document.getElementById('slideTitle').value = slide.title || '';
+    document.getElementById('slideSubtitle').value = slide.subtitle || '';
+    document.getElementById('slideContent').value = slide.content || '';
+    document.getElementById('poemText').value = slide.poemText || '';
+    document.getElementById('poemAuthor').value = slide.poemAuthor || '';
+    document.getElementById('accordionQuestion').value = slide.question || '';
+    document.getElementById('accordionAnswer').value = slide.answer || '';
+
+    if (slide.image) {
+      document.getElementById('imagePreviewImg').src = slide.image;
+      document.getElementById('imagePreviewContainer').classList.remove('hidden');
+    } else {
+      document.getElementById('imagePreviewContainer').classList.add('hidden');
+    }
+
+    document.querySelectorAll('.slide-type-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.type === (slide.type || 'title'));
+    });
+
+    applySlideType(slide.type || 'title');
+    renderBullets(slide.bullets || []);
+    renderHotspots(slide.hotspots || []);
+    renderPreview(slide);
+  }
+
+  function changeSlideType(type, btn) {
+    document.querySelectorAll('.slide-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applySlideType(type);
+    updateCurrentSlide();
+  }
+
+  function applySlideType(type) {
+    document.getElementById('subtitleGroup').classList.toggle('hidden', type === 'poem' || type === 'accordion');
+    document.getElementById('contentGroup').classList.toggle('hidden', type !== 'content' && type !== 'image-text');
+    document.getElementById('bulletsGroup').classList.toggle('hidden', type !== 'bullets');
+    document.getElementById('poemGroup').classList.toggle('hidden', type !== 'poem');
+    document.getElementById('hotspotGroup').classList.toggle('hidden', type !== 'interactive');
+    document.getElementById('accordionGroup').classList.toggle('hidden', type !== 'accordion');
+  }
+
+  async function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      showToast('Görsel yükleniyor ve optimize ediliyor...', 'info');
+      const dataUrl = await compressImage(file, 900, 900, 0.75);
+      if (dataUrl) {
+        setImageToCurrentSlide(dataUrl);
+      }
+    } catch (err) {
+      showToast('Görsel işlenirken bir sorun oluştu!', 'error');
+    }
+  }
+
+  function applyImageUrl() {
+    const url = document.getElementById('imageUrlInput').value.trim();
+    if (!url) return;
+    setImageToCurrentSlide(url);
+    document.getElementById('imageUrlInput').value = '';
+  }
+
+  function setImageToCurrentSlide(imgSrc) {
+    if (!currentSlideId) return;
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (!slide) return;
+    slide.image = imgSrc;
+    document.getElementById('imagePreviewImg').src = imgSrc;
+    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+    renderSlidesList();
+    renderPreview(slide);
+    markDirty();
+    showToast('Görsel başarıyla eklendi!', 'success');
+  }
+
+  function removeImage() {
+    if (!currentSlideId) return;
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (!slide) return;
+    slide.image = null;
+    document.getElementById('imagePreviewContainer').classList.add('hidden');
+    document.getElementById('fileInput').value = '';
+    renderSlidesList();
+    renderPreview(slide);
+    markDirty();
+    showToast('Görsel kaldırıldı.', 'info');
+  }
+
+  function addSlide() {
+    const slide = {
+      id: generateId(),
+      type: 'title',
+      title: 'Yeni Slayt',
+      subtitle: '',
+      content: '',
+      bullets: [],
+      hotspots: []
+    };
+    activity.slides.push(slide);
+    updateCount();
+    renderSlidesList();
+    selectSlide(slide.id);
+    markDirty();
+  }
+
+  function deleteSlide() {
+    if (!currentSlideId) return;
+    if (activity.slides.length <= 1) {
+      showToast('En az bir slayt kalmalıdır!', 'warning');
+      return;
+    }
+    const idx = activity.slides.findIndex(s => s.id === currentSlideId);
+    activity.slides = activity.slides.filter(s => s.id !== currentSlideId);
+    updateCount();
+    const nextSlide = activity.slides[Math.max(0, idx - 1)];
+    currentSlideId = nextSlide ? nextSlide.id : null;
+    if (currentSlideId) selectSlide(currentSlideId);
+    else {
+      document.getElementById('slideEditor').classList.add('hidden');
+      document.getElementById('noSlide').classList.remove('hidden');
+    }
+    renderSlidesList();
+    markDirty();
+  }
+
+  function moveSlide(dir) {
+    const idx = activity.slides.findIndex(s => s.id === currentSlideId);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= activity.slides.length) return;
+    const tmp = activity.slides[idx];
+    activity.slides[idx] = activity.slides[newIdx];
+    activity.slides[newIdx] = tmp;
+    renderSlidesList();
+    markDirty();
+  }
+
+  function updateCurrentSlide() {
+    if (!currentSlideId) return;
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (!slide) return;
+    const activeTypeBtn = document.querySelector('.slide-type-btn.active');
+    slide.type = activeTypeBtn ? activeTypeBtn.dataset.type : 'title';
+    slide.title = document.getElementById('slideTitle').value;
+    slide.subtitle = document.getElementById('slideSubtitle').value;
+    slide.content = document.getElementById('slideContent').value;
+    slide.poemText = document.getElementById('poemText').value;
+    slide.poemAuthor = document.getElementById('poemAuthor').value;
+    slide.question = document.getElementById('accordionQuestion').value;
+    slide.answer = document.getElementById('accordionAnswer').value;
+    renderSlidesList();
+    renderPreview(slide);
+    markDirty();
+  }
+
+  function addBullet() {
+    if (!currentSlideId) return;
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (!slide) return;
+    if (!slide.bullets) slide.bullets = [];
+    slide.bullets.push('');
+    renderBullets(slide.bullets);
+    markDirty();
+  }
+
+  function renderBullets(bullets) {
+    const container = document.getElementById('bulletsList');
+    container.innerHTML = bullets.map((b, i) => `
+      <div class="bullet-row">
+        <span style="color:var(--primary); font-weight:900;">→</span>
+        <input type="text" class="form-control" value="${b}"
+          placeholder="Madde ${i + 1}..."
+          oninput="updateBullet(${i}, this.value)" />
+        <button class="icon-btn danger" onclick="removeBullet(${i})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function updateBullet(i, val) {
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (slide) {
+      slide.bullets[i] = val;
+      renderPreview(slide);
+      markDirty();
+    }
+  }
+
+  function removeBullet(i) {
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (slide) {
+      slide.bullets.splice(i, 1);
+      renderBullets(slide.bullets);
+      renderPreview(slide);
+      markDirty();
+    }
+  }
+
+  function addHotspot() {
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (!slide) return;
+    if (!slide.hotspots) slide.hotspots = [];
+    slide.hotspots.push({
+      id: generateId(),
+      label: 'Yeni Terim',
+      title: 'Başlık',
+      desc: 'Öğrencinin göreceği açıklama...'
+    });
+    renderHotspots(slide.hotspots);
+    renderPreview(slide);
+    markDirty();
+  }
+
+  function renderHotspots(hotspots) {
+    const container = document.getElementById('hotspotList');
+    if (!hotspots.length) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Henüz keşif düğmesi eklenmedi.</p>';
+      return;
+    }
+    container.innerHTML = hotspots.map((h, i) => `
+      <div class="hotspot-edit-row">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-weight:800; font-size:0.85rem; color:var(--primary);">Düğme ${i + 1}</span>
+          <button class="icon-btn danger" onclick="removeHotspot('${h.id}')">✕</button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px;">
+          <input type="text" class="form-control" value="${h.label}" placeholder="Düğme Etiketi..." oninput="updateHotspot('${h.id}', 'label', this.value)" />
+          <input type="text" class="form-control" value="${h.title}" placeholder="Açılan Kart Başlığı..." oninput="updateHotspot('${h.id}', 'title', this.value)" />
+        </div>
+        <textarea class="form-control" rows="2" placeholder="Açılan detaylı açıklama..." oninput="updateHotspot('${h.id}', 'desc', this.value)">${h.desc}</textarea>
+      </div>
+    `).join('');
+  }
+
+  function updateHotspot(id, field, val) {
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (!slide || !slide.hotspots) return;
+    const h = slide.hotspots.find(x => x.id === id);
+    if (h) {
+      h[field] = val;
+      renderPreview(slide);
+      markDirty();
+    }
+  }
+
+  function removeHotspot(id) {
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (!slide || !slide.hotspots) return;
+    slide.hotspots = slide.hotspots.filter(x => x.id !== id);
+    renderHotspots(slide.hotspots);
+    renderPreview(slide);
+    markDirty();
+  }
+
+  let previewHotspotIdx = null;
+
+  function previewToggleHotspot(i) {
+    if (previewHotspotIdx === i) previewHotspotIdx = null;
+    else previewHotspotIdx = i;
+    const slide = activity.slides.find(s => s.id === currentSlideId);
+    if (slide) renderPreview(slide);
+  }
+
+  function renderPreview(slide) {
+    const container = document.getElementById('slidePreview');
+    if (!container) return;
+
+    let imgHtml = slide.image ? `<div class="activity-media-box"><img src="${slide.image}" alt="Slayt Görseli" /></div>` : '';
+
+    if (slide.type === 'title') {
+      container.innerHTML = `
+        <div style="background:linear-gradient(135deg,#6C63FF,#9B59B6);color:#fff;padding:50px 32px;text-align:center;">
+          <h2 style="font-size:2rem;font-weight:900;margin-bottom:12px;">${slide.title || 'Başlık'}</h2>
+          ${slide.subtitle ? `<p style="opacity:0.9; font-size:1.1rem;">${slide.subtitle}</p>` : ''}
+          ${imgHtml}
+        </div>`;
+    } else if (slide.type === 'image-text') {
+      container.innerHTML = `
+        <div style="padding:32px;background:#fff;">
+          <h3 style="font-size:1.3rem;font-weight:900;color:#6C63FF;border-bottom:3px solid #EEF0FF;padding-bottom:10px;margin-bottom:16px;">${slide.title || 'Başlık'}</h3>
+          <div class="slide-split-layout">
+            <div>
+              <p style="font-size:1.05rem;line-height:1.8;color:#2D2D2D;">${slide.content || 'İçerik metni...'}</p>
+            </div>
+            <div>
+              ${slide.image ? `<img src="${slide.image}" class="slide-split-img" alt="Görsel" />` : '<div style="background:#F0F2FF; border:2px dashed #CCD4FF; border-radius:12px; height:200px; display:flex; align-items:center; justify-content:center; color:#7A7A9A;">Görsel bekleniyor</div>'}
+            </div>
+          </div>
+        </div>`;
+    } else if (slide.type === 'poem') {
+      container.innerHTML = `
+        <div style="padding:32px;background:#fff;">
+          <h3 style="font-size:1.3rem;font-weight:900;color:#6C63FF;margin-bottom:12px;">${slide.title || 'Şiir İncelemesi'}</h3>
+          <div class="poem-box">
+            <div class="poem-text">${slide.poemText || 'Dizeler buraya yazılacak...'}</div>
+            <div class="poem-author">${slide.poemAuthor || ''}</div>
+          </div>
+          ${imgHtml}
+        </div>`;
+    } else if (slide.type === 'interactive') {
+      const hotspots = slide.hotspots || [];
+      container.innerHTML = `
+        <div style="padding:32px;background:#fff;">
+          <h3 style="font-size:1.3rem;font-weight:900;color:#6C63FF;margin-bottom:8px;">${slide.title || 'Keşfet'}</h3>
+          <p style="color:var(--text-muted); font-size:0.95rem;">${slide.subtitle || 'Düğmelere tıklayarak keşfedin:'}</p>
+          <div class="hotspot-wrapper">
+            ${hotspots.map((h, i) => `
+              <button type="button" class="hotspot-btn ${previewHotspotIdx === i ? 'active' : ''}" onclick="previewToggleHotspot(${i})">
+                <span class="hotspot-badge">${i + 1}</span>
+                <span>${h.label}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div id="editorPreviewHotspotCard">
+            ${previewHotspotIdx !== null && hotspots[previewHotspotIdx] ? `
+              <div class="hotspot-modal-card">
+                <div class="hotspot-card-title">💡 ${hotspots[previewHotspotIdx].title}</div>
+                <div class="hotspot-card-desc">${hotspots[previewHotspotIdx].desc}</div>
+              </div>
+            ` : '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px; background:#F8F9FE; border-radius:8px; border:1px dashed var(--border); text-align:center;">Önizlemede görmek için düğmelerden birine tıklayın.</div>'}
+          </div>
+          ${imgHtml}
+        </div>`;
+    } else if (slide.type === 'accordion') {
+      container.innerHTML = `
+        <div style="padding:32px;background:#fff;">
+          <h3 style="font-size:1.3rem;font-weight:900;color:#6C63FF;margin-bottom:16px;">${slide.title || 'Soru-Cevap'}</h3>
+          <div class="slide-accordion open">
+            <div class="slide-accordion-header">
+              <span>❓ ${slide.question || 'Düşündürücü Soru...'}</span>
+              <span>▼</span>
+            </div>
+            <div class="slide-accordion-body" style="display:block;">
+              <strong>Cevap / İpucu:</strong> ${slide.answer || 'Açıklama...'}
+            </div>
+          </div>
+          ${imgHtml}
+        </div>`;
+    } else if (slide.type === 'bullets') {
+      const bulletsHtml = (slide.bullets || []).filter(b => b.trim()).map(b =>
+        `<li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:1rem;">
+          <span style="color:#6C63FF;font-weight:900;flex-shrink:0;">→</span>${b}
+         </li>`
+      ).join('');
+      container.innerHTML = `
+        <div style="padding:32px;background:#fff;">
+          <h3 style="font-size:1.3rem;font-weight:900;color:#6C63FF;border-bottom:3px solid #EEF0FF;padding-bottom:10px;margin-bottom:16px;">${slide.title || 'Başlık'}</h3>
+          <ul style="list-style:none;">${bulletsHtml || '<li style="color:#999;">Madde ekleyin...</li>'}</ul>
+          ${imgHtml}
+        </div>`;
+    } else {
+      container.innerHTML = `
+        <div style="padding:32px;background:#fff;">
+          <h3 style="font-size:1.3rem;font-weight:900;color:#6C63FF;border-bottom:3px solid #EEF0FF;padding-bottom:10px;margin-bottom:16px;">${slide.title || 'Başlık'}</h3>
+          <p style="font-size:1.05rem;line-height:1.8;color:#2D2D2D;">${slide.content || 'İçerik metni...'}</p>
+          ${imgHtml}
+        </div>`;
+    }
+  }
+
+  function updateCount() {
+    document.getElementById('slideCount').textContent = `${activity.slides.length} Slayt`;
+  }
+
+  function markDirty() {
+    isDirty = true;
+    document.getElementById('saveStatus').textContent = '⏳ Kaydedilmedi';
+    document.getElementById('saveStatus').style.color = 'var(--warning)';
+  }
+
+  function saveActivity() {
+    activity.title = document.getElementById('activityTitle').value.trim() || 'İsimsiz Sunum';
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    isDirty = false;
+    document.getElementById('saveStatus').textContent = '✅ Kaydedildi';
+    document.getElementById('saveStatus').style.color = 'var(--success)';
+    showToast('Sunum kaydedildi!', 'success');
+  }
+
+  setInterval(() => { if (isDirty) saveActivity(); }, 30000);
+  window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  init();
+</script>
+</body>
+</html>

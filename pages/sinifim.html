@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sınıfım - DüzgünÖğretmenlik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/games.css" />
+  <style>
+    .student-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      transition: var(--transition);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-top: 4px solid var(--primary);
+    }
+    .student-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-3px);
+    }
+    .student-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .student-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+      border: 2px solid var(--primary);
+    }
+    .student-score-badge {
+      background: linear-gradient(135deg, #FFB347, #FF8C00);
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.1rem;
+      padding: 6px 14px;
+      border-radius: 50px;
+      box-shadow: 0 4px 12px rgba(255,140,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #F0F4FF;
+      color: var(--primary);
+      border-radius: 50px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      margin: 2px;
+      border: 1px solid var(--border);
+    }
+    .quick-point-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 900;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .quick-point-btn.plus { background: #E8F5E9; color: #2E7D32; }
+    .quick-point-btn.plus:hover { background: #2E7D32; color: #fff; transform: scale(1.08); }
+    .quick-point-btn.minus { background: #FFEBEE; color: #C62828; }
+    .quick-point-btn.minus:hover { background: #C62828; color: #fff; transform: scale(1.08); }
+
+    .note-timeline-item {
+      padding: 12px 14px;
+      background: #F8F9FE;
+      border-radius: 10px;
+      border-left: 4px solid var(--primary);
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+    .note-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- GEZİNTİ ÇUBUĞU (NAVBAR) -->
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">
+    <span class="logo-icon">📚</span> DüzgünÖğretmenlik
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="../index.html">📋 Etkinliklerim</a></li>
+    <li><a href="sinifim.html" class="active">👥 Sınıfım</a></li>
+    <li><a href="turkce-oneriler.html">🗣️ Türkçe Öneriler</a></li>
+    <li><a href="join.html">🎮 Etkinliğe Gir</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <button class="btn btn-outline btn-sm" onclick="openModal('newCustomBadgeModal')">🏅 Yeni Rozet Tanımla</button>
+    <button class="btn btn-outline btn-sm" onclick="openModal('bulkStudentModal')">📋 Toplu Liste Yükle</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('newStudentModal')">➕ Yeni Öğrenci Ekle</button>
+  </div>
+</nav>
+
+<!-- HERO BAŞLIK -->
+<div class="hero-small" style="background: linear-gradient(135deg, #4B44CC 0%, #6C63FF 100%);">
+  <div>
+    <h1>👥 Sınıfım ve Öğrenci Takibi</h1>
+    <p>Eğitim yılı boyunca öğrencilerinizin ders içi puanlarını, rozetlerini ve öğretmen gözlem notlarını yönetin.</p>
+  </div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <button class="btn btn-outline-white btn-sm" onclick="openModal('newClassModal')">➕ Yeni Şube Ekle</button>
+    <button class="btn btn-outline-white btn-sm" style="border-color:rgba(255,255,255,0.6);" onclick="openClearStudentsModal()">🗑️ Sınıf Listesini Temizle</button>
+  </div>
+</div>
+
+<!-- ANA İÇERİK -->
+<div class="section">
+
+  <!-- İSTATİSTİK ÖZETİ -->
+  <div class="grid-4 mb-24" id="classStats"></div>
+
+  <!-- FİLTRE VE ARAMA ÇUBUĞU -->
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
+    <!-- Şube Butonları -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap;" id="classFilterList"></div>
+
+    <!-- Arama Kutusu -->
+    <div class="search-box" style="margin-bottom:0; min-width:280px;">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="form-control" id="searchStudent" placeholder="Öğrenci adı veya numarası ara..." oninput="renderStudents()" />
+    </div>
+  </div>
+
+  <!-- ÖĞRENCİ LİSTESİ IZGARASI -->
+  <div class="grid-3" id="studentsGrid"></div>
+
+</div>
+
+<!-- YENİ ÖĞRENCİ MODALI -->
+<div class="modal-overlay" id="newStudentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Yeni Öğrenci Ekle</h2>
+      <button class="modal-close" onclick="closeModal('newStudentModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Adı Soyadı <span style="color:var(--danger)">*</span></label>
+      <input type="text" class="form-control" id="studentName" placeholder="Öğrenci adı soyadı..." />
+    </div>
+    <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label class="form-label">Okul Numarası</label>
+        <input type="text" class="form-control" id="studentNumber" placeholder="Örn: 104" />
+      </div>
+      <div>
+        <label class="form-label">Sınıf / Şube</label>
+        <select class="form-control" id="studentClass"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Avatar / Simge</label>
+      <div style="display:flex; gap:10px; font-size:1.6rem;" id="avatarSelector">
+        <label style="cursor:pointer;"><input type="radio" name="av" value="👧" checked /> 👧</label>
+        <label style="cursor:pointer;"><input type="radio" name="av" value="👦" /> 👦</label>
+        <label style="cursor:pointer;"><input type="radio" name="av" value="🧒" /> 🧒</label>
+        <label style="cursor:pointer;"><input type="radio" name="av" value="⭐" /> ⭐</label>
+        <label style="cursor:pointer;"><input type="radio" name="av" value="🚀" /> 🚀</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">İlk Öğretmen Notu (İsteğe bağlı)</label>
+      <textarea class="form-control" id="studentInitialNote" rows="2" placeholder="Öğrenci hakkında başlangıç notu..."></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeModal('newStudentModal')">İptal</button>
+      <button class="btn btn-primary" onclick="createStudent()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPLU ÖĞRENCİ EKLEME MODALI -->
+<div class="modal-overlay" id="bulkStudentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📋 Toplu Öğrenci Listesi Yükle</h2>
+      <button class="modal-close" onclick="closeModal('bulkStudentModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Hedef Şube</label>
+      <select class="form-control" id="bulkTargetClass"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Her satıra: <code>Numara İsim Soyisim</code> yazın</label>
+      <textarea class="form-control" id="bulkStudentsText" rows="10" placeholder="101 Ali Yılmaz&#10;102 Ayşe Demir&#10;103 Canan Özkan"></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeModal('bulkStudentModal')">İptal</button>
+      <button class="btn btn-primary" onclick="processBulkStudents()">➕ Öğrencileri Yükle</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOT EKLEME MODALI -->
+<div class="modal-overlay" id="addNoteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📝 Öğrenci Gözlem Notu Yaz</h2>
+      <button class="modal-close" onclick="closeModal('addNoteModal')">✕</button>
+    </div>
+    <p id="noteModalStudentName" style="font-weight:800; color:var(--primary); margin-bottom:12px;"></p>
+    <div class="form-group">
+      <label class="form-label">Öğretmen Gözlem ve Değerlendirme Notu</label>
+      <textarea class="form-control" id="noteInputText" rows="4" placeholder="Ders içi katılımı, kitap okuma durumu, yazım kurallarına dikkati hakkında..."></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('addNoteModal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveStudentNote()">💾 Notu Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ÖĞRENCİ DETAY & GELİŞİM RAPORU MODALI -->
+<div class="modal-overlay" id="studentDetailModal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div id="detailAvatar" class="student-avatar" style="width:44px; height:44px; font-size:1.4rem;"></div>
+        <div>
+          <h2 class="modal-title" id="detailName" style="margin-bottom:2px;"></h2>
+          <span id="detailClassNum" style="font-size:0.85rem; color:var(--text-muted); font-weight:700;"></span>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('studentDetailModal')">✕</button>
+    </div>
+
+    <!-- Puan ve Rozet Özeti -->
+    <div style="display:flex; align-items:center; justify-content:space-between; background:var(--primary-light); padding:16px 20px; border-radius:12px; margin-bottom:20px;">
+      <div>
+        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:800;">TOPLAM PUAN</div>
+        <div style="font-size:2rem; font-weight:900; color:var(--primary);" id="detailPoints">0</div>
+      </div>
+      <div id="detailBadgesList" style="display:flex; flex-wrap:wrap; gap:6px; max-width:340px; justify-content:flex-end;"></div>
+    </div>
+
+    <!-- Hızlı Rozet Verme -->
+    <div style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:0.85rem; font-weight:800; color:var(--text-muted);">🎖️ Rozet Hediye Et:</span>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openModal('newCustomBadgeModal')" style="font-size:0.75rem; padding:3px 8px;">➕ Yeni Rozet Tanımla</button>
+      </div>
+      <div id="assignableBadgesList" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- Not Geçmişi -->
+    <h3 style="font-size:1rem; font-weight:800; margin-bottom:12px;">📋 Öğretmen Gözlem Notları</h3>
+    <div id="detailNotesList" style="max-height:200px; overflow-y:auto; margin-bottom:20px;"></div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:16px;">
+      <button class="btn btn-outline btn-sm" onclick="copyParentReport()">📲 Veli Bilgilendirme Raporu Kopyala</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-danger btn-sm" onclick="deleteCurrentStudent()">🗑️ Öğrenciyi Sil</button>
+        <button class="btn btn-primary btn-sm" onclick="closeModal('studentDetailModal')">Tamam</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- YENİ ŞUBE EKLEME MODALI -->
+<div class="modal-overlay" id="newClassModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Yeni Şube Ekle</h2>
+      <button class="modal-close" onclick="closeModal('newClassModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Şube Adı</label>
+      <input type="text" class="form-control" id="newClassNameInput" placeholder="Örn: 8-C, 6-A, Masal Kulübü" />
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('newClassModal')">İptal</button>
+      <button class="btn btn-primary" onclick="createNewClass()">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- YENİ ÖZEL ROZET TANIMLAMA MODALI -->
+<div class="modal-overlay" id="newCustomBadgeModal">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <h2 class="modal-title">🏅 Yeni Rozet Tanımla</h2>
+      <button class="modal-close" onclick="closeModal('newCustomBadgeModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rozet Adı <span style="color:var(--danger)">*</span></label>
+      <input type="text" class="form-control" id="customBadgeName" placeholder="Örn: Masal Anlatıcısı, Şiir Sevdalısı, Deyim Dedektifi..." />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rozet Simgesi / Emoji</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" class="form-control" id="customBadgeIcon" value="🌟" style="width:64px; text-align:center; font-size:1.5rem;" />
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='📜'">📜</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='🎙️'">🎙️</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='🔍'">🔍</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='🌟'">🌟</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='👑'">👑</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='🎭'">🎭</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='📚'">📚</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('customBadgeIcon').value='💡'">💡</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kazanım / Açıklama (İsteğe bağlı)</label>
+      <input type="text" class="form-control" id="customBadgeDesc" placeholder="Bu rozetin veriliş gerekçesi veya hedefi..." />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ödül Puanı</label>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="number" class="form-control" id="customBadgePoints" value="15" min="1" max="100" style="width:90px; text-align:center;" />
+        <span style="color:var(--text-muted); font-size:0.9rem;">puan (kazanılınca otomatik eklenir)</span>
+      </div>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeModal('newCustomBadgeModal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveCustomBadge()">💾 Rozeti Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ÖĞRENCİ SİLME ONAY MODALI -->
+<div class="modal-overlay" id="deleteStudentModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">🗑️ Öğrenciyi Sil</h2>
+      <button class="modal-close" onclick="closeModal('deleteStudentModal')">✕</button>
+    </div>
+    <p id="deleteStudentText" style="font-size:1rem; font-weight:700; color:var(--text); margin-bottom:8px;"></p>
+    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:20px;">
+      Öğrencinin puanları, kazandığı rozetler ve öğretmen gözlem notları kalıcı olarak silinecektir.
+    </p>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('deleteStudentModal')">Vazgeç</button>
+      <button class="btn btn-danger" onclick="confirmDeleteStudent()">🗑️ Evet, Öğrenciyi Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPLU SINIF TEMİZLEME MODALI -->
+<div class="modal-overlay" id="clearStudentsModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">🗑️ Sınıf Listesini Temizle</h2>
+      <button class="modal-close" onclick="closeModal('clearStudentsModal')">✕</button>
+    </div>
+    <p id="clearStudentsDesc" style="font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:16px;"></p>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button class="btn btn-outline" id="clearSelectedClassBtn" style="justify-content:center; border-color:var(--danger); color:var(--danger); display:none;" onclick="confirmClearClassOnly()"></button>
+      <button class="btn btn-danger" style="justify-content:center;" onclick="confirmClearAllStudents()">🗑️ Tüm Sınıflardaki Öğrencileri Sil</button>
+      <button class="btn btn-outline" style="justify-content:center;" onclick="closeModal('clearStudentsModal')">Vazgeç</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <strong>📚 DüzgünÖğretmenlik</strong> — Sınıf & Öğrenci Gelişim Takip Sistemi
+</footer>
+
+<script src="../assets/js/app.js"></script>
+<script>
+  let currentClassFilter = 'all';
+  let activeStudentId = null;
+
+  function init() {
+    renderClassFilters();
+    renderClassSelects();
+    renderStats();
+    renderStudents();
+  }
+
+  function renderClassFilters() {
+    const classes = StudentStore.getClasses();
+    const container = document.getElementById('classFilterList');
+    container.innerHTML = `
+      <button class="filter-btn ${currentClassFilter === 'all' ? 'active' : ''}" onclick="filterClass('all', this)">Tüm Sınıflar</button>
+      ${classes.map(c => `
+        <button class="filter-btn ${currentClassFilter === c ? 'active' : ''}" onclick="filterClass('${c}', this)">${c}</button>
+      `).join('')}
+    `;
+  }
+
+  function renderClassSelects() {
+    const classes = StudentStore.getClasses();
+    const opts = classes.map(c => `<option value="${c}">${c}</option>`).join('');
+    document.getElementById('studentClass').innerHTML = opts;
+    document.getElementById('bulkTargetClass').innerHTML = opts;
+  }
+
+  function filterClass(cls, btn) {
+    currentClassFilter = cls;
+    document.querySelectorAll('#classFilterList .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderStudents();
+  }
+
+  function renderStats() {
+    const all = StudentStore.getAll();
+    const total = all.length;
+    const totalPoints = all.reduce((sum, s) => sum + (s.points || 0), 0);
+    const avg = total > 0 ? Math.round(totalPoints / total) : 0;
+    const totalBadges = all.reduce((sum, s) => sum + (s.badges?.length || 0), 0);
+    const totalNotes = all.reduce((sum, s) => sum + (s.notes?.length || 0), 0);
+
+    document.getElementById('classStats').innerHTML = `
+      <div class="stat-card card">
+        <span class="stat-icon">👥</span>
+        <div class="stat-number">${total}</div>
+        <div class="stat-label">Kayıtlı Öğrenci</div>
+      </div>
+      <div class="stat-card card">
+        <span class="stat-icon">⭐</span>
+        <div class="stat-number">${avg}</div>
+        <div class="stat-label">Ortalama Puan</div>
+      </div>
+      <div class="stat-card card">
+        <span class="stat-icon">🎖️</span>
+        <div class="stat-number">${totalBadges}</div>
+        <div class="stat-label">Kazanılan Rozet</div>
+      </div>
+      <div class="stat-card card">
+        <span class="stat-icon">📝</span>
+        <div class="stat-number">${totalNotes}</div>
+        <div class="stat-label">Gözlem Notu</div>
+      </div>
+    `;
+  }
+
+  function renderStudents() {
+    const query = (document.getElementById('searchStudent').value || '').toLowerCase();
+    let list = StudentStore.getAll();
+
+    if (currentClassFilter !== 'all') {
+      list = list.filter(s => s.className === currentClassFilter);
+    }
+    if (query) {
+      list = list.filter(s =>
+        s.name.toLowerCase().includes(query) ||
+        (s.number || '').includes(query)
+      );
+    }
+
+    const grid = document.getElementById('studentsGrid');
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <span class="empty-icon">👥</span>
+          <h3>Bu filtrede öğrenci bulunamadı</h3>
+          <p>Yeni bir öğrenci ekleyebilir veya toplu liste yükleyebilirsiniz.</p>
+          <button class="btn btn-primary mt-16" onclick="openModal('newStudentModal')">➕ Öğrenci Ekle</button>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = list.map(studentCard).join('');
+  }
+
+  function studentCard(s) {
+    const badgesHtml = (s.badges || []).slice(0, 3).map(b =>
+      `<span class="badge-pill" title="${b.name}">${b.icon} ${b.name}</span>`
+    ).join('');
+
+    const latestNote = s.notes && s.notes.length > 0 ? s.notes[0].text : 'Henüz not eklenmedi.';
+
+    return `
+      <div class="student-card">
+        <div>
+          <div class="student-header">
+            <div class="student-avatar">${s.avatar || '👧'}</div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:900; font-size:1.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${s.name}
+              </div>
+              <div style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">
+                No: ${s.number || '-'} · <span style="color:var(--primary);">${s.className}</span>
+              </div>
+            </div>
+            <div class="student-score-badge">
+              ⭐ ${s.points || 0}
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px; min-height:30px;">
+            ${badgesHtml || '<span style="font-size:0.75rem; color:var(--text-muted);">Rozet yok</span>'}
+          </div>
+
+          <div class="note-timeline-item" style="margin-bottom:16px;">
+            <div class="note-date">Son Öğretmen Notu</div>
+            <div style="overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+              ${latestNote}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <!-- Hızlı Puan Düğmeleri -->
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-top:12px; border-top:1px solid var(--border);">
+            <span style="font-size:0.8rem; font-weight:800; color:var(--text-muted);">HIZLI PUAN</span>
+            <div style="display:flex; gap:6px;">
+              <button class="quick-point-btn minus" onclick="givePoint('${s.id}', -5)" title="-5 Puan">-5</button>
+              <button class="quick-point-btn plus" onclick="givePoint('${s.id}', 5)" title="+5 Puan">+5</button>
+              <button class="quick-point-btn plus" onclick="givePoint('${s.id}', 10)" title="+10 Puan">+10</button>
+            </div>
+          </div>
+
+          <!-- Aksiyon Düğmeleri -->
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-outline btn-sm" style="flex:1; justify-content:center;" onclick="openNoteModal('${s.id}')">
+              📝 Not Yaz
+            </button>
+            <button class="btn btn-primary btn-sm" style="flex:1; justify-content:center;" onclick="openDetailModal('${s.id}')">
+              🔍 Detay & Karne
+            </button>
+            <button class="btn btn-outline btn-sm" style="padding:7px 10px; color:var(--danger); border-color:#FECACA; background:#FEF2F2;" onclick="promptDeleteStudent('${s.id}')" title="Öğrenciyi Sil">
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function givePoint(id, delta) {
+    StudentStore.addPoint(id, delta);
+    renderStats();
+    renderStudents();
+    showToast(`${delta > 0 ? '+' + delta : delta} puan işlendi!`, delta > 0 ? 'success' : 'info');
+  }
+
+  function openNoteModal(id) {
+    activeStudentId = id;
+    const student = StudentStore.getById(id);
+    if (!student) return;
+    document.getElementById('noteModalStudentName').textContent = `Öğrenci: ${student.name} (${student.className})`;
+    document.getElementById('noteInputText').value = '';
+    openModal('addNoteModal');
+  }
+
+  function saveStudentNote() {
+    const text = document.getElementById('noteInputText').value.trim();
+    if (!text) {
+      showToast('Lütfen bir not yazın!', 'warning');
+      return;
+    }
+    StudentStore.addNote(activeStudentId, text);
+    closeModal('addNoteModal');
+    renderStats();
+    renderStudents();
+    showToast('Öğrenci gözlem notu kaydedildi!', 'success');
+  }
+
+  function openDetailModal(id) {
+    activeStudentId = id;
+    const student = StudentStore.getById(id);
+    if (!student) return;
+
+    document.getElementById('detailAvatar').textContent = student.avatar || '👧';
+    document.getElementById('detailName').textContent = student.name;
+    document.getElementById('detailClassNum').textContent = `No: ${student.number || '-'} · Şube: ${student.className}`;
+    document.getElementById('detailPoints').textContent = student.points || 0;
+
+    // Rozetler
+    const badgesContainer = document.getElementById('detailBadgesList');
+    if (student.badges && student.badges.length) {
+      badgesContainer.innerHTML = student.badges.map(b => `
+        <span class="badge-pill" style="font-size:0.85rem; padding:6px 10px;">
+          ${b.icon} ${escHtml(b.name)}
+          <button type="button" style="border:none; background:none; color:var(--danger); cursor:pointer; font-weight:900; margin-left:4px; font-size:0.8rem;" onclick="removeStudentBadge('${student.id}', '${b.id}')" title="Rozeti kaldır">✕</button>
+        </span>
+      `).join('');
+    } else {
+      badgesContainer.innerHTML = '<span style="font-size:0.8rem; color:var(--text-muted);">Henüz rozet kazanmadı</span>';
+    }
+
+    // Notlar
+    const notesContainer = document.getElementById('detailNotesList');
+    if (student.notes && student.notes.length) {
+      notesContainer.innerHTML = student.notes.map(n => `
+        <div class="note-timeline-item" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div style="flex:1; min-width:0;">
+            <div class="note-date">🗓️ ${formatDate(n.date)}</div>
+            <div>${escHtml(n.text)}</div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.75rem; color:var(--danger); border-color:#FECACA;" onclick="removeStudentNote('${student.id}', '${n.id}')" title="Notu sil">🗑️</button>
+        </div>
+      `).join('');
+    } else {
+      notesContainer.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Henüz bir not yazılmadı.</p>';
+    }
+
+    renderAssignableBadges();
+    openModal('studentDetailModal');
+  }
+
+  function removeStudentNote(studentId, noteId) {
+    StudentStore.deleteNote(studentId, noteId);
+    openDetailModal(studentId);
+    renderStats();
+    renderStudents();
+    showToast('Gözlem notu silindi.', 'info');
+  }
+
+  function removeStudentBadge(studentId, badgeId) {
+    StudentStore.deleteBadge(studentId, badgeId);
+    openDetailModal(studentId);
+    renderStats();
+    renderStudents();
+    showToast('Rozet kaldırıldı.', 'info');
+  }
+
+  function renderAssignableBadges() {
+    const list = StudentStore.getAvailableBadges();
+    const container = document.getElementById('assignableBadgesList');
+    if (!container) return;
+
+    container.innerHTML = list.map(b => `
+      <button type="button" class="badge-pill" style="cursor:pointer; display:inline-flex; align-items:center; gap:5px;"
+        onclick="giveBadge('${b.name}', '${b.icon}', ${b.points || 15})"
+        title="${b.desc || ''} (+${b.points || 15} Puan)">
+        <span>${b.icon}</span>
+        <span>${b.name}</span>
+        <span style="opacity:0.75; font-size:0.7rem;">(+${b.points || 15})</span>
+      </button>
+    `).join('') + `
+      <button type="button" class="btn btn-outline btn-sm" onclick="openModal('newCustomBadgeModal')" style="font-size:0.75rem; padding:3px 8px; margin:2px;">➕ Yeni Rozet</button>
+    `;
+  }
+
+  function saveCustomBadge() {
+    const name = document.getElementById('customBadgeName').value.trim();
+    if (!name) {
+      showToast('Lütfen rozet adını yazın!', 'warning');
+      return;
+    }
+    const icon = document.getElementById('customBadgeIcon').value.trim() || '🌟';
+    const desc = document.getElementById('customBadgeDesc').value.trim();
+    const points = parseInt(document.getElementById('customBadgePoints').value) || 15;
+
+    StudentStore.addCustomBadge({ name, icon, desc, points });
+    closeModal('newCustomBadgeModal');
+    document.getElementById('customBadgeName').value = '';
+    document.getElementById('customBadgeDesc').value = '';
+
+    renderAssignableBadges();
+    showToast(`"${name}" rozeti tanımlandı! Artık öğrencilerinize verebilirsiniz.`, 'success');
+    SoundEffects.correct();
+  }
+
+  function giveBadge(badgeName, badgeIcon, badgePoints = 15) {
+    if (!activeStudentId) return;
+    StudentStore.addBadge(activeStudentId, badgeName, badgeIcon, badgePoints);
+    openDetailModal(activeStudentId);
+    renderStats();
+    renderStudents();
+    showToast(`"${badgeName}" rozeti verildi! (+${badgePoints} Puan)`, 'success');
+    launchConfetti();
+    SoundEffects.correct();
+  }
+
+  let pendingDeleteStudentId = null;
+
+  function promptDeleteStudent(id) {
+    const student = StudentStore.getById(id);
+    if (!student) return;
+    pendingDeleteStudentId = id;
+    document.getElementById('deleteStudentText').textContent = `"${student.name}" (${student.className} - No: ${student.number || '-'}) adlı öğrenciyi silmek istediğinize emin misiniz?`;
+    openModal('deleteStudentModal');
+  }
+
+  function deleteCurrentStudent() {
+    if (!activeStudentId) return;
+    promptDeleteStudent(activeStudentId);
+  }
+
+  function confirmDeleteStudent() {
+    if (!pendingDeleteStudentId) return;
+    const student = StudentStore.getById(pendingDeleteStudentId);
+    const name = student ? student.name : 'Öğrenci';
+    StudentStore.delete(pendingDeleteStudentId);
+    pendingDeleteStudentId = null;
+    closeModal('deleteStudentModal');
+    closeModal('studentDetailModal');
+    renderStats();
+    renderStudents();
+    showToast(`"${name}" sınıftan silindi.`, 'info');
+  }
+
+  function openClearStudentsModal() {
+    const all = StudentStore.getAll();
+    if (all.length === 0) {
+      showToast('Sınıfta silinecek öğrenci bulunmuyor.', 'info');
+      return;
+    }
+    const clsBtn = document.getElementById('clearSelectedClassBtn');
+    if (currentClassFilter !== 'all') {
+      const count = all.filter(s => s.className === currentClassFilter).length;
+      clsBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+      clsBtn.textContent = `🗑️ Yalnızca ${currentClassFilter} Şubesini Temizle (${count} Öğrenci)`;
+    } else {
+      clsBtn.style.display = 'none';
+    }
+    document.getElementById('clearStudentsDesc').textContent = `Kayıtlı ${all.length} öğrenci bulunuyor. Hangi silme işlemini yapmak istersiniz?`;
+    openModal('clearStudentsModal');
+  }
+
+  function confirmClearClassOnly() {
+    if (currentClassFilter === 'all') return;
+    StudentStore.deleteByClass(currentClassFilter);
+    closeModal('clearStudentsModal');
+    renderStats();
+    renderStudents();
+    showToast(`${currentClassFilter} şubesindeki tüm öğrenciler silindi.`, 'info');
+  }
+
+  function confirmClearAllStudents() {
+    StudentStore.clearAll();
+    closeModal('clearStudentsModal');
+    renderStats();
+    renderStudents();
+    showToast('Tüm öğrenci listesi temizlendi.', 'info');
+  }
+
+  function copyParentReport() {
+    const student = StudentStore.getById(activeStudentId);
+    if (!student) return;
+    const badgeNames = (student.badges || []).map(b => b.name).join(', ') || 'Henüz rozet yok';
+    const lastNote = student.notes && student.notes.length ? student.notes[0].text : 'Gözlem notu eklenmedi.';
+
+    const reportText = `Sayın Velimiz,\n\nÖğrencimiz ${student.name}'in (${student.className}) Türkçe dersi gelişim raporu:\n• Toplam Katılım Puanı: ${student.points || 0}\n• Kazanılan Rozetler: ${badgeNames}\n• Öğretmen Değerlendirmesi: ${lastNote}\n\nİyi günler dileriz.\n— DüzgünÖğretmenlik`;
+
+    navigator.clipboard.writeText(reportText).then(() => {
+      showToast('Veli bilgilendirme metni panoya kopyalandı!', 'success');
+    });
+  }
+
+  function createStudent() {
+    const name = document.getElementById('studentName').value.trim();
+    if (!name) {
+      showToast('Lütfen öğrenci adını yazın!', 'error');
+      return;
+    }
+    const number = document.getElementById('studentNumber').value.trim();
+    const className = document.getElementById('studentClass').value;
+    const avatar = document.querySelector('input[name="av"]:checked')?.value || '👧';
+    const initNote = document.getElementById('studentInitialNote').value.trim();
+
+    const student = {
+      id: generateId(),
+      name,
+      number,
+      className,
+      avatar,
+      points: 20, // Başlangıç puanı
+      badges: [],
+      notes: initNote ? [{ id: generateId(), text: initNote, date: new Date().toISOString() }] : [],
+      history: [{ id: generateId(), type: 'plus', amount: 20, reason: 'Hoş geldin puanı', date: new Date().toISOString() }]
+    };
+
+    StudentStore.save(student);
+    closeModal('newStudentModal');
+    document.getElementById('studentName').value = '';
+    document.getElementById('studentNumber').value = '';
+    document.getElementById('studentInitialNote').value = '';
+    renderStats();
+    renderStudents();
+    showToast(`${name} başarıyla sınıfa eklendi!`, 'success');
+  }
+
+  function processBulkStudents() {
+    const text = document.getElementById('bulkStudentsText').value;
+    const className = document.getElementById('bulkTargetClass').value;
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    if (lines.length === 0) {
+      showToast('Lütfen eklenecek öğrencileri yazın!', 'warning');
+      return;
+    }
+
+    let count = 0;
+    lines.forEach(line => {
+      const parts = line.split(' ');
+      let num = '';
+      let name = line;
+      if (!isNaN(parts[0])) {
+        num = parts[0];
+        name = parts.slice(1).join(' ');
+      }
+      StudentStore.save({
+        id: generateId(),
+        name: name.trim() || 'İsimsiz Öğrenci',
+        number: num,
+        className,
+        avatar: Math.random() > 0.5 ? '👧' : '👦',
+        points: 20,
+        badges: [],
+        notes: [],
+        history: []
+      });
+      count++;
+    });
+
+    closeModal('bulkStudentModal');
+    document.getElementById('bulkStudentsText').value = '';
+    renderStats();
+    renderStudents();
+    showToast(`${count} öğrenci başarıyla ${className} şubesine eklendi!`, 'success');
+  }
+
+  function createNewClass() {
+    const name = document.getElementById('newClassNameInput').value.trim();
+    if (!name) return;
+    StudentStore.addClass(name);
+    closeModal('newClassModal');
+    document.getElementById('newClassNameInput').value = '';
+    renderClassFilters();
+    renderClassSelects();
+    showToast(`"${name}" şubesi eklendi!`, 'success');
+  }
+
+  init();
+</script>
+</body>
+</html>
