@@ -4372,27 +4372,9 @@ const SupabaseService = {
   },
 
   mountEditorSaveAndShareBtn() {
-    if (typeof document === 'undefined' || typeof window === 'undefined') return;
-    const path = window.location.pathname.replace(/\\/g, '/').toLowerCase();
-    if (!path.includes('editor-')) return;
-    if (document.getElementById('saveAndShareBtn')) return;
-    const actionsEl = document.querySelector('.navbar-actions');
-    if (!actionsEl) return;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.id = 'saveAndShareBtn';
-    btn.className = 'btn btn-primary';
-    btn.style.cssText = 'background:linear-gradient(135deg,#059669 0%,#0D9488 100%); border:none; font-weight:800;';
-    btn.innerHTML = '🚀 Kaydet ve Paylaş';
-    btn.onclick = () => this.handleEditorSaveAndShare();
-
-    const previewBtn = document.getElementById('previewBtn');
-    if (previewBtn && previewBtn.parentNode === actionsEl) {
-      actionsEl.insertBefore(btn, previewBtn);
-    } else {
-      actionsEl.appendChild(btn);
-    }
+    if (typeof document === 'undefined') return;
+    const staleBtn = document.getElementById('saveAndShareBtn');
+    if (staleBtn) staleBtn.remove();
   },
 
   copyShareUrl(inputId) {
@@ -4506,6 +4488,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   SoundEffects.updateToggleButtons();
   AuthStore.syncNavbarAndRoleUI();
-  SupabaseService.mountEditorSaveAndShareBtn();
   SupabaseService.refreshSessionState();
 });
