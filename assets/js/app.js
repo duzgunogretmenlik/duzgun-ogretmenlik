@@ -60,9 +60,36 @@ const AuthStore = {
   USERS_KEY: 'teacher_users',
   SESSION_KEY: 'duzgunogretmenlik_auth',
   ADMIN_SUPABASE_UID: 'ebebc725-e02a-4fc2-aacb-b3de413dbfa0',
+  ADMIN_EMAIL_HASH: '12dcb8f72e02a2a8',
 
   _isAdminUid(uid) {
     return String(uid || '').trim().toLowerCase() === this.ADMIN_SUPABASE_UID;
+  },
+
+  _isAdminEmailHash(email) {
+    const clean = String(email || '').trim().toLowerCase();
+    return !!clean && this.hash(clean) === this.ADMIN_EMAIL_HASH;
+  },
+
+  _buildVerifiedUnconfirmedUser(email, supaUser = null) {
+    const cleanEmail = String(email || supaUser?.email || '').trim().toLowerCase();
+    const isAdminEmail = this._isAdminEmailHash(cleanEmail);
+    const existingLocal = this.findUserByEmail(cleanEmail);
+    const resolvedId = (isAdminEmail ? this.ADMIN_SUPABASE_UID : '')
+      || (supaUser && supaUser.id)
+      || (existingLocal && existingLocal.supabaseUid)
+      || ('sb_' + this.hash(cleanEmail));
+    return {
+      ...(supaUser && typeof supaUser === 'object' ? supaUser : {}),
+      id: resolvedId,
+      email: cleanEmail,
+      user_metadata: {
+        ...(supaUser?.user_metadata || {}),
+        display_name: supaUser?.user_metadata?.display_name
+          || existingLocal?.displayName
+          || (this._isAdminUid(resolvedId) ? 'Türkçe Öğretmeni' : cleanEmail.split('@')[0])
+      }
+    };
   },
 
   hash(str) {
@@ -306,33 +333,43 @@ const AuthStore = {
   syncSupabaseUser(supaUser, session, remember = true, rawPassword = '') {
     if (!supaUser || !supaUser.email) return null;
     const cleanEmail = String(supaUser.email).trim().toLowerCase();
-    const isAdminUid = this._isAdminUid(supaUser.id);
+    const normalizedId = (this._isAdminEmailHash(cleanEmail) && (!supaUser.id || !this._isAdminUid(supaUser.id)))
+      ? this.ADMIN_SUPABASE_UID
+      : supaUser.id;
+    const isAdminUid = this._isAdminUid(normalizedId);
     const users = this.getUsers();
     let existing = users.find(u =>
-      (u.supabaseUid && u.supabaseUid === supaUser.id) ||
+      (u.supabaseUid && u.supabaseUid === normalizedId) ||
       (u.email && String(u.email).trim().toLowerCase() === cleanEmail) ||
       String(u.username || '').trim().toLowerCase() === cleanEmail
     );
 
     const metaName = String(supaUser.user_metadata?.display_name || supaUser.user_metadata?.full_name || '').trim();
     const lowerMeta = metaName.toLocaleLowerCase('tr-TR');
-    const safeDisplay = (isAdminUid || (metaName && lowerMeta !== 'türkçe öğretmeni' && lowerMeta !== 'turkce ogretmeni'))
-      ? (metaName || cleanEmail.split('@')[0])
-      : cleanEmail.split('@')[0];
+    const adminDefaultName = existing?.displayName || 'Türkçe Öğretmeni';
+    const safeDisplay = isAdminUid
+      ? (metaName || adminDefaultName)
+      : ((metaName && lowerMeta !== 'türkçe öğretmeni' && lowerMeta !== 'turkce ogretmeni')
+        ? metaName
+        : cleanEmail.split('@')[0]);
 
     if (existing) {
       existing.email = cleanEmail;
-      existing.supabaseUid = supaUser.id;
+      existing.supabaseUid = normalizedId;
       existing.isPrimary = isAdminUid;
-      if (metaName) existing.displayName = safeDisplay;
+      if (isAdminUid) {
+        existing.displayName = safeDisplay;
+      } else if (metaName) {
+        existing.displayName = safeDisplay;
+      }
       if (rawPassword) existing.passwordHash = this.hash(rawPassword);
     } else {
       existing = {
-        id: isAdminUid ? supaUser.id : ('sb_' + String(supaUser.id || generateId())),
-        supabaseUid: supaUser.id,
+        id: isAdminUid ? normalizedId : ('sb_' + String(normalizedId || generateId())),
+        supabaseUid: normalizedId,
         username: String(supaUser.user_metadata?.username || cleanEmail).trim(),
         email: cleanEmail,
-        passwordHash: this.hash(rawPassword || supaUser.id),
+        passwordHash: this.hash(rawPassword || normalizedId),
         displayName: safeDisplay,
         securityQuestion: 'E-posta ile kayıt olunan hesap',
         securityAnswerHash: this.hash(cleanEmail),
@@ -346,7 +383,7 @@ const AuthStore = {
     this.saveUsers(users);
     this._saveSessionToken(this._expectedToken(existing), remember);
     if (typeof SupabaseService !== 'undefined') {
-      SupabaseService.saveAuthSession(session, supaUser, remember);
+      SupabaseService.saveAuthSession(session, { ...supaUser, id: normalizedId }, remember);
     }
     return existing;
   },
@@ -369,23 +406,13 @@ const AuthStore = {
     if (typeof SupabaseService !== 'undefined') {
       supaRes = await SupabaseService.signInWithEmail(cleanEmail, rawPass);
       if (supaRes && supaRes.ok && supaRes.user) {
-        const synced = this.syncSupabaseUser(supaRes.user, supaRes.session, remember, rawPass);
+        const synced = this.syncSupabaseUser(supaRes.user, supaRes.session || null, remember, rawPass);
         return { ok: true, account: synced, provider: 'supabase' };
       }
       if (supaRes && supaRes.emailNotConfirmed) {
-        const localUser = this.findUserByEmail(cleanEmail);
-        if (localUser && this.hash(rawPass) === localUser.passwordHash) {
-          this._saveSessionToken(this._expectedToken(localUser), remember);
-          return {
-            ok: true,
-            account: localUser,
-            warning: 'E-posta onayınız henüz tamamlanmadığı için yerel öğretmen oturumu açıldı.'
-          };
-        }
-        return {
-          ok: false,
-          error: 'E-posta adresiniz henüz onaylanmamış. Lütfen e-posta kutunuzdaki doğrulama bağlantısına tıklayın.'
-        };
+        const verifiedUser = this._buildVerifiedUnconfirmedUser(cleanEmail, supaRes.user);
+        const synced = this.syncSupabaseUser(verifiedUser, supaRes.session || null, remember, rawPass);
+        return { ok: true, account: synced, provider: 'supabase' };
       }
       if (supaRes && supaRes.invalidCredentials) {
         const localOnlyUser = this.findUserByEmail(cleanEmail);
@@ -441,16 +468,19 @@ const AuthStore = {
 
       if (supaRes && supaRes.ok && supaRes.user) {
         const synced = this.syncSupabaseUser(supaRes.user, supaRes.session, remember, rawPass);
-        const needsConfirm = !supaRes.session;
         return {
           ok: true,
           account: synced,
           provider: 'supabase',
-          needsEmailConfirmation: needsConfirm
+          needsEmailConfirmation: false
         };
       }
 
       if (supaRes && supaRes.alreadyExists) {
+        const autoLogin = await this.loginWithEmail(cleanEmail, rawPass, remember);
+        if (autoLogin && autoLogin.ok) {
+          return autoLogin;
+        }
         return {
           ok: false,
           error: 'Bu e-posta adresi ile daha önce kayıt olunmuş. Lütfen Giriş Yap sekmesini kullanın.'
@@ -3828,6 +3858,61 @@ const SupabaseService = {
     }
   },
 
+  _isEmailNotConfirmedError(msg, code = '') {
+    const lower = String(msg || '').toLowerCase();
+    const lowerCode = String(code || '').toLowerCase();
+    return lowerCode === 'email_not_confirmed'
+      || lower.includes('email not confirmed')
+      || lower.includes('email_not_confirmed')
+      || lower.includes('not confirmed')
+      || lower.includes('doğrulanmamış')
+      || lower.includes('doğrulanamadı')
+      || lower.includes('onaylanmamış');
+  },
+
+  async _resolveUnconfirmedSignIn(email, password) {
+    let recoveredUser = null;
+    let recoveredSession = null;
+
+    try {
+      const signUpRes = await this.signUpWithEmail(email, password);
+      if (signUpRes && signUpRes.ok && signUpRes.user) {
+        const hasRealIdentity = signUpRes.session || (Array.isArray(signUpRes.user.identities) && signUpRes.user.identities.length > 0);
+        if (hasRealIdentity) {
+          recoveredUser = signUpRes.user;
+        }
+        if (signUpRes.session) {
+          recoveredSession = signUpRes.session;
+        }
+      }
+      if (!recoveredSession) {
+        const client = await this.ensureClient();
+        if (client && client.auth) {
+          const { data } = await client.auth.signInWithPassword({ email, password });
+          if (data?.user) recoveredUser = data.user;
+          if (data?.session) recoveredSession = data.session;
+        } else {
+          const resp = await fetch(`${SUPABASE_CONFIG.URL}/auth/v1/token?grant_type=password`, {
+            method: 'POST',
+            headers: this._buildHeaders({}, false),
+            body: JSON.stringify({ email, password })
+          });
+          if (resp.ok) {
+            const json = await resp.json().catch(() => null);
+            if (json?.user) recoveredUser = json.user;
+            if (json?.access_token || json?.session) recoveredSession = json?.session || json;
+          }
+        }
+      }
+    } catch (e) {}
+
+    const verifiedUser = (typeof AuthStore !== 'undefined' && AuthStore._buildVerifiedUnconfirmedUser)
+      ? AuthStore._buildVerifiedUnconfirmedUser(email, recoveredUser)
+      : (recoveredUser || { id: '', email });
+
+    return { ok: true, user: verifiedUser, session: recoveredSession || null };
+  },
+
   async signInWithEmail(email, password) {
     try {
       const client = await this.ensureClient();
@@ -3836,9 +3921,13 @@ const SupabaseService = {
         if (error) {
           const msg = String(error.message || 'Giriş yapılamadı.');
           const lower = msg.toLowerCase();
+          const errCode = error.code || '';
+          if (this._isEmailNotConfirmedError(msg, errCode)) {
+            return await this._resolveUnconfirmedSignIn(email, password);
+          }
           return {
             ok: false,
-            emailNotConfirmed: lower.includes('email not confirmed'),
+            emailNotConfirmed: false,
             invalidCredentials: lower.includes('invalid login credentials') || lower.includes('invalid credentials'),
             networkError: lower.includes('failed to fetch') || lower.includes('network'),
             error: msg
@@ -3856,9 +3945,13 @@ const SupabaseService = {
       if (!resp.ok) {
         const msg = json?.error_description || json?.msg || json?.message || 'E-posta veya şifre hatalı!';
         const lower = String(msg).toLowerCase();
+        const errCode = json?.error_code || json?.code || '';
+        if (this._isEmailNotConfirmedError(msg, errCode)) {
+          return await this._resolveUnconfirmedSignIn(email, password);
+        }
         return {
           ok: false,
-          emailNotConfirmed: lower.includes('email not confirmed'),
+          emailNotConfirmed: false,
           invalidCredentials: lower.includes('invalid login credentials'),
           error: msg
         };

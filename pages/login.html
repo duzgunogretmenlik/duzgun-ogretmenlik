@@ -422,8 +422,7 @@
       }
 
       if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
-      const extraNote = res.warning ? ` (${res.warning})` : '';
-      showLoginSuccess(`Hoş geldiniz, ${res.account.displayName}!${extraNote} Panele yönlendiriliyorsunuz...`);
+      showLoginSuccess(`Hoş geldiniz, ${res.account.displayName}! Panele yönlendiriliyorsunuz...`);
       setTimeout(() => {
         window.location.href = getRedirectTarget();
       }, 350);
@@ -483,10 +482,7 @@
       }
 
       if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
-      const confirmNote = res.needsEmailConfirmation
-        ? ' (Doğrulama e-postası gönderildi; hesabınızla hemen kullanmaya başlayabilirsiniz.)'
-        : '';
-      showLoginSuccess(`Hesabınız oluşturuldu, hoş geldiniz ${res.account.displayName}!${confirmNote}`);
+      showLoginSuccess(`Hesabınız oluşturuldu, hoş geldiniz ${res.account.displayName}! Panele yönlendiriliyorsunuz...`);
       setTimeout(() => {
         window.location.href = getRedirectTarget();
       }, 550);
