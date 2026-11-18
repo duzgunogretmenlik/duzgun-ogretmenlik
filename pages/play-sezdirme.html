@@ -171,8 +171,14 @@
     }
     .sz-suspect-card.eliminated { opacity: .48; background: #F1F5F9; border-style: dashed; }
     .sz-suspect-card.eliminated .sz-suspect-traits { text-decoration: line-through; }
+    .sz-suspect-card.eliminated .sz-suspect-img { filter: grayscale(0.85); }
     .sz-suspect-card.caught { border-color: #16A34A; background: #DCFCE7; box-shadow: 0 6px 18px rgba(22,163,74,.2); }
     .sz-suspect-card.wrong-guess { border-color: #EF4444; background: #FEE2E2; animation: shake .4s; }
+    .sz-suspect-img {
+      width: 100%; height: 155px; object-fit: contain; background: #F8FAFC;
+      border: 1px solid #E2E8F0; border-radius: 10px; margin-bottom: 8px;
+      cursor: zoom-in; display: block; padding: 4px;
+    }
 
     body.fs .sz-nav, body.fs .sz-track { display: none; }
 
@@ -410,6 +416,7 @@
             return `
               <div class="sz-suspect-card ${cls}">
                 <div>
+                  ${sp.image ? `<img class="sz-suspect-img" src="${escHtml(sp.image)}" alt="${escHtml(sp.name || `${i + 1}. Şüpheli`)}" onclick="openLightbox(this.src)" title="Büyütmek için tıklayın" />` : ''}
                   <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                     <span style="font-size:2rem;">${escHtml(sp.avatar || '🕵️')}</span>
                     <div>

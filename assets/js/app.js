@@ -2062,10 +2062,10 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
           { speaker: 'merkez', speakerName: 'Merkez Dedektifi', text: 'Teşekkürler dedektif! Şüpheliyi yakaladık!', clueNote: 'Harika! Şimdi aşağıdaki 4 şüpheli arasından eşkâle uymayanları eleyip gerçek soyguncuyu yakalayın!' }
         ],
         suspects: [
-          { name: 'Şüpheli A', avatar: '🕶️', traits: 'Siyah maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: false },
-          { name: 'Şüpheli B', avatar: '🎭', traits: 'Lacivert maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: true },
-          { name: 'Şüpheli C', avatar: '🧢', traits: 'Lacivert maskeli, saçları simsiyah, yeşil gömlekli', isCulprit: false },
-          { name: 'Şüpheli D', avatar: '🧥', traits: 'Lacivert maskeli, saçları bembeyaz, sarı gömlekli', isCulprit: false }
+          { name: 'Şüpheli A', avatar: '🕶️', image: '', traits: 'Siyah maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: false },
+          { name: 'Şüpheli B', avatar: '🎭', image: '', traits: 'Lacivert maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: true },
+          { name: 'Şüpheli C', avatar: '🧢', image: '', traits: 'Lacivert maskeli, saçları simsiyah, yeşil gömlekli', isCulprit: false },
+          { name: 'Şüpheli D', avatar: '🧥', image: '', traits: 'Lacivert maskeli, saçları bembeyaz, sarı gömlekli', isCulprit: false }
         ],
         question: 'İlk telsiz çağrısında memurun "şey" dediği yerlere hangi sözcükleri koyduğumuzda soyguncuyu yakalayabildik?',
         image: '',
@@ -2176,10 +2176,10 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
         { speaker: 'merkez', speakerName: 'Merkez Komiseri', text: 'Harika! Eldeki ipuçlarıyla aşağıdan doğru şüpheliyi yakalayalım.', clueNote: '' }
       ],
       suspects: [
-        { name: '1. Şüpheli', avatar: '🕵️', traits: 'Birinci ipucu özelliğini buraya yazın', isCulprit: false },
-        { name: '2. Şüpheli', avatar: '🎭', traits: 'Doğru eşkâl özelliklerini buraya yazın', isCulprit: true },
-        { name: '3. Şüpheli', avatar: '🎩', traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false },
-        { name: '4. Şüpheli', avatar: '🕶️', traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false }
+        { name: '1. Şüpheli', avatar: '🕵️', image: '', traits: 'Birinci ipucu özelliğini buraya yazın', isCulprit: false },
+        { name: '2. Şüpheli', avatar: '🎭', image: '', traits: 'Doğru eşkâl özelliklerini buraya yazın', isCulprit: true },
+        { name: '3. Şüpheli', avatar: '🎩', image: '', traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false },
+        { name: '4. Şüpheli', avatar: '🕶️', image: '', traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false }
       ],
       question: 'İletişimdeki karışıklık neden kaynaklandı ve hangi değişiklik sorunu çözdü?',
       image: '',

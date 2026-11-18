@@ -333,11 +333,20 @@
               <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedSus(${i})">✕</button>
             </div>
           </div>
-          <div style="display:grid; grid-template-columns:80px minmax(0, 1fr) minmax(0, 2fr); gap:8px;">
+          <div style="display:grid; grid-template-columns:80px minmax(0, 1fr) minmax(0, 2fr); gap:8px; margin-bottom:8px;">
             <input type="text" class="form-control" placeholder="Simge" value="${escHtml(sp.avatar || '🕵️')}" oninput="updDedSus(${i},'avatar',this.value)" title="Emoji/Simge" />
             <input type="text" class="form-control" placeholder="Şüpheli adı" value="${escHtml(sp.name || '')}" oninput="updDedSus(${i},'name',this.value)" />
             <input type="text" class="form-control" placeholder="Eşkâl / özellikleri..." value="${escHtml(sp.traits || '')}" oninput="updDedSus(${i},'traits',this.value)" />
           </div>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+              🖼️ Şüpheli Görseli Yükle
+              <input type="file" accept="image/*" style="display:none;" onchange="handleDedSusImageUpload(${i}, this)" />
+            </label>
+            <input type="text" class="form-control" style="flex:1; min-width:160px; padding:6px 10px; font-size:0.82rem;" placeholder="veya şüpheli görseli bağlantısı (https://...)" value="${escHtml(sp.image && !sp.image.startsWith('data:') ? sp.image : '')}" oninput="setDedSusImageUrl(${i}, this.value)" onchange="renderStepEditor()" />
+            ${sp.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSusImage(${i})">🗑️ Görseli Kaldır</button>` : ''}
+          </div>
+          ${sp.image ? `<img src="${escHtml(sp.image)}" alt="${escHtml(sp.name || 'Şüpheli')} Görseli" style="max-height:115px; max-width:100%; border-radius:8px; margin-top:8px; display:block; object-fit:contain; cursor:zoom-in; border:1px solid var(--border); background:#fff; padding:4px;" onclick="openLightbox(this.src)" title="Büyütmek için tıklayın" />` : ''}
         </div>
       `).join('');
 
@@ -725,10 +734,35 @@
   }
   function addDedSus() {
     const sus = activity.steps[currentIdx].suspects ||= [];
-    sus.push({ name: `${sus.length + 1}. Şüpheli`, avatar: '🕵️', traits: '', isCulprit: sus.length === 0 });
+    sus.push({ name: `${sus.length + 1}. Şüpheli`, avatar: '🕵️', image: '', traits: '', isCulprit: sus.length === 0 });
     markDirty(); renderStepEditor();
   }
   function delDedSus(i) { activity.steps[currentIdx].suspects.splice(i, 1); markDirty(); renderStepEditor(); }
+  async function handleDedSusImageUpload(sIdx, input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file, 700, 700, 0.78);
+      activity.steps[currentIdx].suspects[sIdx].image = dataUrl;
+      markDirty();
+      renderStepEditor();
+      showToast('Şüpheli görseli eklendi!', 'success');
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+  function setDedSusImageUrl(sIdx, url) {
+    const raw = String(url || '').trim();
+    const safeUrl = (raw && typeof ensureHttpsUrl === 'function') ? ensureHttpsUrl(raw) : raw;
+    activity.steps[currentIdx].suspects[sIdx].image = safeUrl;
+    markDirty();
+  }
+  function removeDedSusImage(sIdx) {
+    activity.steps[currentIdx].suspects[sIdx].image = '';
+    markDirty();
+    renderStepEditor();
+    showToast('Şüpheli görseli kaldırıldı.', 'info');
+  }
 
   function loadDetectivePreset(preset) {
     activity.steps = createDetectiveSezdirmeSteps(preset);
