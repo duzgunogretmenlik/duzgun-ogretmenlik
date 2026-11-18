@@ -326,6 +326,7 @@
         <label class="form-label">🕵️ Sezdirme Ders Akışı Kurgusu</label>
         <select class="form-control" id="newSezdirmeMode">
           <option value="standard">Standart 8 Aşamalı Sezdirme Akışı</option>
+          <option value="detective_criminal">🔍 Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları)</option>
           <option value="detective_soyguncu">🕵️ Dedektiflik Kurgu Şablonu — Örnek Vaka (Soyguncu &amp; Eşkâl)</option>
           <option value="detective_custom">🕵️ Dedektiflik Kurgu Şablonu — Boş Vaka Taslağı</option>
         </select>
@@ -395,6 +396,18 @@
 
   // ---- TÜRKİYE YÜZYILI MAARİF MODELİ ŞABLONLARI ----
   const TEMPLATES = [
+    {
+      icon: '🔍', name: 'Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları)', type: 'sezdirme',
+      grade: '5', theme: 'Dilimizin Zenginliği', outcome: 'T.D.5.2',
+      desc: 'Olay yerindeki gizli görselleri (kırmızı gömlek, yırtık ayakkabı, kırık gözlük...) bularak sıfat tamlamalarını keşfettiren ve şüpheliyi yakalatan dedektiflik oyunu',
+      data: {
+        grade: '5', theme: 'Dilimizin Zenginliği', outcome: 'T.D.5.2',
+        title: '🕵️ Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları)',
+        description: 'Olay yeri inceleme oyunu üzerinden sıfat + isim (sıfat tamlaması) yapısını keşfettiren ve şüpheli yakalatan ders kurgusu.',
+        objective: 'Öğrenciler olay yerindeki görsel delilleri eşleştirerek sıfat tamlamalarını keşfeder ve şüpheliyi yakalar.'
+      },
+      getSteps: () => createDetectiveSezdirmeSteps('criminal_case')
+    },
     {
       icon: '🕵️', name: 'Dedektiflik Tarzı Sezdirme: Soyguncu Telsiz Operasyonu', type: 'sezdirme',
       grade: '5', theme: 'Dilimizin Zenginliği', outcome: 'T.D.5.2',
@@ -887,7 +900,10 @@
       activity.description = document.getElementById('newDesc').value.trim();
       const modeSel = document.getElementById('newSezdirmeMode');
       if (selectedType === 'sezdirme' && modeSel && typeof createDetectiveSezdirmeSteps === 'function') {
-        if (modeSel.value === 'detective_soyguncu') {
+        if (modeSel.value === 'detective_criminal') {
+          activity.steps = createDetectiveSezdirmeSteps('criminal_case');
+          if (!activity.objective) activity.objective = 'Öğrenciler olay yerindeki sıfat tamlamalarını bularak sıfat + isim yapısını keşfeder ve şüpheliyi yakalar.';
+        } else if (modeSel.value === 'detective_soyguncu') {
           activity.steps = createDetectiveSezdirmeSteps('soyguncu');
           if (!activity.objective) activity.objective = 'Öğrenciler telsiz diyaloğundaki belirsiz ifadeler yerine isim ve sıfat kullanma ihtiyacını keşfeder.';
         } else if (modeSel.value === 'detective_custom') {

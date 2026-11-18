@@ -789,7 +789,7 @@
           ${st.type === 'dedektif' ? `
             ${st.caseBrief ? `<div style="margin-bottom:6px;">${esc(st.caseBrief)}</div>` : ''}
             <div style="font-size:0.86rem; color:var(--text-muted); margin-bottom:4px;">
-              📻 <strong>${(st.dialogues || []).length}</strong> Telsiz Mesajı · 🎭 <strong>${(st.suspects || []).length}</strong> Şüpheli Eşkâli
+              ${(st.sceneItems || []).length ? `🔍 <strong>${(st.sceneItems || []).filter(ci => ci.isClue !== false).length}</strong> Olay Yeri Delili · ` : ''}📻 <strong>${(st.dialogues || []).length}</strong> Telsiz Mesajı · 🎭 <strong>${(st.suspects || []).length}</strong> Şüpheli Eşkâli
             </div>
             ${st.question ? `<div style="font-weight:700;">❓ ${esc(st.question)}</div>` : ''}
           ` : ''}

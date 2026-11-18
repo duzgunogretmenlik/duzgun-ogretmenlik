@@ -164,6 +164,12 @@
       Seçtiğiniz kurgu bu dersin mevcut aşamalarının yerine yüklenir. İsterseniz ardından tüm telsiz mesajlarını ve şüphelileri kendi konunuza göre düzenleyebilirsiniz.
     </p>
     <div style="display:flex; flex-direction:column; gap:12px;">
+      <button type="button" class="row-box" style="text-align:left; cursor:pointer; border:2px solid #F59E0B; background:#FFFBEB;" onclick="loadDetectivePreset('criminal_case')">
+        <div style="font-weight:900; font-size:1rem; color:#92400E;">🔍 Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları &amp; Şüpheli Yakalama)</div>
+        <div style="font-size:0.84rem; color:#78350F; margin-top:4px;">
+          Olay yerinde görselli delilleri (kırmızı gömlek, yırtık ayakkabı, kırık gözlük, çamurlu eldiven, siyah şapka) buldurup görselli şüpheliyi yakalatan tam oyun!
+        </div>
+      </button>
       <button type="button" class="row-box" style="text-align:left; cursor:pointer; border:2px solid #0F172A; background:#F8FAFC;" onclick="loadDetectivePreset('soyguncu')">
         <div style="font-weight:900; font-size:1rem; color:#0F172A;">📻 Soyguncu Telsiz Operasyonu (Örnek Ders: İsim &amp; Sıfat Keşfi)</div>
         <div style="font-size:0.84rem; color:var(--text-muted); margin-top:4px;">
@@ -299,6 +305,38 @@
     if (s.type === 'dedektif') {
       const dlgs = s.dialogues || (s.dialogues = []);
       const sus = s.suspects || (s.suspects = []);
+      const sceneItems = s.sceneItems || (s.sceneItems = []);
+
+      const sceneItemRows = sceneItems.map((ci, i) => `
+        <div class="row-box" style="border-left:4px solid ${ci.isClue !== false ? '#F59E0B' : '#94A3B8'};">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <strong>${ci.isClue !== false ? '🎯' : '🎭'} ${i + 1}. Olay Yeri Nesnesi</strong>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <select class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem; font-weight:700;" onchange="updDedSceneItem(${i},'isClue',this.value==='true'); renderStepEditor();">
+                <option value="true" ${ci.isClue !== false ? 'selected' : ''}>🎯 Aranan Delil (Sıfat Tamlaması)</option>
+                <option value="false" ${ci.isClue === false ? 'selected' : ''}>🎭 Çeldirici Nesne</option>
+              </select>
+              <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedSceneItem(${i})">✕</button>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:72px minmax(0, 1.5fr) 78px 78px; gap:8px; margin-bottom:8px;">
+            <input type="text" class="form-control" placeholder="Simge" value="${escHtml(ci.icon || '🔍')}" oninput="updDedSceneItem(${i},'icon',this.value)" title="Emoji" />
+            <input type="text" class="form-control" placeholder="Sıfat tamlaması / Nesne (örn: Kırmızı gömlek)" value="${escHtml(ci.label || '')}" oninput="updDedSceneItem(${i},'label',this.value)" />
+            <input type="number" class="form-control" min="8" max="92" value="${Number(ci.x ?? 50)}" oninput="updDedSceneItem(${i},'x',Number(this.value))" title="Sahnedeki Yatay Konum (X%)" placeholder="X%" />
+            <input type="number" class="form-control" min="12" max="88" value="${Number(ci.y ?? 50)}" oninput="updDedSceneItem(${i},'y',Number(this.value))" title="Sahnedeki Dikey Konum (Y%)" placeholder="Y%" />
+          </div>
+          <input type="text" class="form-control mb-16" style="margin-bottom:8px;" placeholder="💡 Delil bulunduğunda gösterilecek dil bilgisi / vaka notu..." value="${escHtml(ci.clueNote || '')}" oninput="updDedSceneItem(${i},'clueNote',this.value)" />
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+              🖼️ Nesne Görseli Yükle
+              <input type="file" accept="image/*" style="display:none;" onchange="handleDedSceneItemImageUpload(${i}, this)" />
+            </label>
+            <input type="text" class="form-control" style="flex:1; min-width:160px; padding:6px 10px; font-size:0.82rem;" placeholder="veya nesne görseli bağlantısı (https://...)" value="${escHtml(ci.image && !ci.image.startsWith('data:') ? ci.image : '')}" oninput="setDedSceneItemImageUrl(${i}, this.value)" onchange="renderStepEditor()" />
+            ${ci.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSceneItemImage(${i})">🗑️ Kaldır</button>` : ''}
+          </div>
+          ${ci.image ? `<img src="${escHtml(ci.image)}" alt="${escHtml(ci.label || 'Delil')} Görseli" style="max-height:84px; max-width:100%; border-radius:8px; margin-top:8px; display:block; object-fit:contain; cursor:zoom-in; border:1px solid var(--border); background:#fff; padding:4px;" onclick="openLightbox(this.src)" />` : ''}
+        </div>
+      `).join('');
       const dlgRows = dlgs.map((d, i) => `
         <div class="row-box">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
@@ -354,6 +392,26 @@
         <div class="form-group">
           <label class="form-label">🕵️ Vaka Dosyası Giriş Özeti</label>
           <textarea class="form-control" rows="2" oninput="upd('caseBrief', this.value)">${escHtml(s.caseBrief || '')}</textarea>
+        </div>
+        <div class="form-group" style="background:#FFFBEB; border:2px dashed #F59E0B; border-radius:12px; padding:14px 16px;">
+          <label class="form-label" style="color:#92400E;">🔍 Criminal Case Olay Yeri Sahnesi &amp; Arka Planı</label>
+          <input type="text" class="form-control mb-16" style="margin-bottom:10px;" placeholder="Olay yeri başlığı (örn: Eski Müze Çalışma Odası)" value="${escHtml(s.sceneTitle || '')}" oninput="upd('sceneTitle', this.value)" />
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer; border-color:#D97706; color:#92400E; background:#fff;">
+              🖼️ Özel Olay Yeri Arka Planı Yükle
+              <input type="file" accept="image/*" style="display:none;" onchange="handleDedSceneBgUpload(this)" />
+            </label>
+            <input type="text" class="form-control" style="flex:1; min-width:180px; padding:6px 10px; font-size:0.82rem;" placeholder="veya arka plan görseli bağlantısı (boşsa hazır dedektif odası kullanılır)..." value="${escHtml(s.sceneImage && !s.sceneImage.startsWith('data:') ? s.sceneImage : '')}" oninput="setDedSceneBgUrl(this.value)" onchange="renderStepEditor()" />
+            ${s.sceneImage ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSceneBg()">🗑️ Arka Planı Kaldır</button>` : ''}
+          </div>
+          ${s.sceneImage ? `<img src="${escHtml(s.sceneImage)}" alt="Olay Yeri Arka Planı" style="max-height:130px; max-width:100%; border-radius:8px; margin-bottom:12px; display:block; object-fit:contain; border:1px solid #FCD34D; background:#fff; padding:4px;" onclick="openLightbox(this.src)" />` : ''}
+
+          <label class="form-label" style="color:#92400E; margin-top:6px;">🎯 Olay Yerindeki Deliller (Sıfat Tamlamaları) ve Çeldiriciler</label>
+          ${sceneItemRows}
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+            <button type="button" class="btn btn-primary btn-sm" style="background:#D97706;" onclick="addDedSceneItem()">➕ Olay Yerine Delil / Nesne Ekle</button>
+            ${sceneItems.length ? `<button type="button" class="btn btn-outline btn-sm" onclick="randomizeDedScenePositions()">🎲 Konumları Dağıt</button>` : ''}
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">📻 Telsiz Diyalog Satırları <small style="color:#0D9488;">(Vurgulamak istediğiniz sözcükleri <strong>[köşeli parantez]</strong> içine yazın)</small></label>
@@ -763,10 +821,100 @@
     renderStepEditor();
     showToast('Şüpheli görseli kaldırıldı.', 'info');
   }
+  async function handleDedSceneBgUpload(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file, 1100, 700, 0.78);
+      activity.steps[currentIdx].sceneImage = dataUrl;
+      markDirty();
+      renderStepEditor();
+      showToast('Olay yeri arka plan görseli eklendi!', 'success');
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+  function setDedSceneBgUrl(url) {
+    const raw = String(url || '').trim();
+    const safeUrl = (raw && typeof ensureHttpsUrl === 'function') ? ensureHttpsUrl(raw) : raw;
+    activity.steps[currentIdx].sceneImage = safeUrl;
+    markDirty();
+  }
+  function removeDedSceneBg() {
+    activity.steps[currentIdx].sceneImage = '';
+    markDirty();
+    renderStepEditor();
+    showToast('Olay yeri arka plan görseli kaldırıldı.', 'info');
+  }
+  function updDedSceneItem(i, k, v) {
+    const items = activity.steps[currentIdx].sceneItems || [];
+    if (items[i]) {
+      items[i][k] = v;
+      markDirty();
+    }
+  }
+  function addDedSceneItem() {
+    const items = activity.steps[currentIdx].sceneItems ||= [];
+    items.push({
+      id: generateId(),
+      label: 'Yeni sıfat tamlaması',
+      icon: '🔍',
+      image: typeof buildClueSvgDataUrl === 'function' ? buildClueSvgDataUrl('kirmizi_gomlek') : '',
+      x: 15 + ((items.length * 17) % 72),
+      y: 26 + ((items.length * 19) % 58),
+      isClue: true,
+      clueNote: 'Niteleyen sözcük (sıfat) + varlık adı (isim)'
+    });
+    markDirty();
+    renderStepEditor();
+  }
+  function delDedSceneItem(i) {
+    activity.steps[currentIdx].sceneItems.splice(i, 1);
+    markDirty();
+    renderStepEditor();
+  }
+  function randomizeDedScenePositions() {
+    const items = activity.steps[currentIdx].sceneItems || [];
+    items.forEach((ci, idx) => {
+      ci.x = 12 + ((idx * 23 + Math.floor(Math.random() * 14)) % 76);
+      ci.y = 22 + ((idx * 19 + Math.floor(Math.random() * 16)) % 62);
+    });
+    markDirty();
+    renderStepEditor();
+    showToast('Olay yeri nesnelerinin konumları güncellendi!', 'info');
+  }
+  async function handleDedSceneItemImageUpload(iIdx, input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file, 450, 450, 0.78);
+      activity.steps[currentIdx].sceneItems[iIdx].image = dataUrl;
+      markDirty();
+      renderStepEditor();
+      showToast('Delil görseli eklendi!', 'success');
+    } catch (e) {
+      showToast('Görsel yüklenirken hata oluştu.', 'error');
+    }
+  }
+  function setDedSceneItemImageUrl(iIdx, url) {
+    const raw = String(url || '').trim();
+    const safeUrl = (raw && typeof ensureHttpsUrl === 'function') ? ensureHttpsUrl(raw) : raw;
+    activity.steps[currentIdx].sceneItems[iIdx].image = safeUrl;
+    markDirty();
+  }
+  function removeDedSceneItemImage(iIdx) {
+    activity.steps[currentIdx].sceneItems[iIdx].image = '';
+    markDirty();
+    renderStepEditor();
+    showToast('Delil görseli kaldırıldı.', 'info');
+  }
 
   function loadDetectivePreset(preset) {
     activity.steps = createDetectiveSezdirmeSteps(preset);
-    if (preset === 'soyguncu' && (!activity.title || activity.title === 'Yeni Sezdirme Dersi')) {
+    if (preset === 'criminal_case' && (!activity.title || activity.title === 'Yeni Sezdirme Dersi')) {
+      activity.title = '🕵️ Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları)';
+      document.getElementById('activityTitle').value = activity.title;
+    } else if (preset === 'soyguncu' && (!activity.title || activity.title === 'Yeni Sezdirme Dersi')) {
       activity.title = '🕵️ Dedektiflik Vakası: Soyguncu Neye Bindi?';
       document.getElementById('activityTitle').value = activity.title;
     }

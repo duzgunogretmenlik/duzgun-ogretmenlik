@@ -1958,6 +1958,78 @@ function _upgradeActivityUrlsToHttps(value) {
 // SEZDİRME YÖNTEMİ (Tümevarım / Keşfettirerek Öğretim)
 // Kural doğrudan verilmez; öğrenci örneklerden yola çıkarak kuralı kendisi bulur.
 // ============================================================
+function buildSuspectSvgDataUrl(opts = {}) {
+  const svgNs = 'http' + '://www.w3.org/2000/svg';
+  const skin = opts.skin || '#FDBA74';
+  const hair = opts.hair || '#1E293B';
+  const shirt = opts.shirt || '#3B82F6';
+  const bg = opts.bg || '#E2E8F0';
+  const hatColor = opts.hatColor || '';
+  const glasses = !!opts.glasses;
+  const brokenGlasses = !!opts.brokenGlasses;
+  const muddyHands = !!opts.muddyHands;
+  const tornShoe = !!opts.tornShoe;
+  const maskColor = opts.maskColor || '';
+  const shoeColor = opts.shoeColor || '#334155';
+
+  const hatSvg = hatColor
+    ? `<ellipse cx="110" cy="54" rx="52" ry="10" fill="${hatColor}"/><path d="M72 54 C76 24, 144 24, 148 54 Z" fill="${hatColor}"/><rect x="74" y="46" width="72" height="6" fill="#0F172A" opacity="0.35"/>`
+    : `<path d="M68 78 C70 42, 150 42, 152 78 C142 58, 78 58, 68 78 Z" fill="${hair}"/>`;
+
+  const maskSvg = maskColor
+    ? `<rect x="75" y="74" width="70" height="22" rx="10" fill="${maskColor}" opacity="0.92"/><circle cx="94" cy="85" r="7" fill="#fff"/><circle cx="126" cy="85" r="7" fill="#fff"/><circle cx="94" cy="85" r="3.5" fill="#0F172A"/><circle cx="126" cy="85" r="3.5" fill="#0F172A"/>`
+    : `<circle cx="94" cy="85" r="4.5" fill="#0F172A"/><circle cx="126" cy="85" r="4.5" fill="#0F172A"/>`;
+
+  const glassSvg = (glasses || brokenGlasses)
+    ? `<rect x="79" y="75" width="28" height="20" rx="5" fill="none" stroke="#0F172A" stroke-width="3"/><rect x="113" y="75" width="28" height="20" rx="5" fill="none" stroke="#0F172A" stroke-width="3"/><line x1="107" y1="84" x2="113" y2="84" stroke="#0F172A" stroke-width="3"/>${brokenGlasses ? '<path d="M84 77 L97 93 M95 78 L86 91" stroke="#EF4444" stroke-width="2.4"/>' : ''}`
+    : '';
+
+  const mudBadge = muddyHands
+    ? `<g transform="translate(156,148)"><circle cx="20" cy="20" r="18" fill="#FEF3C7" stroke="#92400E" stroke-width="2"/><path d="M12 24 C10 15, 16 10, 20 12 C23 9, 28 12, 27 22 C28 28, 13 29, 12 24 Z" fill="#475569"/><circle cx="17" cy="21" r="3.2" fill="#78350F"/><circle cx="24" cy="17" r="2.5" fill="#78350F"/></g>`
+    : '';
+
+  const shoeBadge = tornShoe
+    ? `<g transform="translate(18,148)"><circle cx="20" cy="20" r="18" fill="#FEE2E2" stroke="#991B1B" stroke-width="2"/><path d="M9 24 L15 15 L23 19 L31 22 L31 27 L9 27 Z" fill="${shoeColor}"/><path d="M18 17 L21 24 M22 18 L19 25" stroke="#FACC15" stroke-width="2"/></g>`
+    : '';
+
+  const svg = `<svg xmlns="${svgNs}" viewBox="0 0 220 200">`
+    + `<rect width="220" height="200" rx="16" fill="${bg}"/>`
+    + `<g stroke="#94A3B8" stroke-width="1" opacity="0.45"><line x1="0" y1="40" x2="220" y2="40"/><line x1="0" y1="80" x2="220" y2="80"/><line x1="0" y1="120" x2="220" y2="120"/><line x1="0" y1="160" x2="220" y2="160"/></g>`
+    + `<path d="M44 200 C46 144, 72 128, 110 128 C148 128, 174 144, 176 200 Z" fill="${shirt}"/>`
+    + `<path d="M94 128 L110 148 L126 128" fill="#fff" opacity="0.88"/>`
+    + `<circle cx="110" cy="160" r="3" fill="#0F172A" opacity="0.45"/><circle cx="110" cy="178" r="3" fill="#0F172A" opacity="0.45"/>`
+    + `<rect x="98" y="110" width="24" height="24" rx="8" fill="${skin}"/>`
+    + `<circle cx="110" cy="84" r="38" fill="${skin}"/>`
+    + hatSvg
+    + maskSvg
+    + glassSvg
+    + `<path d="M96 105 Q110 113 124 105" fill="none" stroke="#7C2D12" stroke-width="3" stroke-linecap="round"/>`
+    + mudBadge
+    + shoeBadge
+    + `</svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function buildClueSvgDataUrl(kind) {
+  const svgNs = 'http' + '://www.w3.org/2000/svg';
+  const bodies = {
+    kirmizi_gomlek: `<circle cx="60" cy="60" r="54" fill="#FEF2F2" stroke="#EF4444" stroke-width="4"/><path d="M24 38 L42 26 L60 36 L78 26 L96 38 L88 58 L78 52 L78 94 L42 94 L42 52 L32 58 Z" fill="#DC2626" stroke="#7F1D1D" stroke-width="3" stroke-linejoin="round"/><path d="M45 27 L60 44 L75 27" fill="none" stroke="#FEE2E2" stroke-width="3"/><circle cx="60" cy="56" r="2.8" fill="#FEF2F2"/><circle cx="60" cy="70" r="2.8" fill="#FEF2F2"/><circle cx="60" cy="84" r="2.8" fill="#FEF2F2"/>`,
+    yirtik_ayakkabi: `<circle cx="60" cy="60" r="54" fill="#FFFBEB" stroke="#D97706" stroke-width="4"/><path d="M22 76 L34 44 L54 48 L70 60 L96 66 C100 68, 100 80, 94 82 L22 82 Z" fill="#475569" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"/><rect x="20" y="78" width="76" height="8" rx="3" fill="#E2E8F0" stroke="#0F172A" stroke-width="2"/><path d="M52 58 L58 68 L53 74" fill="none" stroke="#FACC15" stroke-width="3" stroke-linecap="round"/><path d="M44 45 L40 33 M50 47 L56 36" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>`,
+    kirik_gozluk: `<circle cx="60" cy="60" r="54" fill="#EFF6FF" stroke="#3B82F6" stroke-width="4"/><rect x="18" y="45" width="34" height="26" rx="8" fill="#DBEAFE" stroke="#0F172A" stroke-width="4"/><rect x="68" y="45" width="34" height="26" rx="8" fill="#DBEAFE" stroke="#0F172A" stroke-width="4"/><line x1="52" y1="56" x2="68" y2="56" stroke="#0F172A" stroke-width="4"/><path d="M25 48 L43 68 M40 48 L29 66" stroke="#DC2626" stroke-width="3" stroke-linecap="round"/>`,
+    camurlu_eldiven: `<circle cx="60" cy="60" r="54" fill="#F5F5F4" stroke="#78350F" stroke-width="4"/><path d="M36 92 L36 52 C36 45, 43 45, 44 52 L45 36 C45 29, 53 29, 53 36 L55 32 C56 25, 64 25, 64 32 L66 38 C67 32, 75 33, 74 40 L73 56 L82 48 C87 44, 92 50, 87 56 L74 74 L74 92 Z" fill="#334155" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"/><circle cx="52" cy="68" r="8" fill="#78350F" opacity="0.9"/><circle cx="66" cy="54" r="6" fill="#92400E" opacity="0.9"/><circle cx="48" cy="48" r="4.5" fill="#78350F" opacity="0.9"/>`,
+    siyah_sapka: `<circle cx="60" cy="60" r="54" fill="#F1F5F9" stroke="#0F172A" stroke-width="4"/><ellipse cx="60" cy="76" rx="44" ry="10" fill="#0F172A"/><path d="M30 74 L38 36 C42 30, 78 30, 82 36 L90 74 Z" fill="#1E293B" stroke="#0F172A" stroke-width="3"/><rect x="33" y="61" width="54" height="7" fill="#D97706"/>`,
+    mavi_semsiye: `<circle cx="60" cy="60" r="54" fill="#EFF6FF" stroke="#60A5FA" stroke-width="3"/><path d="M20 56 C24 28, 96 28, 100 56 Q80 48 60 56 Q40 48 20 56 Z" fill="#2563EB" stroke="#1E3A8A" stroke-width="3"/><path d="M60 32 L60 88 C60 95, 70 95, 70 88" fill="none" stroke="#78350F" stroke-width="4" stroke-linecap="round"/>`,
+    temiz_fincan: `<circle cx="60" cy="60" r="54" fill="#F8FAFC" stroke="#94A3B8" stroke-width="3"/><ellipse cx="58" cy="86" rx="34" ry="7" fill="#CBD5E1"/><path d="M34 46 L82 46 L76 82 L40 82 Z" fill="#FFFFFF" stroke="#475569" stroke-width="3"/><path d="M81 52 C94 52, 94 72, 78 72" fill="none" stroke="#475569" stroke-width="4"/><ellipse cx="58" cy="46" rx="22" ry="4" fill="#78350F"/>`,
+    yeni_saat: `<circle cx="60" cy="60" r="54" fill="#F0FDF4" stroke="#10B981" stroke-width="3"/><rect x="49" y="16" width="22" height="88" rx="6" fill="#334155"/><circle cx="60" cy="60" r="24" fill="#FFFFFF" stroke="#0F172A" stroke-width="4"/><line x1="60" y1="60" x2="60" y2="44" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/><line x1="60" y1="60" x2="72" y2="62" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round"/>`,
+    kirmizi_araba: `<circle cx="60" cy="60" r="54" fill="#FEF2F2" stroke="#EF4444" stroke-width="4"/><path d="M18 68 L26 48 L46 38 L78 38 L94 52 L102 58 L102 74 L18 74 Z" fill="#DC2626" stroke="#7F1D1D" stroke-width="3"/><rect x="46" y="43" width="28" height="12" rx="3" fill="#BFDBFE"/><circle cx="38" cy="76" r="10" fill="#0F172A"/><circle cx="84" cy="76" r="10" fill="#0F172A"/><circle cx="38" cy="76" r="4" fill="#CBD5E1"/><circle cx="84" cy="76" r="4" fill="#CBD5E1"/>`,
+    lacivert_maske: `<circle cx="60" cy="60" r="54" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="4"/><path d="M18 52 C34 38, 86 38, 102 52 L96 74 C76 66, 66 64, 60 72 C54 64, 44 66, 24 74 Z" fill="#1E3A8A" stroke="#0F172A" stroke-width="3"/><ellipse cx="42" cy="56" rx="9" ry="5" fill="#fff"/><ellipse cx="78" cy="56" rx="9" ry="5" fill="#fff"/>`
+  };
+
+  const inner = bodies[kind] || `<circle cx="60" cy="60" r="54" fill="#FEF3C7" stroke="#D97706" stroke-width="4"/><text x="60" y="72" text-anchor="middle" font-size="44" font-family="sans-serif" font-weight="900" fill="#92400E">🔍</text>`;
+  const svg = `<svg xmlns="${svgNs}" viewBox="0 0 120 120">${inner}</svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
 const SEZDIRME_STAGES = {
   dedektif:    { label: 'Dedektiflik Vakası',   icon: '🕵️', color: '#0F172A', desc: 'Telsiz diyaloğu, ipuçları ve şüpheli eleme ile dil kuralının işlevini sezdirme' },
   hazirlik:    { label: 'Merak Uyandırma',      icon: '💭', color: '#8B5CF6', desc: 'Konunun adını söylemeden dikkat çeken bir durum, hikâye ya da soru' },
@@ -1976,8 +2048,15 @@ function createSezdirmeStep(type) {
     case 'dedektif':
       return {
         ...base,
-        title: 'Dedektiflik Vakası: Telsiz Hattı ve Şüpheliler',
-        caseBrief: 'Sahadaki dedektif telsizle merkeze bilgi veriyor ancak bazı sözcükleri ya da kuralları kullanmadığı için iletişim kopuyor. Mesajları sırayla açıp eksik olan dil unsurunu keşfedelim!',
+        title: 'Dedektiflik Vakası: Olay Yeri ve Şüpheliler',
+        sceneTitle: '🔍 Olay Yeri İnceleme Panosu',
+        sceneImage: '',
+        caseBrief: 'Sahadaki dedektif olay yerinde önemli ipuçları tespit etti. Önce görsellere tıklayıp delilleri toplayın, telsiz mesajlarını açarak eksik dil unsurunu keşfedin!',
+        sceneItems: [
+          { id: generateId(), label: 'Kırmızı araba', icon: '🚗', image: buildClueSvgDataUrl('kirmizi_araba'), x: 24, y: 68, isClue: true, clueNote: '"Nasıl araba?" → Kırmızı araba! Renk bildiren sıfat + varlık adı (isim).' },
+          { id: generateId(), label: 'Mavi şapka', icon: '🧢', image: buildClueSvgDataUrl('siyah_sapka'), x: 74, y: 64, isClue: true, clueNote: '"Hangi/nasıl şapka?" → Belirtilen özellik şapkayı diğerlerinden ayırdı.' },
+          { id: generateId(), label: 'Temiz fincan', icon: '☕', image: buildClueSvgDataUrl('temiz_fincan'), x: 52, y: 54, isClue: false, clueNote: 'Bu sıradan kahve fincanının vaka ile ilgisi yok!' }
+        ],
         dialogues: [
           {
             speaker: 'dedektif',
@@ -2005,10 +2084,10 @@ function createSezdirmeStep(type) {
           }
         ],
         suspects: [
-          { name: '1. Şüpheli', avatar: '🧢', traits: 'Mavi şapkalı, kırmızı arabanın sürücüsü', isCulprit: true },
-          { name: '2. Şüpheli', avatar: '🕶️', traits: 'Siyah şapkalı, kırmızı arabanın sürücüsü', isCulprit: false },
-          { name: '3. Şüpheli', avatar: '👒', traits: 'Mavi şapkalı, beyaz minibüste', isCulprit: false },
-          { name: '4. Şüpheli', avatar: '🎩', traits: 'Yeşil şapkalı, motosikletli', isCulprit: false }
+          { name: '1. Şüpheli', avatar: '🧢', image: buildSuspectSvgDataUrl({ shirt: '#DC2626', hatColor: '#2563EB' }), traits: 'Mavi şapkalı, kırmızı arabanın sürücüsü', isCulprit: true },
+          { name: '2. Şüpheli', avatar: '🕶️', image: buildSuspectSvgDataUrl({ shirt: '#DC2626', hatColor: '#0F172A', glasses: true }), traits: 'Siyah şapkalı, kırmızı arabanın sürücüsü', isCulprit: false },
+          { name: '3. Şüpheli', avatar: '👒', image: buildSuspectSvgDataUrl({ shirt: '#F8FAFC', hatColor: '#2563EB' }), traits: 'Mavi şapkalı, beyaz minibüste', isCulprit: false },
+          { name: '4. Şüpheli', avatar: '🎩', image: buildSuspectSvgDataUrl({ shirt: '#16A34A', hatColor: '#15803D' }), traits: 'Yeşil şapkalı, motosikletli', isCulprit: false }
         ],
         question: 'Dedektif ilk mesajlarında neden merkeze derdini anlatamadı? Vaka sonunda iletişimi netleştiren sözcüklerin ortak özelliği nedir?',
         image: ''
@@ -2036,13 +2115,264 @@ function createSezdirmeStep(type) {
 
 // Dedektiflik tarzı sezdirme ders akışı şablon üreticisi
 function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
+  if (preset === 'criminal_case') {
+    return [
+      {
+        id: generateId(),
+        type: 'dedektif',
+        title: 'Criminal Case: Olay Yeri İnceleme (Delilleri Topla)',
+        sceneTitle: '🔍 Eski Müze Çalışma Odası — Olay Yeri',
+        sceneImage: '',
+        caseBrief: 'Gece müze arşivinden değerli bir el yazması kayboldu! Olay yerinde aranan 5 sıfat tamlaması delilini ve 3 yanıltıcı nesneyi inceleyin. Önce sahnedeki gizli delilleri bulun, telsiz ipuçlarını dinleyin ve eşkâle tam uyan şüpheliyi yakalayın!',
+        sceneItems: [
+          {
+            id: generateId(),
+            label: 'Kırmızı gömlek',
+            icon: '👕',
+            image: buildClueSvgDataUrl('kirmizi_gomlek'),
+            x: 18,
+            y: 66,
+            isClue: true,
+            clueNote: 'BULUNDU: [Kırmızı gömlek] → "Nasıl gömlek?" Kırmızı gömlek! ("Kırmızı" niteleme sıfatı + "gömlek" isim = Sıfat Tamlaması)'
+          },
+          {
+            id: generateId(),
+            label: 'Yırtık ayakkabı',
+            icon: '👟',
+            image: buildClueSvgDataUrl('yirtik_ayakkabi'),
+            x: 76,
+            y: 80,
+            isClue: true,
+            clueNote: 'BULUNDU: [Yırtık ayakkabı] → "Nasıl ayakkabı?" Yırtık ayakkabı! ("Yırtık" durum bildiren sıfat + "ayakkabı" isim = Sıfat Tamlaması)'
+          },
+          {
+            id: generateId(),
+            label: 'Kırık gözlük',
+            icon: '👓',
+            image: buildClueSvgDataUrl('kirik_gozluk'),
+            x: 47,
+            y: 58,
+            isClue: true,
+            clueNote: 'BULUNDU: [Kırık gözlük] → "Nasıl gözlük?" Kırık gözlük! ("Kırık" biçim/durum sıfatı + "gözlük" isim = Sıfat Tamlaması)'
+          },
+          {
+            id: generateId(),
+            label: 'Çamurlu eldiven',
+            icon: '🧤',
+            image: buildClueSvgDataUrl('camurlu_eldiven'),
+            x: 31,
+            y: 79,
+            isClue: true,
+            clueNote: 'BULUNDU: [Çamurlu eldiven] → "Nasıl eldiven?" Çamurlu eldiven! ("Çamurlu" özellik sıfatı + "eldiven" isim = Sıfat Tamlaması)'
+          },
+          {
+            id: generateId(),
+            label: 'Siyah şapka',
+            icon: '🎩',
+            image: buildClueSvgDataUrl('siyah_sapka'),
+            x: 83,
+            y: 39,
+            isClue: true,
+            clueNote: 'BULUNDU: [Siyah şapka] → "Nasıl şapka?" Siyah şapka! ("Siyah" renk sıfatı + "şapka" isim = Sıfat Tamlaması)'
+          },
+          {
+            id: generateId(),
+            label: 'Mavi şemsiye',
+            icon: '☂️',
+            image: buildClueSvgDataUrl('mavi_semsiye'),
+            x: 11,
+            y: 40,
+            isClue: false,
+            clueNote: 'Bu mavi şemsiye gece bekçisine ait, olayla ilgisi yok!'
+          },
+          {
+            id: generateId(),
+            label: 'Temiz fincan',
+            icon: '☕',
+            image: buildClueSvgDataUrl('temiz_fincan'),
+            x: 58,
+            y: 55,
+            isClue: false,
+            clueNote: 'Bu temiz fincan müze görevlisine ait; başka deliller ara!'
+          },
+          {
+            id: generateId(),
+            label: 'Yeni saat',
+            icon: '⌚',
+            image: buildClueSvgDataUrl('yeni_saat'),
+            x: 68,
+            y: 26,
+            isClue: false,
+            clueNote: 'Masa saati normal yerinde duruyor; aranan delillerden biri değil.'
+          }
+        ],
+        dialogues: [
+          {
+            speaker: 'dedektif',
+            speakerName: 'Olay Yeri Dedektifi',
+            text: 'Merkez! Şüpheli kaçarken [kırmızı gömlek] parçasını ve [yırtık ayakkabı] izini bırakmış!',
+            clueNote: 'İki sözcük bir araya gelip varlığı özelliğiyle birlikte tarif ediyor.'
+          },
+          {
+            speaker: 'merkez',
+            speakerName: 'Merkez Komiseri',
+            text: 'Harika başlangıç! Masada veya kapı önünde başka ayırt edici delil var mı?',
+            clueNote: ''
+          },
+          {
+            speaker: 'dedektif',
+            speakerName: 'Olay Yeri Dedektifi',
+            text: 'Evet! Yerde [kırık gözlük], [çamurlu eldiven] ve [siyah şapka] da bulundu!',
+            clueNote: 'Bulduğumuz 5 delilin tamamı "Nasıl?" sorusuna yanıt veren sözcük gruplarıdır.'
+          },
+          {
+            speaker: 'merkez',
+            speakerName: 'Merkez Komiseri',
+            text: 'Eşkâl tamamen netleşti! Olay yerinden topladığın delillerle uymayanları ele, gerçek suçluyu yakala!',
+            clueNote: 'Delil panosundan 5 delili tamamladıktan sonra aşağıdaki 4 şüpheli arasından suçluyu yakalayın.'
+          }
+        ],
+        suspects: [
+          {
+            name: 'Şüpheli 1: Demir',
+            avatar: '🧢',
+            image: buildSuspectSvgDataUrl({ shirt: '#2563EB', hatColor: '#0F172A', glasses: true, muddyHands: true }),
+            traits: 'Mavi gömlekli, sağlam ayakkabılı, siyah şapkalı, çamurlu eldivenli',
+            isCulprit: false
+          },
+          {
+            name: 'Şüpheli 2: Poyraz',
+            avatar: '🕵️',
+            image: buildSuspectSvgDataUrl({ shirt: '#DC2626', hatColor: '#0F172A', brokenGlasses: true, muddyHands: true, tornShoe: true, shoeColor: '#334155' }),
+            traits: 'Kırmızı gömlekli, yırtık ayakkabılı, kırık gözlüklü, çamurlu eldivenli, siyah şapkalı',
+            isCulprit: true
+          },
+          {
+            name: 'Şüpheli 3: Kaan',
+            avatar: '👓',
+            image: buildSuspectSvgDataUrl({ shirt: '#DC2626', hatColor: '#15803D', brokenGlasses: true, tornShoe: true }),
+            traits: 'Kırmızı gömlekli, yırtık ayakkabılı, kırık gözlüklü, yeşil şapkalı, eldivensiz',
+            isCulprit: false
+          },
+          {
+            name: 'Şüpheli 4: Mert',
+            avatar: '🧥',
+            image: buildSuspectSvgDataUrl({ shirt: '#16A34A', hatColor: '#0F172A', muddyHands: true }),
+            traits: 'Yeşil gömlekli, gözlüksüz, siyah şapkalı, temiz eldivenli',
+            isCulprit: false
+          }
+        ],
+        question: 'Olay yerinden topladığımız "kırmızı gömlek, yırtık ayakkabı, kırık gözlük, çamurlu eldiven, siyah şapka" ikilileri neden tek sözcükten daha güçlü ipucu verdi?',
+        image: '',
+        note: 'Öğrencilerle birlikte önce olay yerindeki görselleri tek tek tıklayarak bulun. Her delil açıldığında "Nasıl?" sorusunu sorarak sıfat ve ismin nasıl eşleştiğini hissettirin.'
+      },
+      {
+        id: generateId(),
+        type: 'karsilastir',
+        title: 'Yalın İsimler mi, Tamlamalı Deliller mi?',
+        instruction: 'Delil poşetindeki tek sözcüklü kayıtlarla olay yeri delillerini yan yana inceleyin.',
+        groupA: {
+          title: '❌ Eksik Rapor',
+          items: ['Olay yerinde [gömlek] bulundu.', 'Kapıda [ayakkabı] izi var.', 'Masada [gözlük] kalmış.', 'Duvarda [eldiven] düştü.']
+        },
+        groupB: {
+          title: '✅ Olay Yeri Delil Raporu',
+          items: ['Olay yerinde [kırmızı] [gömlek] bulundu.', 'Kapıda [yırtık] [ayakkabı] izi var.', 'Masada [kırık] [gözlük] kalmış.', 'Duvarda [çamurlu] [eldiven] düştü.']
+        },
+        question: 'Sağdaki raporda her varlığın önüne gelen sözcük (kırmızı, yırtık, kırık, çamurlu) hangi soruya cevap vererek suçluyu buldurdu?',
+        note: 'İki kelimenin tek bir kavram/nesne görüntüsü oluşturduğuna dikkat çekin.'
+      },
+      {
+        id: generateId(),
+        type: 'gozlem',
+        title: 'Delil Etiketlerini İnceleyelim',
+        instruction: 'Delil etiketlerindeki cümleleri okuyun. Önce kendiniz inceleyin, sonra vurguları açın.',
+        examples: [
+          'Suçlu [kırmızı] [gömleğinin] kolunu pencereye takmış.',
+          'Koridorda [yırtık] [ayakkabı] tabanından kalma iz vardı.',
+          'Çalışma masasının altında [kırık] [gözlük] parçaları parlıyordu.',
+          'Bahçe kapısında [çamurlu] [eldiven] tekini düşürmüş.',
+          'Güvenlik kamerasında [siyah] [şapkalı] biri göründü.'
+        ],
+        image: '',
+        note: 'Her iki sözcüğün birlikte okunuşuna ve öndeki sözcüğün isme bağlanışına dikkat çekin.'
+      },
+      {
+        id: generateId(),
+        type: 'soru',
+        title: 'Laboratuvar Sorgusu',
+        questions: [
+          { q: '"Kırmızı gömlek, yırtık ayakkabı, kırık gözlük" gruplarında birinci ve ikinci sözcüklerin yeri değiştirilirse ne olur?', hint: '"Gömlek kırmızı" dersek yine bir söz öbeği/tamlama kalır mı?', answer: 'Önce özellik (sıfat), sonra varlık (isim) gelir; bu sıra bir sıfat tamlaması oluşturur.' },
+          { q: 'Delillerdeki "kırmızı, yırtık, kırık, çamurlu, siyah" sözcüklerini bulmak için isme hangi soruyu sorduk?', hint: '"... gömlek? ... ayakkabı?"', answer: '"Nasıl?" sorusunu sorduk.' },
+          { q: 'Peki bu sözcükler tek başına (örneğin sadece "yırtık" veya "kırmızı") şüpheliyi bulmaya yeter miydi?', hint: 'Sadece "kırmızı" denseydi kravat mı gömlek mi bilebilir miydik?', answer: 'Yetmezdi! Sıfat mutlaka bir ismin önüne gelerek onunla birlikte "sıfat tamlaması" kurar.' }
+        ],
+        note: 'Henüz terimi ezberletmeden öğrencilerin "ikili grup / tamlama" fikrini söylemesini sağlayın.'
+      },
+      {
+        id: generateId(),
+        type: 'siniflandir',
+        title: 'Delilleri Parçalarına Ayıralım',
+        instruction: 'Bulduğumuz olay yeri delillerinin parçalarını iki kutuya ayırın!',
+        hideNames: true,
+        categories: ['Niteleyen Sözcük (Sıfat)', 'Nitelenen Varlık (İsim)'],
+        items: [
+          { text: 'kırmızı', c: 0 },
+          { text: 'gömlek', c: 1 },
+          { text: 'yırtık', c: 0 },
+          { text: 'ayakkabı', c: 1 },
+          { text: 'kırık', c: 0 },
+          { text: 'gözlük', c: 1 },
+          { text: 'çamurlu', c: 0 },
+          { text: 'eldiven', c: 1 },
+          { text: 'siyah', c: 0 },
+          { text: 'şapka', c: 1 }
+        ],
+        note: 'Gruplama bittiğinde "Soldakiler + sağdakiler birleşince ortaya çıkan yapıya ne denir?" sorusunu sorun.'
+      },
+      {
+        id: generateId(),
+        type: 'cikarim',
+        title: 'Kendi Dedektif Kuralını Yaz!',
+        prompt: 'Olay yerindeki delillerden hareketle bir varlığı özelliğiyle birlikte anlatan sözcük grubunun nasıl kurulduğunu kendi cümlenle açıkla.',
+        placeholder: 'Bence bir ... sözcüğünün önüne ... gelerek ... oluşturur.',
+        note: 'Öğrencilerin tahminlerini panoya kaydedin.'
+      },
+      {
+        id: generateId(),
+        type: 'kural',
+        title: 'Vaka Çözüldü: Sıfat Tamlaması',
+        rule: 'SIFAT TAMLAMASI: Bir sıfatın (tamlayan) bir ismin (tamlanan) önüne gelerek onu renk, biçim, durum, sayı veya işaret bakımından tamamlamasıyla oluşan sözcük grubudur.\n\nKuruluş: [SIFAT] + [İSİM] = SIFAT TAMLAMASI\n\nOlay Yeri Örnekleri:\n• kırmızı (sıfat) + gömlek (isim) → kırmızı gömlek\n• yırtık (sıfat) + ayakkabı (isim) → yırtık ayakkabı\n• kırık (sıfat) + gözlük (isim) → kırık gözlük\n• çamurlu (sıfat) + eldiven (isim) → çamurlu eldiven\n• siyah (sıfat) + şapka (isim) → siyah şapka',
+        image: '',
+        note: 'Kuralı öğrencilerin tahminleriyle karşılaştırın.'
+      },
+      {
+        id: generateId(),
+        type: 'uygulama',
+        title: 'Final Operasyonu: Pekiştirme Soruları',
+        items: [
+          { q: 'Aşağıdakilerden hangisi olay yerinde bulunan bir sıfat tamlamasıdır?', options: ['kapının kolu', 'çamurlu eldiven', 'hızla koştu', 'bekçinin odası'], correct: 1, explanation: '"Nasıl eldiven?" → çamurlu eldiven (sıfat + isim = sıfat tamlaması).' },
+          { q: '"Dedektif masada kırık gözlük buldu." cümlesindeki sıfat tamlamasının tamlayanı (sıfat) hangisidir?', options: ['dedektif', 'masada', 'kırık', 'gözlük'], correct: 2, explanation: '"kırık gözlük" sıfat tamlamasında "kırık" sözcüğü ismi niteleyen sıfattır.' },
+          { q: 'Aşağıdaki eşkâl özelliklerinden hangisi bir sıfat tamlaması DEĞİLDİR?', options: ['eski ceket', 'parlak düğme', 'demir kapısı', 'siyah şapka'], correct: 2, explanation: '"demir kapısı" tamlanan eki aldığı için belirtisiz isim tamlamasıdır; diğerleri sıfat tamlamasıdır.' }
+        ],
+        note: ''
+      }
+    ];
+  }
+
   if (preset === 'soyguncu') {
     return [
       {
         id: generateId(),
         type: 'dedektif',
         title: 'Telsiz Operasyonu: Soyguncu Neye Bindi?',
-        caseBrief: 'Banka soygununun ardından sahadaki memur heyecanla merkeze telsiz geçiyor. Telsiz mesajlarını sırayla açın ve merkezdeki dedektifin soyguncuyu nasıl yakalayabildiğini keşfedin!',
+        sceneTitle: '🔍 Banka Önü Kaçış Güzergâhı',
+        sceneImage: '',
+        caseBrief: 'Banka soygununun ardından sahadaki memur heyecanla merkeze telsiz geçiyor. Hem olay yerindeki görsel delilleri toplayın hem telsiz mesajlarını sırayla açarak gerçek soyguncuyu yakalayın!',
+        sceneItems: [
+          { id: generateId(), label: 'Kırmızı araba', icon: '🚗', image: buildClueSvgDataUrl('kirmizi_araba'), x: 22, y: 66, isClue: true, clueNote: '"Nasıl araba?" → Kırmızı ve lüks araba! (Sıfat + İsim)' },
+          { id: generateId(), label: 'Lacivert maske', icon: '🎭', image: buildClueSvgDataUrl('lacivert_maske'), x: 64, y: 74, isClue: true, clueNote: '"Nasıl maske?" → Lacivert maske! (Renk sıfatı + İsim)' },
+          { id: generateId(), label: 'Mavi şemsiye', icon: '☂️', image: buildClueSvgDataUrl('mavi_semsiye'), x: 81, y: 46, isClue: false, clueNote: 'Bu mavi şemsiye bankadaki bir müşteriye ait, delil değil.' }
+        ],
         dialogues: [
           { speaker: 'dedektif', speakerName: 'Sahadaki Memur', text: 'Alo merkez! Soyguncu [şeye] bindi. Çabuk [şeyi] takip edin. Eee [şeye] doğru gidiyorlar.', clueNote: 'Hiçbir varlık ve yer adı verilmediği için "neyi, nereyi" takip edeceğimiz anlaşılmıyor!' },
           { speaker: 'merkez', speakerName: 'Merkez Dedektifi', text: 'Soyguncu neye bindi? Daha net konuş. Dediklerini anlamıyorum.', clueNote: '' },
@@ -2062,10 +2392,10 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
           { speaker: 'merkez', speakerName: 'Merkez Dedektifi', text: 'Teşekkürler dedektif! Şüpheliyi yakaladık!', clueNote: 'Harika! Şimdi aşağıdaki 4 şüpheli arasından eşkâle uymayanları eleyip gerçek soyguncuyu yakalayın!' }
         ],
         suspects: [
-          { name: 'Şüpheli A', avatar: '🕶️', image: '', traits: 'Siyah maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: false },
-          { name: 'Şüpheli B', avatar: '🎭', image: '', traits: 'Lacivert maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: true },
-          { name: 'Şüpheli C', avatar: '🧢', image: '', traits: 'Lacivert maskeli, saçları simsiyah, yeşil gömlekli', isCulprit: false },
-          { name: 'Şüpheli D', avatar: '🧥', image: '', traits: 'Lacivert maskeli, saçları bembeyaz, sarı gömlekli', isCulprit: false }
+          { name: 'Şüpheli A', avatar: '🕶️', image: buildSuspectSvgDataUrl({ hair: '#F8FAFC', shirt: '#16A34A', maskColor: '#0F172A' }), traits: 'Siyah maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: false },
+          { name: 'Şüpheli B', avatar: '🎭', image: buildSuspectSvgDataUrl({ hair: '#F8FAFC', shirt: '#16A34A', maskColor: '#1E3A8A' }), traits: 'Lacivert maskeli, saçları bembeyaz, yeşil gömlekli', isCulprit: true },
+          { name: 'Şüpheli C', avatar: '🧢', image: buildSuspectSvgDataUrl({ hair: '#0F172A', shirt: '#16A34A', maskColor: '#1E3A8A' }), traits: 'Lacivert maskeli, saçları simsiyah, yeşil gömlekli', isCulprit: false },
+          { name: 'Şüpheli D', avatar: '🧥', image: buildSuspectSvgDataUrl({ hair: '#F8FAFC', shirt: '#EAB308', maskColor: '#1E3A8A' }), traits: 'Lacivert maskeli, saçları bembeyaz, sarı gömlekli', isCulprit: false }
         ],
         question: 'İlk telsiz çağrısında memurun "şey" dediği yerlere hangi sözcükleri koyduğumuzda soyguncuyu yakalayabildik?',
         image: '',
@@ -2167,8 +2497,15 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
     {
       id: generateId(),
       type: 'dedektif',
-      title: 'Dedektiflik Vakası: Şifreli Telsiz Mesajı',
-      caseBrief: 'Olay yerindeki iletişimi aksatan dil/yazım hatasını veya eksik dil unsurunu adım adım ortaya çıkaralım.',
+      title: 'Dedektiflik Vakası: Olay Yeri ve Şifreli Mesaj',
+      sceneTitle: '🔍 Olay Yeri Delil Panosu',
+      sceneImage: '',
+      caseBrief: 'Olay yerindeki gizli delilleri toplayın ve iletişimi aksatan dil/yazım hatasını veya eksik dil unsurunu adım adım ortaya çıkarın.',
+      sceneItems: [
+        { id: generateId(), label: '1. Örnek delil', icon: '🔎', image: buildClueSvgDataUrl('kirmizi_gomlek'), x: 25, y: 65, isClue: true, clueNote: 'Bu delil bulunduğunda öğrencilere göstereceğiniz kural notu.' },
+        { id: generateId(), label: '2. Örnek delil', icon: '🧤', image: buildClueSvgDataUrl('camurlu_eldiven'), x: 68, y: 74, isClue: true, clueNote: 'İkinci delil ipucu notunu buraya yazabilirsiniz.' },
+        { id: generateId(), label: 'Yanıltıcı nesne', icon: '☕', image: buildClueSvgDataUrl('temiz_fincan'), x: 50, y: 52, isClue: false, clueNote: 'Bu nesne olayla ilgisiz bir çeldiricidir.' }
+      ],
       dialogues: [
         { speaker: 'dedektif', speakerName: 'Sahadaki Dedektif', text: 'Alo merkez! Şüpheli ilk ipucunu [buraya] bıraktı ama cümle biraz karışık görünüyor.', clueNote: 'Öğrencilerin dikkatini çekecek ilk sorunlu noktayı [köşeli parantez] içine yazın.' },
         { speaker: 'merkez', speakerName: 'Merkez Komiseri', text: 'Mesajın net değil dedektif! Tam olarak ne demek istiyorsun?', clueNote: '' },
@@ -2176,10 +2513,10 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
         { speaker: 'merkez', speakerName: 'Merkez Komiseri', text: 'Harika! Eldeki ipuçlarıyla aşağıdan doğru şüpheliyi yakalayalım.', clueNote: '' }
       ],
       suspects: [
-        { name: '1. Şüpheli', avatar: '🕵️', image: '', traits: 'Birinci ipucu özelliğini buraya yazın', isCulprit: false },
-        { name: '2. Şüpheli', avatar: '🎭', image: '', traits: 'Doğru eşkâl özelliklerini buraya yazın', isCulprit: true },
-        { name: '3. Şüpheli', avatar: '🎩', image: '', traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false },
-        { name: '4. Şüpheli', avatar: '🕶️', image: '', traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false }
+        { name: '1. Şüpheli', avatar: '🕵️', image: buildSuspectSvgDataUrl({ shirt: '#3B82F6', hatColor: '#334155' }), traits: 'Birinci ipucu özelliğini buraya yazın', isCulprit: false },
+        { name: '2. Şüpheli', avatar: '🎭', image: buildSuspectSvgDataUrl({ shirt: '#DC2626', brokenGlasses: true, muddyHands: true }), traits: 'Doğru eşkâl özelliklerini buraya yazın', isCulprit: true },
+        { name: '3. Şüpheli', avatar: '🎩', image: buildSuspectSvgDataUrl({ shirt: '#16A34A', hatColor: '#0F172A' }), traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false },
+        { name: '4. Şüpheli', avatar: '🕶️', image: buildSuspectSvgDataUrl({ shirt: '#EAB308', glasses: true }), traits: 'Çeldirici eşkâl özelliğini buraya yazın', isCulprit: false }
       ],
       question: 'İletişimdeki karışıklık neden kaynaklandı ve hangi değişiklik sorunu çözdü?',
       image: '',
@@ -3081,6 +3418,17 @@ function getSezdirmeSeeds() {
   });
 
   return [
+    // ---------- 5. SINIF: CRIMINAL CASE — OLAY YERİ DELİL AVI (SIFAT TAMLAMALARI) ----------
+    mk({
+      id: 'sez_5_criminal_case_sifat',
+      grade: '5', theme: 'Dilimizin Zenginliği', outcome: 'T.D.5.2',
+      code: 'SZ5CRM',
+      title: '🕵️ Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları)',
+      description: 'Olay yerindeki gizli görselleri (kırmızı gömlek, yırtık ayakkabı, kırık gözlük...) bularak sıfat tamlamalarını keşfettiren ve şüpheliyi yakalatan dedektiflik oyunu',
+      objective: 'Öğrenciler olay yerindeki görsel delilleri eşleştirerek sıfat + isim ikilisinin oluşturduğu sıfat tamlamalarının işlevini ve kuruluşunu kendileri keşfeder.',
+      steps: createDetectiveSezdirmeSteps('criminal_case')
+    }),
+
     // ---------- 5. SINIF: DEDEKTİFLİK TARZI SEZDİRME (İSİM VE SIFATLAR) ----------
     mk({
       id: 'sez_5_dedektif_isim_sifat',
