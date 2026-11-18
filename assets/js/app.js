@@ -2120,7 +2120,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
       {
         id: generateId(),
         type: 'dedektif',
-        title: 'Criminal Case: Olay Yeri İnceleme (Delilleri Topla)',
+        title: 'Olay Yeri Kanıt Avı: Olay Yeri İnceleme (Kanıtları Topla)',
         sceneTitle: '🔍 Eski Müze Çalışma Odası — Olay Yeri',
         sceneImage: '',
         caseBrief: 'Gece müze arşivinden değerli bir el yazması kayboldu! Olay yerinde aranan 5 sıfat tamlaması delilini ve 3 yanıltıcı nesneyi inceleyin. Önce sahnedeki gizli delilleri bulun, telsiz ipuçlarını dinleyin ve eşkâle tam uyan şüpheliyi yakalayın!',
@@ -3418,12 +3418,12 @@ function getSezdirmeSeeds() {
   });
 
   return [
-    // ---------- 5. SINIF: CRIMINAL CASE — OLAY YERİ DELİL AVI (SIFAT TAMLAMALARI) ----------
+    // ---------- 5. SINIF: OLAY YERİ KANIT AVI (SIFAT TAMLAMALARI) ----------
     mk({
       id: 'sez_5_criminal_case_sifat',
       grade: '5', theme: 'Dilimizin Zenginliği', outcome: 'T.D.5.2',
       code: 'SZ5CRM',
-      title: '🕵️ Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları)',
+      title: 'Olay Yeri Kanıt Avı',
       description: 'Olay yerindeki gizli görselleri (kırmızı gömlek, yırtık ayakkabı, kırık gözlük...) bularak sıfat tamlamalarını keşfettiren ve şüpheliyi yakalatan dedektiflik oyunu',
       objective: 'Öğrenciler olay yerindeki görsel delilleri eşleştirerek sıfat + isim ikilisinin oluşturduğu sıfat tamlamalarının işlevini ve kuruluşunu kendileri keşfeder.',
       steps: createDetectiveSezdirmeSteps('criminal_case')

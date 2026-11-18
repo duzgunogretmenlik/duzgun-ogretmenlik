@@ -165,7 +165,7 @@
     </p>
     <div style="display:flex; flex-direction:column; gap:12px;">
       <button type="button" class="row-box" style="text-align:left; cursor:pointer; border:2px solid #F59E0B; background:#FFFBEB;" onclick="loadDetectivePreset('criminal_case')">
-        <div style="font-weight:900; font-size:1rem; color:#92400E;">🔍 Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları &amp; Şüpheli Yakalama)</div>
+        <div style="font-weight:900; font-size:1rem; color:#92400E;">🔍 Olay Yeri Kanıt Avı</div>
         <div style="font-size:0.84rem; color:#78350F; margin-top:4px;">
           Olay yerinde görselli delilleri (kırmızı gömlek, yırtık ayakkabı, kırık gözlük, çamurlu eldiven, siyah şapka) buldurup görselli şüpheliyi yakalatan tam oyun!
         </div>
@@ -394,7 +394,7 @@
           <textarea class="form-control" rows="2" oninput="upd('caseBrief', this.value)">${escHtml(s.caseBrief || '')}</textarea>
         </div>
         <div class="form-group" style="background:#FFFBEB; border:2px dashed #F59E0B; border-radius:12px; padding:14px 16px;">
-          <label class="form-label" style="color:#92400E;">🔍 Criminal Case Olay Yeri Sahnesi &amp; Arka Planı</label>
+          <label class="form-label" style="color:#92400E;">🔍 Olay Yeri Kanıt Avı Sahnesi &amp; Arka Planı</label>
           <input type="text" class="form-control mb-16" style="margin-bottom:10px;" placeholder="Olay yeri başlığı (örn: Eski Müze Çalışma Odası)" value="${escHtml(s.sceneTitle || '')}" oninput="upd('sceneTitle', this.value)" />
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
             <label class="btn btn-outline btn-sm" style="cursor:pointer; border-color:#D97706; color:#92400E; background:#fff;">
@@ -912,7 +912,7 @@
   function loadDetectivePreset(preset) {
     activity.steps = createDetectiveSezdirmeSteps(preset);
     if (preset === 'criminal_case' && (!activity.title || activity.title === 'Yeni Sezdirme Dersi')) {
-      activity.title = '🕵️ Criminal Case: Olay Yeri Delil Avı (Sıfat Tamlamaları)';
+      activity.title = 'Olay Yeri Kanıt Avı';
       document.getElementById('activityTitle').value = activity.title;
     } else if (preset === 'soyguncu' && (!activity.title || activity.title === 'Yeni Sezdirme Dersi')) {
       activity.title = '🕵️ Dedektiflik Vakası: Soyguncu Neye Bindi?';
