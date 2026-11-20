@@ -107,8 +107,94 @@
       transform: scale(1.05);
     }
 
+    .pool-tabs-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .pool-tab-btn {
+      border: 2px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-family: var(--font);
+      font-weight: 800;
+      font-size: 0.92rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .pool-tab-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .pool-tab-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(91, 79, 232, 0.22);
+    }
+    .pool-tab-btn.admin-tab.active {
+      background: #D97706;
+      border-color: #D97706;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+    }
+    .pool-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 900;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .pool-badge.approved { background: #DCFCE7; color: #166534; }
+    .pool-badge.pending  { background: #FEF3C7; color: #92400E; }
+    .pool-badge.rejected { background: #FEE2E2; color: #991B1B; }
+    .info-notice-banner {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      color: #1E3A8A;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .admin-notice-banner {
+      background: #FFFBEB;
+      border: 2px solid #FCD34D;
+      color: #92400E;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .teacher-note-box {
+      background: #F8FAFC;
+      border-left: 3px solid var(--primary);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #334155;
+      margin-top: 8px;
+    }
+    .reject-reason-box {
+      background: #FEF2F2;
+      border-left: 3px solid #EF4444;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #991B1B;
+      margin-top: 8px;
+    }
+
     @media print {
-      .navbar, .hero-small, .search-box, .filter-buttons, .navbar-actions, button, footer {
+      .navbar, .hero-small, .search-box, .filter-buttons, .navbar-actions, .pool-tabs-bar, button, footer {
         display: none !important;
       }
       body { background: #fff; font-size: 11pt; }
@@ -140,6 +226,7 @@
   <div class="navbar-actions">
     <button class="btn btn-outline btn-sm sound-toggle-btn" onclick="SoundEffects.toggleMute()">🔊 Ses Açık</button>
     <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Sınıf Panosu İçin Yazdır</button>
+    <button class="btn btn-outline btn-sm" id="navSharePoolBtn" style="display:none; border-color:#0D9488; color:#0F766E;" onclick="openShareWordModal()">📤 Havuza Öneri Gönder</button>
     <button class="btn btn-primary btn-sm" onclick="openModal('newWordModal')">💡 Öneri Paylaş</button>
   </div>
 </nav>
@@ -155,9 +242,10 @@
 <div class="hero-small" style="background: linear-gradient(135deg, #16A085 0%, #2ECC71 100%);">
   <div>
     <h1>🗣️ Yabancı Sözcüklere Türkçe Öneriler</h1>
-    <p>Günlük dilde ve dijital ortamlarda kullanılan yabancı kelimelere öz Türkçe karşılıklar keşfedin, dilediğinizce yeni önerilerde bulunun.</p>
+    <p>Günlük dilde ve dijital ortamlarda kullanılan yabancı kelimelere öz Türkçe karşılıklar keşfedin; beğendiğiniz önerileri öğretmen havuzuna paylaşım talebi olarak gönderin.</p>
   </div>
   <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button class="btn btn-outline-white btn-sm" id="heroSharePoolBtn" style="display:none;" onclick="openShareWordModal()">📤 Havuza Öneri Gönder</button>
     <button class="btn btn-outline-white btn-sm" onclick="openModal('newWordModal')">➕ Yeni Sözcük Öner</button>
   </div>
 </div>
@@ -167,23 +255,62 @@
   <!-- İSTATİSTİK KARTLARI -->
   <div class="grid-4 mb-24" id="wordStats"></div>
 
-  <!-- ARAMA VE FİLTRELEME -->
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
-    <div class="search-box" style="margin-bottom:0; max-width:340px;">
-      <span class="search-icon">🔍</span>
-      <input type="text" class="form-control" id="wordSearchInput" placeholder="Yabancı kelime veya Türkçe karşılık ara..." oninput="renderWords()" />
-    </div>
-
-    <div class="activity-type-filter" style="margin-bottom:0;">
-      <button class="filter-btn active" data-filter="all" onclick="setWordFilter('all', this)">Tümü</button>
-      <button class="filter-btn" data-filter="student" onclick="setWordFilter('student', this)">🎓 Öğrenci Önerileri</button>
-      <button class="filter-btn" data-filter="official" onclick="setWordFilter('official', this)">🏛️ TDK Karşılıkları</button>
-      <button class="filter-btn" data-filter="popular" onclick="setWordFilter('popular', this)">❤️ En Çok Beğenilenler</button>
-    </div>
+  <!-- HAVUZ SİSTEMİ SEKMELERİ -->
+  <div class="pool-tabs-bar" id="wordPoolTabs">
+    <button type="button" class="pool-tab-btn active" id="tabWordPoolBtn" onclick="switchWordTab('dict')">
+      🌐 Öneri Sözlüğü &amp; Ortak Havuz
+    </button>
+    <button type="button" class="pool-tab-btn" id="tabWordMineBtn" style="display:none;" onclick="switchWordTab('mine')">
+      📤 Havuz Taleplerim
+    </button>
+    <button type="button" class="pool-tab-btn admin-tab" id="tabWordAdminBtn" style="display:none;" onclick="switchWordTab('admin')">
+      🛡️ Yönetici Onay Paneli <span id="wordAdminTabBadge" style="background:rgba(255,255,255,0.28); padding:1px 8px; border-radius:999px; font-size:0.78rem;">0</span>
+    </button>
   </div>
 
-  <!-- SÖZCÜK KARTLARI LİSTESİ -->
-  <div class="word-grid" id="wordGrid"></div>
+  <!-- 1. SEKME: ÖNERİ SÖZLÜĞÜ VE HERKESE AÇIK ONAYLI HAVUZ -->
+  <div id="wordDictSection">
+    <!-- ARAMA VE FİLTRELEME -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
+      <div class="search-box" style="margin-bottom:0; max-width:340px;">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="form-control" id="wordSearchInput" placeholder="Yabancı kelime veya Türkçe karşılık ara..." oninput="renderWords()" />
+      </div>
+
+      <div class="activity-type-filter" style="margin-bottom:0;">
+        <button class="filter-btn active" data-filter="all" onclick="setWordFilter('all', this)">Tümü</button>
+        <button class="filter-btn" data-filter="pool" onclick="setWordFilter('pool', this)">🌐 Onaylı Havuz</button>
+        <button class="filter-btn" data-filter="student" onclick="setWordFilter('student', this)">🎓 Öğrenci &amp; Öğretmen</button>
+        <button class="filter-btn" data-filter="official" onclick="setWordFilter('official', this)">🏛️ TDK Karşılıkları</button>
+        <button class="filter-btn" data-filter="popular" onclick="setWordFilter('popular', this)">❤️ En Çok Beğenilenler</button>
+      </div>
+    </div>
+
+    <!-- SÖZCÜK KARTLARI LİSTESİ -->
+    <div class="word-grid" id="wordGrid"></div>
+  </div>
+
+  <!-- 2. SEKME: ÖĞRETMENİN HAVUZ PAYLAŞIM TALEPLERİ -->
+  <div id="wordMineSection" style="display:none;">
+    <div class="info-notice-banner">
+      ℹ️ <strong>Yayın Kuralı:</strong> Öğretmenlerin beğendiği veya yeni ekleyip havuza gönderdiği öneriler yönetici onayına düşer. Yönetici onayından geçen öneriler herkesin görebileceği şekilde Ortak Havuzda yayınlanır.
+    </div>
+    <div class="word-grid" id="wordMineGrid"></div>
+  </div>
+
+  <!-- 3. SEKME: YÖNETİCİ ONAY PANELİ -->
+  <div id="wordAdminSection" style="display:none;">
+    <div class="admin-notice-banner">
+      🛡️ <strong>Yönetici Onay Alanı:</strong> Öğretmenlerin havuzda paylaşmak istediği önerileri inceleyebilir, onaylayarak herkesin görmesini sağlayabilir veya gerekçeli olarak reddedebilirsiniz.
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;" id="wordAdminStatusFilter">
+      <button type="button" class="filter-btn active" data-status="pending" onclick="setWordAdminFilter('pending', this)">⏳ Onay Bekleyenler</button>
+      <button type="button" class="filter-btn" data-status="approved" onclick="setWordAdminFilter('approved', this)">✅ Onaylananlar</button>
+      <button type="button" class="filter-btn" data-status="rejected" onclick="setWordAdminFilter('rejected', this)">❌ Reddedilenler</button>
+      <button type="button" class="filter-btn" data-status="all" onclick="setWordAdminFilter('all', this)">📋 Tümü</button>
+    </div>
+    <div class="word-grid" id="wordAdminGrid"></div>
+  </div>
 
 </div>
 
@@ -223,9 +350,61 @@
       <input type="text" class="form-control" id="inputProposer" placeholder="Adınız, Sınıfınız (örn: Kerem - 6/B) veya Anonim Öğrenci" />
     </div>
 
+    <div id="inputSubmitToPoolWrap" class="form-group" style="display:none; background:#F0FDFA; border:1px solid #99F6E4; padding:10px 12px; border-radius:10px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.86rem; font-weight:800; color:#0F766E;">
+        <input type="checkbox" id="inputSubmitToPool" style="width:16px; height:16px; accent-color:#0D9488;" />
+        📤 Bu öneriyi Ortak Havuz onayına da gönder (Onaylanınca herkes görür)
+      </label>
+    </div>
+
     <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
       <button class="btn btn-outline" onclick="closeModal('newWordModal')">İptal</button>
       <button class="btn btn-primary" onclick="submitWordSuggestion()">🚀 Öneriyi Paylaş</button>
+    </div>
+  </div>
+</div>
+
+<!-- HAVUZA PAYLAŞIM TALEBİ MODALI -->
+<div class="modal-overlay" id="shareWordPoolModal">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <h2 class="modal-title">📤 Öneriyi Ortak Havuza Gönder</h2>
+      <button type="button" class="modal-close" onclick="closeModal('shareWordPoolModal')">✕</button>
+    </div>
+    <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:14px;">
+      Beğendiğiniz bir Türkçe sözcük önerisini havuzda paylaşma talebinde bulunun. Yönetici onayından geçtikten sonra tüm kullanıcılar tarafından havuzda görünecektir.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Paylaşılacak Sözcük Önerisi</label>
+      <select id="shareWordSelect" class="form-control"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Yöneticiye Not / Paylaşım Gerekçesi (İsteğe bağlı)</label>
+      <textarea class="form-control" id="shareWordNote" rows="2" placeholder="Örn: Öğrencilerimle çok beğendik, tüm sınıfların görmesini öneriyoruz..."></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:16px;">
+      <button type="button" class="btn btn-outline" onclick="closeModal('shareWordPoolModal')">İptal</button>
+      <button type="button" class="btn btn-primary" onclick="submitShareWordPool()">🚀 Havuz Talebi Gönder</button>
+    </div>
+  </div>
+</div>
+
+<!-- YÖNETİCİ RED GEREKÇESİ MODALI -->
+<div class="modal-overlay" id="rejectWordPoolModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">❌ Havuz Talebini Reddet</h2>
+      <button type="button" class="modal-close" onclick="closeModal('rejectWordPoolModal')">✕</button>
+    </div>
+    <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:12px;">
+      Öğretmenin görmesi için kısa bir açıklama yazabilirsiniz (isteğe bağlı):
+    </p>
+    <div class="form-group">
+      <textarea class="form-control" id="rejectWordReasonInput" rows="3" placeholder="Örn: Türkçesi yazım kılavuzuna göre düzenlenip tekrar gönderilebilir..."></textarea>
+    </div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button type="button" class="btn btn-outline" onclick="closeModal('rejectWordPoolModal')">İptal</button>
+      <button type="button" class="btn btn-danger" onclick="confirmRejectWordPool()">❌ Reddet</button>
     </div>
   </div>
 </div>
@@ -266,18 +445,85 @@
 <script src="../assets/js/app.js?v=20261115_5"></script>
 <script>
   let currentFilter = 'all';
+  let currentWordTab = 'dict';
+  let currentWordAdminFilter = 'pending';
   let targetWordForReward = null;
+  let rejectTargetWordPoolId = null;
 
   function init() {
+    syncWordRoleUI();
     renderStats();
-    renderWords();
+    renderCurrentWordTab();
     populateStudentSelect();
+  }
+
+  window.initPage = init;
+  window.onWordPoolSynced = function() {
+    syncWordRoleUI();
+    renderStats();
+    renderCurrentWordTab();
+  };
+
+  function syncWordRoleUI() {
+    const loggedIn = AuthStore.isLoggedIn();
+    const isAdmin = loggedIn && AuthStore.isAdmin();
+
+    const navBtn = document.getElementById('navSharePoolBtn');
+    const heroBtn = document.getElementById('heroSharePoolBtn');
+    const mineTab = document.getElementById('tabWordMineBtn');
+    const adminTab = document.getElementById('tabWordAdminBtn');
+    const poolCheckWrap = document.getElementById('inputSubmitToPoolWrap');
+
+    if (navBtn) navBtn.style.display = loggedIn ? 'inline-flex' : 'none';
+    if (heroBtn) heroBtn.style.display = loggedIn ? 'inline-flex' : 'none';
+    if (mineTab) mineTab.style.display = loggedIn ? 'inline-flex' : 'none';
+    if (adminTab) adminTab.style.display = isAdmin ? 'inline-flex' : 'none';
+    if (poolCheckWrap) poolCheckWrap.style.display = loggedIn ? 'block' : 'none';
+
+    const pendingCount = WordPoolStore.getPendingCount();
+    const badgeEl = document.getElementById('wordAdminTabBadge');
+    if (badgeEl) badgeEl.textContent = String(pendingCount);
+
+    if (!loggedIn && currentWordTab !== 'dict') {
+      switchWordTab('dict');
+    } else if (!isAdmin && currentWordTab === 'admin') {
+      switchWordTab('dict');
+    }
+  }
+
+  function switchWordTab(tab) {
+    if (tab === 'mine' && !AuthStore.isLoggedIn()) return;
+    if (tab === 'admin' && !AuthStore.isAdmin()) return;
+    currentWordTab = tab;
+
+    document.getElementById('wordDictSection').style.display = tab === 'dict' ? 'block' : 'none';
+    document.getElementById('wordMineSection').style.display = tab === 'mine' ? 'block' : 'none';
+    document.getElementById('wordAdminSection').style.display = tab === 'admin' ? 'block' : 'none';
+
+    document.getElementById('tabWordPoolBtn').classList.toggle('active', tab === 'dict');
+    document.getElementById('tabWordMineBtn').classList.toggle('active', tab === 'mine');
+    document.getElementById('tabWordAdminBtn').classList.toggle('active', tab === 'admin');
+
+    renderCurrentWordTab();
+  }
+
+  function renderCurrentWordTab() {
+    syncWordRoleUI();
+    if (currentWordTab === 'mine') renderMineWordPool();
+    else if (currentWordTab === 'admin') renderAdminWordPool();
+    else renderWords();
+  }
+
+  function wordPoolStatusBadge(status) {
+    if (status === 'approved') return '<span class="pool-badge approved">🌐 Havuzda Onaylı</span>';
+    if (status === 'rejected') return '<span class="pool-badge rejected">❌ Reddedildi</span>';
+    return '<span class="pool-badge pending">⏳ Onay Bekliyor</span>';
   }
 
   function renderStats() {
     const all = WordStore.getAll();
     const totalWords = all.length;
-    const studentProposals = all.filter(w => !w.isOfficial).length;
+    const approvedPoolCount = WordPoolStore.getApproved().length;
     const officialCount = all.filter(w => w.isOfficial).length;
     const totalLikes = all.reduce((sum, w) => sum + (w.likes || 0), 0);
 
@@ -288,9 +534,9 @@
         <div class="stat-label">Toplam Sözcük</div>
       </div>
       <div class="stat-card card">
-        <span class="stat-icon">🎓</span>
-        <div class="stat-number">${studentProposals}</div>
-        <div class="stat-label">Öğrenci & Öğretmen Önerisi</div>
+        <span class="stat-icon">🌐</span>
+        <div class="stat-number">${approvedPoolCount}</div>
+        <div class="stat-label">Onaylı Havuz Önerisi</div>
       </div>
       <div class="stat-card card">
         <span class="stat-icon">🏛️</span>
@@ -309,7 +555,8 @@
     const query = (document.getElementById('wordSearchInput').value || '').toLowerCase().trim();
     let list = WordStore.getAll();
 
-    if (currentFilter === 'student') list = list.filter(w => !w.isOfficial);
+    if (currentFilter === 'pool') list = list.filter(w => w.poolStatus === 'approved');
+    else if (currentFilter === 'student') list = list.filter(w => !w.isOfficial);
     else if (currentFilter === 'official') list = list.filter(w => w.isOfficial);
     else if (currentFilter === 'popular') list = [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
 
@@ -318,7 +565,8 @@
         (w.foreign || '').toLowerCase().includes(query) ||
         (w.turkish || '').toLowerCase().includes(query) ||
         (w.example || '').toLowerCase().includes(query) ||
-        (w.proposedBy || '').toLowerCase().includes(query)
+        (w.proposedBy || '').toLowerCase().includes(query) ||
+        (w.sharedByTeacher || '').toLowerCase().includes(query)
       );
     }
 
@@ -336,11 +584,26 @@
     }
 
     const isTeacher = AuthStore.isLoggedIn();
+    const isAdmin = isTeacher && AuthStore.isAdmin();
 
     grid.innerHTML = list.map(w => {
       const cardType = w.isOfficial ? 'official' : 'student';
       const proposerClass = w.isOfficial ? 'proposer-tag tdk' : 'proposer-tag';
       const proposerIcon = w.isOfficial ? '🏛️' : '✍️';
+      const poolBadge = w.poolStatus === 'approved'
+        ? `<span class="pool-badge approved" title="${w.sharedByTeacher ? 'Paylaşan: ' + escapeHtml(w.sharedByTeacher) : 'Yönetici onaylı havuz önerisi'}">🌐 Havuzda Onaylı</span>`
+        : (w.poolStatus === 'pending'
+          ? `<span class="pool-badge pending">⏳ Onay Bekliyor</span>`
+          : '');
+
+      let poolActionHtml = '';
+      if (isTeacher) {
+        if (!w.poolStatus || w.poolStatus === 'rejected') {
+          poolActionHtml = `<button type="button" class="btn btn-outline btn-sm" style="border-color:#0D9488; color:#0F766E;" onclick="openShareWordModal('${w.id}')" title="Bu öneriyi ortak havuzda paylaşma talebinde bulun">📤 Havuzda Paylaş</button>`;
+        } else if (w.poolStatus === 'pending' && isAdmin && w.poolId) {
+          poolActionHtml = `<button type="button" class="btn btn-primary btn-sm" style="background:#16A34A;" onclick="approvePoolWord('${w.poolId}')">✅ Onayla</button>`;
+        }
+      }
 
       return `
         <div class="word-card ${cardType}">
@@ -351,8 +614,11 @@
             </div>
 
             <div class="turkish-result-box">
-              <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">
-                Önerilen Türkçe Karşılık:
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
+                <span style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase;">
+                  Önerilen Türkçe Karşılık:
+                </span>
+                ${poolBadge}
               </div>
               <div class="turkish-word">🇹🇷 ${escapeHtml(w.turkish)}</div>
               ${w.example ? `<div class="word-example">"${escapeHtml(w.example)}"</div>` : ''}
@@ -368,14 +634,15 @@
               <span style="font-size:0.75rem; color:var(--text-muted);">🗓️ ${timeAgo(w.createdAt)}</span>
             </div>
 
-            <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:12px;">
+            <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:12px; flex-wrap:wrap;">
               <button class="like-btn" onclick="upvoteWord('${w.id}')" title="Bu öneriyi beğendim">
                 <span>❤️</span>
                 <span id="likes_${w.id}">${w.likes || 0}</span>
                 <span>Beğen</span>
               </button>
               ${isTeacher ? `
-              <div style="display:flex; gap:6px;">
+              <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                ${poolActionHtml}
                 <button class="btn btn-outline btn-sm" onclick="openRewardModal('${w.id}')" title="Bu öneriyi yapan öğrenciye Sınıfım'da puan ver">
                   🏅 Puan Ver
                 </button>
@@ -388,9 +655,106 @@
     }).join('');
   }
 
+  function renderMineWordPool() {
+    const list = WordPoolStore.getMySubmissions();
+    const grid = document.getElementById('wordMineGrid');
+    if (!list.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <span class="empty-icon">📤</span>
+          <h3>Henüz Havuz Paylaşım Talebiniz Yok</h3>
+          <p>Sözlükteki beğendiğiniz bir önerideki <strong>"📤 Havuzda Paylaş"</strong> butonuna basarak veya yeni öneri ekleyerek ortak havuza paylaşım talebinde bulunabilirsiniz.</p>
+          <button type="button" class="btn btn-primary" style="margin-top:14px;" onclick="openShareWordModal()">📤 İlk Havuz Talebini Gönder</button>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = list.map(item => `
+      <div class="word-card">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            ${wordPoolStatusBadge(item.status)}
+            <span style="font-size:0.75rem; color:var(--text-muted);">🕐 ${timeAgo(item.submittedAt)}</span>
+          </div>
+          <div class="foreign-title">
+            <span>${escapeHtml(item.foreign)}</span>
+            <span class="origin-badge">${escapeHtml(item.origin || 'Yabancı')}</span>
+          </div>
+          <div class="turkish-result-box">
+            <div class="turkish-word">🇹🇷 ${escapeHtml(item.turkish)}</div>
+            ${item.example ? `<div class="word-example">"${escapeHtml(item.example)}"</div>` : ''}
+          </div>
+          ${item.teacherNote ? `<div class="teacher-note-box">💬 <strong>Notunuz:</strong> ${escapeHtml(item.teacherNote)}</div>` : ''}
+          ${item.status === 'rejected' && item.rejectionReason ? `<div class="reject-reason-box">❌ <strong>Yönetici Notu:</strong> ${escapeHtml(item.rejectionReason)}</div>` : ''}
+          ${item.status === 'pending' ? `<div style="font-size:0.8rem; color:#92400E; font-weight:700; margin-top:8px;">⏳ Yönetici onayı bekleniyor...</div>` : ''}
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+          <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="deletePoolWord('${item.id}')">🗑️ Havuzdan Kaldır</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderAdminWordPool() {
+    if (!AuthStore.isAdmin()) return;
+    const all = WordPoolStore.getAllForAdmin();
+    const list = currentWordAdminFilter === 'all'
+      ? all
+      : all.filter(item => item.status === currentWordAdminFilter);
+    const grid = document.getElementById('wordAdminGrid');
+
+    if (!list.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <span class="empty-icon">🛡️</span>
+          <h3>Bu Kategoride Havuz Talebi Bulunmuyor</h3>
+          <p>Öğretmenler havuzda paylaşma talebinde bulunduğunda onay bekleyen öneriler burada listelenecektir.</p>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = list.map(item => `
+      <div class="word-card" style="border-top-color:${item.status === 'pending' ? '#F59E0B' : (item.status === 'approved' ? '#16A34A' : '#EF4444')};">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            ${wordPoolStatusBadge(item.status)}
+            <span style="font-size:0.75rem; color:var(--text-muted);">🕐 ${timeAgo(item.submittedAt)}</span>
+          </div>
+          <div class="foreign-title">
+            <span>${escapeHtml(item.foreign)}</span>
+            <span class="origin-badge">${escapeHtml(item.origin || 'Yabancı')}</span>
+          </div>
+          <div class="turkish-result-box">
+            <div class="turkish-word">🇹🇷 ${escapeHtml(item.turkish)}</div>
+            ${item.example ? `<div class="word-example">"${escapeHtml(item.example)}"</div>` : ''}
+          </div>
+          <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:6px;">
+            👩‍🏫 Talep Eden: <strong>${escapeHtml(item.authorName)}</strong> · ✍️ Öneren: <strong>${escapeHtml(item.proposedBy)}</strong>
+          </div>
+          ${item.teacherNote ? `<div class="teacher-note-box">💬 <strong>Öğretmen Notu:</strong> ${escapeHtml(item.teacherNote)}</div>` : ''}
+          ${item.status === 'rejected' && item.rejectionReason ? `<div class="reject-reason-box">❌ <strong>Red Gerekçesi:</strong> ${escapeHtml(item.rejectionReason)}</div>` : ''}
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; border-top:1px solid var(--border); padding-top:12px;">
+          ${item.status !== 'approved' ? `<button type="button" class="btn btn-primary btn-sm" style="flex:1; justify-content:center; background:#16A34A;" onclick="approvePoolWord('${item.id}')">✅ Onayla &amp; Havuzda Yayınla</button>` : ''}
+          ${item.status !== 'rejected' ? `<button type="button" class="btn btn-outline btn-sm" style="flex:1; justify-content:center; color:#DC2626; border-color:#DC2626;" onclick="openRejectWordPoolModal('${item.id}')">❌ Reddet</button>` : ''}
+          <button type="button" class="btn btn-danger btn-sm" onclick="deletePoolWord('${item.id}')" title="Kaldır">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function setWordAdminFilter(status, btn) {
+    currentWordAdminFilter = status;
+    document.querySelectorAll('#wordAdminStatusFilter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAdminWordPool();
+  }
+
   function setWordFilter(type, btn) {
     currentFilter = type;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#wordDictSection .filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     renderWords();
   }
@@ -401,6 +765,93 @@
     if (badge) badge.textContent = newCount;
     SoundEffects.click();
     renderStats();
+  }
+
+  function openShareWordModal(preselectWordId = '') {
+    if (!AuthStore.isLoggedIn()) {
+      showToast('Havuza paylaşım talebi göndermek için önce öğretmen girişi yapmalısınız.', 'warning');
+      return;
+    }
+    const allWords = WordStore.getAll().filter(w => !w.poolStatus || w.poolStatus === 'rejected');
+    const select = document.getElementById('shareWordSelect');
+    if (!allWords.length) {
+      showToast('Tüm sözcük önerileri zaten havuzda veya onay bekliyor!', 'info');
+      return;
+    }
+    select.innerHTML = allWords.map(w => `
+      <option value="${escapeHtml(w.id)}">${escapeHtml(w.foreign)} → ${escapeHtml(w.turkish)} (${escapeHtml(w.proposedBy || 'Öneri')})</option>
+    `).join('');
+    if (preselectWordId && allWords.some(w => w.id === preselectWordId)) {
+      select.value = preselectWordId;
+    }
+    document.getElementById('shareWordNote').value = '';
+    openModal('shareWordPoolModal');
+  }
+
+  function submitShareWordPool() {
+    const wordId = document.getElementById('shareWordSelect').value;
+    const note = document.getElementById('shareWordNote').value;
+    const res = WordPoolStore.submitWord(wordId, note);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    closeModal('shareWordPoolModal');
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    if (res.autoApproved) {
+      showToast(`"${res.item.foreign} → ${res.item.turkish}" doğrudan Ortak Havuzda yayınlandı!`, 'success');
+    } else {
+      showToast(`"${res.item.foreign} → ${res.item.turkish}" havuzda paylaşım talebi olarak yönetici onayına gönderildi!`, 'success');
+    }
+    renderStats();
+    renderCurrentWordTab();
+  }
+
+  function approvePoolWord(poolId) {
+    const res = WordPoolStore.approve(poolId);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    if (typeof SoundEffects !== 'undefined') SoundEffects.correct();
+    launchConfetti();
+    showToast(`"${res.item.foreign} → ${res.item.turkish}" onaylandı ve herkesin görebileceği havuzda yayınlandı!`, 'success');
+    renderStats();
+    renderCurrentWordTab();
+  }
+
+  function openRejectWordPoolModal(poolId) {
+    if (!AuthStore.isAdmin()) return;
+    rejectTargetWordPoolId = poolId;
+    document.getElementById('rejectWordReasonInput').value = '';
+    openModal('rejectWordPoolModal');
+  }
+
+  function confirmRejectWordPool() {
+    if (!AuthStore.isAdmin() || !rejectTargetWordPoolId) return;
+    const reason = document.getElementById('rejectWordReasonInput').value;
+    const res = WordPoolStore.reject(rejectTargetWordPoolId, reason);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    rejectTargetWordPoolId = null;
+    closeModal('rejectWordPoolModal');
+    showToast('Havuz talebi reddedildi.', 'info');
+    renderStats();
+    renderCurrentWordTab();
+  }
+
+  function deletePoolWord(poolId) {
+    if (!confirm('Bu havuz kaydını kaldırmak istediğinizden emin misiniz?')) return;
+    const res = WordPoolStore.unpublishOrDelete(poolId);
+    if (!res.ok) {
+      showToast(res.error, 'error');
+      return;
+    }
+    showToast('Öneri havuzdan kaldırıldı.', 'success');
+    renderStats();
+    renderCurrentWordTab();
   }
 
   function submitWordSuggestion() {
@@ -415,8 +866,9 @@
     const origin = document.getElementById('inputOrigin').value.trim() || 'İngilizce';
     const example = document.getElementById('inputExample').value.trim();
     const proposer = document.getElementById('inputProposer').value.trim() || 'Öğrenci Önerisi';
+    const submitToPool = AuthStore.isLoggedIn() && document.getElementById('inputSubmitToPool')?.checked;
 
-    WordStore.addWord({
+    const added = WordStore.addWord({
       foreign,
       origin,
       turkish,
@@ -425,25 +877,36 @@
       isOfficial: false
     });
 
+    if (submitToPool && added) {
+      WordPoolStore.submitWord(added, '');
+    }
+
     closeModal('newWordModal');
     document.getElementById('inputForeign').value = '';
     document.getElementById('inputTurkish').value = '';
     document.getElementById('inputExample').value = '';
     document.getElementById('inputProposer').value = '';
+    if (document.getElementById('inputSubmitToPool')) document.getElementById('inputSubmitToPool').checked = false;
 
     renderStats();
-    renderWords();
+    renderCurrentWordTab();
     launchConfetti();
     SoundEffects.correct();
-    showToast('Harika öneriniz için teşekkürler! Sözlüğe eklendi.', 'success');
+    showToast(submitToPool
+      ? (AuthStore.isAdmin() ? 'Öneriniz sözlüğe ve Ortak Havuza eklendi!' : 'Öneriniz eklendi ve havuzda paylaşım talebi yönetici onayına gönderildi!')
+      : 'Harika öneriniz için teşekkürler! Sözlüğe eklendi.', 'success');
   }
 
   function deleteWord(id) {
     if (!AuthStore.isLoggedIn()) return;
+    const target = WordStore.getById(id);
     if (confirm('Bu sözcük önerisini kaldırmak istediğinizden emin misiniz?')) {
       WordStore.delete(id);
+      if (target && target.poolId) {
+        WordPoolStore.unpublishOrDelete(target.poolId);
+      }
       renderStats();
-      renderWords();
+      renderCurrentWordTab();
       showToast('Sözcük kaldırıldı.', 'info');
     }
   }

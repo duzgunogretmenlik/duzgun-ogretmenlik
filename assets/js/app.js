@@ -655,6 +655,9 @@ const AuthStore = {
     const pendingCount = (isAdminUser && typeof SharedActivityStore !== 'undefined' && SharedActivityStore.getPendingCount)
       ? SharedActivityStore.getPendingCount()
       : 0;
+    const pendingWordCount = (isAdminUser && typeof WordPoolStore !== 'undefined' && WordPoolStore.getPendingCount)
+      ? WordPoolStore.getPendingCount()
+      : 0;
 
     // Menü bağlantılarını role göre güncelle
     document.querySelectorAll('.navbar-nav a').forEach(link => {
@@ -671,6 +674,16 @@ const AuthStore = {
           pill.className = 'share-pending-pill';
           pill.style.cssText = 'margin-left:5px; background:#F59E0B; color:#fff; font-size:0.72rem; font-weight:900; padding:1px 6px; border-radius:999px;';
           pill.textContent = String(pendingCount);
+          link.appendChild(pill);
+        }
+      }
+      if (href.includes('turkce-oneriler.html')) {
+        link.querySelectorAll('.share-pending-pill').forEach(p => p.remove());
+        if (pendingWordCount > 0) {
+          const pill = document.createElement('span');
+          pill.className = 'share-pending-pill';
+          pill.style.cssText = 'margin-left:5px; background:#F59E0B; color:#fff; font-size:0.72rem; font-weight:900; padding:1px 6px; border-radius:999px;';
+          pill.textContent = String(pendingWordCount);
           link.appendChild(pill);
         }
       }
@@ -3926,7 +3939,11 @@ const SoundEffects = {
 const WordStore = {
   STORAGE_KEY: 'word_suggestions',
 
-  getAll() {
+  _normalizePairKey(foreign, turkish) {
+    return `${String(foreign || '').trim().toLocaleLowerCase('tr-TR')}|${String(turkish || '').trim().toLocaleLowerCase('tr-TR')}`;
+  },
+
+  getLocalRaw() {
     let list = DB.get(this.STORAGE_KEY);
     if (!list || !Array.isArray(list) || list.length === 0) {
       list = this.resetToDefaults();
@@ -3934,12 +3951,70 @@ const WordStore = {
     return list;
   },
 
+  getAll() {
+    const localList = this.getLocalRaw();
+    const poolRaw = (typeof WordPoolStore !== 'undefined' && WordPoolStore.getAllRaw)
+      ? WordPoolStore.getAllRaw()
+      : [];
+
+    const poolBySourceId = new Map();
+    const poolByPair = new Map();
+    poolRaw.forEach(p => {
+      if (!p) return;
+      if (p.sourceWordId) poolBySourceId.set(p.sourceWordId, p);
+      poolByPair.set(this._normalizePairKey(p.foreign, p.turkish), p);
+    });
+
+    const seenPairs = new Set();
+    const merged = localList.map(w => {
+      const pMatch = poolBySourceId.get(w.id) || poolByPair.get(this._normalizePairKey(w.foreign, w.turkish)) || null;
+      seenPairs.add(this._normalizePairKey(w.foreign, w.turkish));
+      if (!pMatch) return w;
+      return {
+        ...w,
+        poolId: pMatch.id,
+        poolStatus: pMatch.status,
+        poolAuthorId: pMatch.authorId,
+        sharedByTeacher: pMatch.status === 'approved' ? pMatch.authorName : '',
+        likes: Math.max(w.likes || 0, pMatch.likes || 0)
+      };
+    });
+
+    // Ortak havuzda onaylanmış olup yerel sözlükte henüz bulunmayan öğretmen önerilerini herkese ekle
+    poolRaw
+      .filter(p => p && p.status === 'approved')
+      .forEach(p => {
+        const pairKey = this._normalizePairKey(p.foreign, p.turkish);
+        if (!seenPairs.has(pairKey)) {
+          seenPairs.add(pairKey);
+          merged.unshift({
+            id: p.sourceWordId || p.id,
+            poolId: p.id,
+            foreign: p.foreign,
+            origin: p.origin || 'Yabancı Kökenli',
+            turkish: p.turkish,
+            example: p.example || '',
+            proposedBy: p.proposedBy || p.authorName || 'Öğretmen Önerisi',
+            isOfficial: !!p.isOfficial,
+            isFromPool: true,
+            poolStatus: 'approved',
+            poolAuthorId: p.authorId,
+            sharedByTeacher: p.authorName || '',
+            likes: p.likes || 0,
+            createdAt: p.reviewedAt || p.submittedAt || new Date().toISOString()
+          });
+        }
+      });
+
+    return merged;
+  },
+
   getById(id) {
-    return this.getAll().find(w => w.id === id) || null;
+    return this.getAll().find(w => w.id === id || w.poolId === id) || null;
   },
 
   addWord(wordObj) {
-    let list = this.getAll();
+    const list = this.getLocalRaw();
     const newWord = {
       id: generateId(),
       foreign: (wordObj.foreign || '').trim(),
@@ -3957,18 +4032,23 @@ const WordStore = {
   },
 
   upvote(id) {
-    let list = this.getAll();
+    const list = this.getLocalRaw();
     const w = list.find(item => item.id === id);
+    let nextLikes = 0;
     if (w) {
       w.likes = (w.likes || 0) + 1;
       DB.set(this.STORAGE_KEY, list);
-      return w.likes;
+      nextLikes = w.likes;
     }
-    return 0;
+    if (typeof WordPoolStore !== 'undefined' && WordPoolStore.syncLikesForWord) {
+      const synced = WordPoolStore.syncLikesForWord(id, nextLikes);
+      if (synced > nextLikes) nextLikes = synced;
+    }
+    return nextLikes;
   },
 
   delete(id) {
-    let list = this.getAll().filter(w => w.id !== id);
+    const list = this.getLocalRaw().filter(w => w.id !== id);
     DB.set(this.STORAGE_KEY, list);
     return list;
   },
@@ -3979,6 +4059,407 @@ const WordStore = {
     return list;
   }
 };
+
+// ---- TÜRKÇE ÖNERİLER PAYLAŞIM HAVUZU VE YÖNETİCİ ONAY SİSTEMİ ----
+const WordPoolStore = {
+  STORAGE_KEY: 'shared_words_pool',
+  SEEDED_KEY: 'shared_words_seeded_v1',
+  DELETED_KEY: 'shared_words_deleted_ids',
+
+  getAllRaw() {
+    let list = DB.get(this.STORAGE_KEY);
+    if (!Array.isArray(list) || !DB.get(this.SEEDED_KEY)) {
+      if (!Array.isArray(list) || list.length === 0) {
+        list = getSeedWordPool();
+      }
+      DB.set(this.STORAGE_KEY, list);
+      DB.set(this.SEEDED_KEY, true);
+    }
+    return list;
+  },
+
+  saveAllRaw(list) {
+    const clean = Array.isArray(list) ? list : [];
+    DB.set(this.STORAGE_KEY, clean);
+    DB.set(this.SEEDED_KEY, true);
+    return clean;
+  },
+
+  _getDeletedIds() {
+    const arr = DB.get(this.DELETED_KEY);
+    return new Set(Array.isArray(arr) ? arr : []);
+  },
+
+  _markDeletedId(id) {
+    if (!id) return;
+    const set = this._getDeletedIds();
+    set.add(String(id));
+    DB.set(this.DELETED_KEY, Array.from(set));
+  },
+
+  getById(poolId) {
+    return this.getAllRaw().find(item => item.id === poolId) || null;
+  },
+
+  findByWordId(wordId) {
+    if (!wordId) return null;
+    return this.getAllRaw().find(item => item.sourceWordId === wordId || item.id === wordId) || null;
+  },
+
+  getApproved() {
+    return this.getAllRaw().filter(item => item.status === 'approved');
+  },
+
+  getMySubmissions() {
+    const currentUser = AuthStore.getCurrentUser();
+    if (!currentUser) return [];
+    const uid = currentUser.supabaseUid || currentUser.id;
+    return this.getAllRaw().filter(item =>
+      item.authorId === currentUser.id || (uid && item.authorId === uid)
+    );
+  },
+
+  getPendingForAdmin() {
+    if (!AuthStore.isAdmin()) return [];
+    return this.getAllRaw().filter(item => item.status === 'pending');
+  },
+
+  getAllForAdmin() {
+    if (!AuthStore.isAdmin()) return [];
+    return this.getAllRaw();
+  },
+
+  getPendingCount() {
+    return this.getAllRaw().filter(item => item.status === 'pending').length;
+  },
+
+  submitWord(wordOrId, teacherNote = '') {
+    const currentUser = AuthStore.getCurrentUser();
+    if (!currentUser) {
+      return { ok: false, error: 'Öneriyi havuza göndermek için önce öğretmen girişi yapmalısınız.' };
+    }
+
+    const wordObj = typeof wordOrId === 'string' ? WordStore.getById(wordOrId) : wordOrId;
+    if (!wordObj || !wordObj.foreign || !wordObj.turkish) {
+      return { ok: false, error: 'Paylaşılacak sözcük önerisi bulunamadı.' };
+    }
+
+    const isAdminUser = AuthStore.isAdmin(currentUser);
+    const list = this.getAllRaw();
+    const pairKey = WordStore._normalizePairKey(wordObj.foreign, wordObj.turkish);
+    const existingIdx = list.findIndex(item =>
+      (wordObj.id && item.sourceWordId === wordObj.id) ||
+      WordStore._normalizePairKey(item.foreign, item.turkish) === pairKey
+    );
+    const existing = existingIdx >= 0 ? list[existingIdx] : null;
+
+    if (existing && existing.status === 'approved') {
+      return { ok: false, error: 'Bu öneri zaten onaylanarak ortak havuzda yayınlanmış.' };
+    }
+    if (existing && existing.status === 'pending' && !isAdminUser) {
+      return { ok: false, error: 'Bu öneri zaten yönetici onayı bekliyor.' };
+    }
+
+    const nowIso = new Date().toISOString();
+    const record = {
+      id: existing ? existing.id : ('wp_' + generateId()),
+      supabaseId: existing?.supabaseId || '',
+      sourceWordId: wordObj.id || existing?.sourceWordId || ('w_' + generateId()),
+      foreign: String(wordObj.foreign || '').trim(),
+      origin: String(wordObj.origin || 'Yabancı Kökenli').trim(),
+      turkish: String(wordObj.turkish || '').trim(),
+      example: String(wordObj.example || '').trim(),
+      proposedBy: String(wordObj.proposedBy || currentUser.displayName || 'Öğretmen Önerisi').trim(),
+      isOfficial: !!wordObj.isOfficial,
+      likes: Math.max(wordObj.likes || 0, existing?.likes || 0),
+      teacherNote: String(teacherNote || '').trim(),
+      authorId: currentUser.supabaseUid || currentUser.id,
+      authorName: currentUser.displayName || currentUser.email || 'Öğretmen',
+      authorUsername: currentUser.username || currentUser.email || '',
+      status: isAdminUser ? 'approved' : 'pending',
+      rejectionReason: '',
+      submittedAt: nowIso,
+      reviewedAt: isAdminUser ? nowIso : null,
+      reviewedBy: isAdminUser ? (currentUser.displayName || 'Yönetici') : null,
+      updatedAt: nowIso
+    };
+
+    if (existingIdx >= 0) {
+      list[existingIdx] = record;
+    } else {
+      list.unshift(record);
+    }
+    this.saveAllRaw(list);
+    this._pushRecordToSupabase(record).catch(() => {});
+    if (typeof AuthStore.syncNavbarAndRoleUI === 'function') AuthStore.syncNavbarAndRoleUI();
+    return { ok: true, item: record, autoApproved: isAdminUser };
+  },
+
+  approve(poolId) {
+    if (!AuthStore.isAdmin()) {
+      return { ok: false, error: 'Bu işlem için yalnızca yönetici hesabı yetkilidir!' };
+    }
+    const adminUser = AuthStore.getCurrentUser();
+    const list = this.getAllRaw();
+    const idx = list.findIndex(item => item.id === poolId);
+    if (idx < 0) {
+      return { ok: false, error: 'Havuz talebi bulunamadı.' };
+    }
+    const nowIso = new Date().toISOString();
+    list[idx] = {
+      ...list[idx],
+      status: 'approved',
+      rejectionReason: '',
+      reviewedAt: nowIso,
+      reviewedBy: adminUser?.displayName || 'Yönetici',
+      updatedAt: nowIso
+    };
+    this.saveAllRaw(list);
+    this._pushRecordToSupabase(list[idx]).catch(() => {});
+    if (typeof AuthStore.syncNavbarAndRoleUI === 'function') AuthStore.syncNavbarAndRoleUI();
+    return { ok: true, item: list[idx] };
+  },
+
+  reject(poolId, reason = '') {
+    if (!AuthStore.isAdmin()) {
+      return { ok: false, error: 'Bu işlem için yalnızca yönetici hesabı yetkilidir!' };
+    }
+    const adminUser = AuthStore.getCurrentUser();
+    const list = this.getAllRaw();
+    const idx = list.findIndex(item => item.id === poolId);
+    if (idx < 0) {
+      return { ok: false, error: 'Havuz talebi bulunamadı.' };
+    }
+    const nowIso = new Date().toISOString();
+    list[idx] = {
+      ...list[idx],
+      status: 'rejected',
+      rejectionReason: String(reason || '').trim() || 'Yönetici tarafından havuzda yayınlanmaya uygun görülmedi.',
+      reviewedAt: nowIso,
+      reviewedBy: adminUser?.displayName || 'Yönetici',
+      updatedAt: nowIso
+    };
+    this.saveAllRaw(list);
+    this._pushRecordToSupabase(list[idx]).catch(() => {});
+    if (typeof AuthStore.syncNavbarAndRoleUI === 'function') AuthStore.syncNavbarAndRoleUI();
+    return { ok: true, item: list[idx] };
+  },
+
+  unpublishOrDelete(poolId) {
+    const currentUser = AuthStore.getCurrentUser();
+    if (!currentUser) {
+      return { ok: false, error: 'Önce giriş yapmalısınız.' };
+    }
+    const list = this.getAllRaw();
+    const item = list.find(i => i.id === poolId);
+    if (!item) {
+      return { ok: false, error: 'Havuz kaydı bulunamadı.' };
+    }
+    const uid = currentUser.supabaseUid || currentUser.id;
+    const isOwner = item.authorId === currentUser.id || (uid && item.authorId === uid);
+    if (!AuthStore.isAdmin() && !isOwner) {
+      return { ok: false, error: 'Yalnızca kendi talebinizi veya yönetici bu içeriği kaldırabilir.' };
+    }
+    this._markDeletedId(item.id);
+    if (item.supabaseId) this._markDeletedId(item.supabaseId);
+    this.saveAllRaw(list.filter(i => i.id !== poolId));
+    this._deleteFromSupabase(item).catch(() => {});
+    if (typeof AuthStore.syncNavbarAndRoleUI === 'function') AuthStore.syncNavbarAndRoleUI();
+    return { ok: true };
+  },
+
+  syncLikesForWord(wordOrPoolId, minLikes = 0) {
+    const list = this.getAllRaw();
+    const item = list.find(i => i.id === wordOrPoolId || i.sourceWordId === wordOrPoolId);
+    if (!item) return minLikes;
+    item.likes = Math.max(item.likes || 0, minLikes || 0) + (minLikes === 0 ? 1 : 0);
+    item.updatedAt = new Date().toISOString();
+    this.saveAllRaw(list);
+    return item.likes;
+  },
+
+  upvotePoolItem(poolId) {
+    const list = this.getAllRaw();
+    const item = list.find(i => i.id === poolId || i.sourceWordId === poolId);
+    if (!item) return 0;
+    item.likes = (item.likes || 0) + 1;
+    item.updatedAt = new Date().toISOString();
+    this.saveAllRaw(list);
+    if (item.supabaseId) this._pushRecordToSupabase(item).catch(() => {});
+    return item.likes;
+  },
+
+  async _pushRecordToSupabase(record) {
+    if (!record || typeof SupabaseService === 'undefined') return null;
+    try {
+      const payloadObj = {
+        id: record.supabaseId || record.id,
+        poolId: record.id,
+        kind: 'kelime_havuzu',
+        type: 'kelime_havuzu',
+        title: `${record.foreign} → ${record.turkish}`,
+        description: record.example || record.teacherNote || '',
+        grade: '5',
+        theme: 'Türkçe Öneriler Havuzu',
+        code: 'WP_' + String(record.id).slice(-5).toUpperCase(),
+        record: { ...record }
+      };
+      const propsMap = await SupabaseService._fetchTableProperties();
+      const supaUser = SupabaseService.getSupabaseUser();
+      const payload = SupabaseService._buildEtkinlikPayload(payloadObj, propsMap, supaUser, !!record.supabaseId);
+      if (Object.prototype.hasOwnProperty.call(payload, 'tur')) payload.tur = 'kelime_havuzu';
+      if (Object.prototype.hasOwnProperty.call(payload, 'type')) payload.type = 'kelime_havuzu';
+      const writeRes = await SupabaseService._writeEtkinlikWithAdapt(payload, record.supabaseId || null);
+      if (writeRes && writeRes.ok && writeRes.row?.id) {
+        const list = this.getAllRaw();
+        const idx = list.findIndex(r => r.id === record.id);
+        if (idx >= 0) {
+          list[idx].supabaseId = String(writeRes.row.id);
+          this.saveAllRaw(list);
+        }
+      }
+      return writeRes;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async _deleteFromSupabase(record) {
+    if (!record || !record.supabaseId || typeof SupabaseService === 'undefined') return;
+    try {
+      const client = await SupabaseService.ensureClient();
+      if (client && client.from) {
+        await client.from(SUPABASE_CONFIG.TABLE).delete().eq('id', record.supabaseId);
+      } else {
+        await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/${SUPABASE_CONFIG.TABLE}?id=eq.${encodeURIComponent(record.supabaseId)}`, {
+          method: 'DELETE',
+          headers: SupabaseService._buildHeaders({}, true)
+        });
+      }
+    } catch (e) {}
+  },
+
+  async syncFromSupabase() {
+    if (typeof SupabaseService === 'undefined') return [];
+    try {
+      const client = await SupabaseService.ensureClient();
+      let rows = null;
+      if (client && client.from) {
+        let res = await client.from(SUPABASE_CONFIG.TABLE).select('*').eq('tur', 'kelime_havuzu').limit(200);
+        if (res.error) {
+          res = await client.from(SUPABASE_CONFIG.TABLE).select('*').limit(200);
+        }
+        if (Array.isArray(res.data)) rows = res.data;
+      } else {
+        const resp = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/${SUPABASE_CONFIG.TABLE}?select=*&limit=200`, {
+          method: 'GET',
+          headers: SupabaseService._buildHeaders({}, true)
+        });
+        if (resp.ok) rows = await resp.json().catch(() => null);
+      }
+
+      if (!Array.isArray(rows) || rows.length === 0) return this.getAllRaw();
+
+      const deleted = this._getDeletedIds();
+      const localList = this.getAllRaw();
+      const byPoolId = new Map();
+      localList.forEach(item => {
+        if (item && item.id) byPoolId.set(item.id, item);
+      });
+
+      let changed = false;
+      rows.forEach(row => {
+        const unpacked = SupabaseService._extractEtkinlikJson(row);
+        if (!unpacked) return;
+        const isWordPoolRow = unpacked.kind === 'kelime_havuzu' || row.tur === 'kelime_havuzu' || row.type === 'kelime_havuzu';
+        if (!isWordPoolRow) return;
+        const rec = unpacked.record || unpacked;
+        const pid = String(rec.id || unpacked.poolId || row.id || '');
+        if (!pid || !rec.foreign || !rec.turkish) return;
+        if (deleted.has(pid) || (row.id && deleted.has(String(row.id)))) return;
+
+        const remoteRec = {
+          ...rec,
+          id: pid,
+          supabaseId: String(row.id || rec.supabaseId || '')
+        };
+        const existing = byPoolId.get(pid);
+        const existingTs = new Date(existing?.updatedAt || existing?.reviewedAt || existing?.submittedAt || 0).getTime();
+        const remoteTs = new Date(remoteRec.updatedAt || remoteRec.reviewedAt || remoteRec.submittedAt || 0).getTime();
+        if (!existing || remoteTs >= existingTs) {
+          byPoolId.set(pid, remoteRec);
+          changed = true;
+        }
+      });
+
+      if (changed) {
+        const mergedList = Array.from(byPoolId.values()).sort(
+          (a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime()
+        );
+        this.saveAllRaw(mergedList);
+        if (typeof AuthStore !== 'undefined' && typeof AuthStore.syncNavbarAndRoleUI === 'function') {
+          AuthStore.syncNavbarAndRoleUI();
+        }
+        if (typeof window !== 'undefined' && typeof window.onWordPoolSynced === 'function') {
+          window.onWordPoolSynced();
+        }
+        return mergedList;
+      }
+      return localList;
+    } catch (e) {
+      return this.getAllRaw();
+    }
+  }
+};
+
+function getSeedWordPool() {
+  return [
+    {
+      id: 'wp_seed_1',
+      supabaseId: '',
+      sourceWordId: 'wp_seed_1',
+      foreign: 'Podcast',
+      origin: 'İngilizce',
+      turkish: 'Sesli Yayın / Dinleti',
+      example: 'Türkçe dersimiz için hazırladığımız sesli yayını okul panosunda paylaştık.',
+      proposedBy: 'TDK & Türkçe Öğretmenleri Havuzu',
+      isOfficial: true,
+      likes: 34,
+      teacherNote: 'Öğrencilerin günlük yaşamda sık kullandığı dijital yayın terimi için sınıfça benimsenmiştir.',
+      authorId: 'pool_seed',
+      authorName: 'Türkçe Öğretmeni',
+      authorUsername: 'admin',
+      status: 'approved',
+      rejectionReason: '',
+      submittedAt: '2026-11-10T09:00:00Z',
+      reviewedAt: '2026-11-10T10:00:00Z',
+      reviewedBy: 'Türkçe Öğretmeni',
+      updatedAt: '2026-11-10T10:00:00Z'
+    },
+    {
+      id: 'wp_seed_2',
+      supabaseId: '',
+      sourceWordId: 'wp_seed_2',
+      foreign: 'Avatar',
+      origin: 'İngilizce',
+      turkish: 'Sanal Kimlik / Simge',
+      example: 'Oyun hesabında kendine Türk bayraklı bir sanal kimlik seçti.',
+      proposedBy: 'Elif Öğretmen (Öneri Havuzu)',
+      isOfficial: false,
+      likes: 28,
+      teacherNote: '6. sınıflarımızla yapılan sözcük üretme etkinliğinde en çok oyu aldı.',
+      authorId: 'pool_seed',
+      authorName: 'Türkçe Öğretmeni',
+      authorUsername: 'admin',
+      status: 'approved',
+      rejectionReason: '',
+      submittedAt: '2026-11-12T11:30:00Z',
+      reviewedAt: '2026-11-12T12:00:00Z',
+      reviewedBy: 'Türkçe Öğretmeni',
+      updatedAt: '2026-11-12T12:00:00Z'
+    }
+  ];
+}
 
 function getSeedWords() {
   return [
@@ -5025,8 +5506,10 @@ create policy "Guncelleme" on public.etkinlikler for update using (true);</pre>
   StudentStore.getAll();
   WordStore.getAll();
   SharedActivityStore.getAllRaw();
+  WordPoolStore.getAllRaw();
   SupabaseService.getClient();
   SupabaseService.initEtkinlikLoader();
+  WordPoolStore.syncFromSupabase();
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
