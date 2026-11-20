@@ -63,6 +63,47 @@
       background: #F8FAFC; border: 1px solid var(--border);
       border-radius: 10px; padding: 12px; margin-bottom: 10px;
     }
+    .ded-subtabs {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+      background: #F1F5F9; padding: 6px; border-radius: 12px; border: 1px solid var(--border);
+    }
+    .ded-subtab-btn {
+      flex: 1; min-width: 150px; padding: 10px 12px; border-radius: 9px;
+      border: none; background: transparent; color: #334155;
+      font-family: var(--font); font-weight: 800; font-size: 0.88rem;
+      cursor: pointer; transition: var(--transition);
+    }
+    .ded-subtab-btn.active {
+      background: #0F172A; color: #F8FAFC;
+      box-shadow: 0 3px 10px rgba(15,23,42,0.18);
+    }
+    .preset-chip-bar {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+    }
+    .preset-chip {
+      border: 1px solid #F59E0B; background: #FFFBEB; color: #92400E;
+      border-radius: 999px; padding: 5px 11px; font-family: var(--font);
+      font-size: 0.8rem; font-weight: 800; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
+      transition: var(--transition);
+    }
+    .preset-chip:hover { background: #FEF3C7; transform: translateY(-1px); }
+    .preset-chip.decoy { border-color: #94A3B8; background: #F8FAFC; color: #475569; }
+    .editor-scene-preview {
+      position: relative; width: 100%; height: 240px; border-radius: 14px;
+      overflow: hidden; background: linear-gradient(180deg, #1E293B 0%, #334155 62%, #5C3A21 62%, #3E2513 100%);
+      border: 2px solid #0F172A; margin-bottom: 12px; cursor: crosshair; user-select: none;
+    }
+    .editor-scene-pin {
+      position: absolute; transform: translate(-50%, -50%);
+      padding: 4px 8px; border-radius: 999px; font-size: 0.76rem; font-weight: 900;
+      display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35); white-space: nowrap;
+      border: 2px solid #fff;
+    }
+    .editor-scene-pin.active-pin {
+      outline: 3px solid #FACC15; transform: translate(-50%, -50%) scale(1.12); z-index: 4;
+    }
     @media (max-width: 860px) {
       .sz-editor-layout { grid-template-columns: 1fr; }
       .sz-sidebar { border-right: none; border-bottom: 2px solid var(--border); }
@@ -97,8 +138,6 @@
       <option value="7">🎓 7. Sınıf</option>
       <option value="8">🎓 8. Sınıf (LGS)</option>
     </select>
-    <input type="text" id="activityTheme" class="form-control" placeholder="Tema (örn: Dilimizin Zenginliği)" style="width:210px; padding:8px 12px;" oninput="markDirty()" />
-    <input type="text" id="activityOutcome" class="form-control" placeholder="Kazanım (örn: DYS.DO.6.2)" style="width:150px; padding:8px 12px;" oninput="markDirty()" />
     <span id="codeDisplay" class="activity-code-badge" style="padding:6px 10px; background:#CCFBF1; color:#0F766E; border-radius:6px; font-weight:900; font-family:monospace;"></span>
   </div>
 </div>
@@ -106,8 +145,15 @@
 <div class="sz-editor-layout">
   <!-- SOL: AŞAMA LİSTESİ -->
   <div class="sz-sidebar">
+    <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:10px; padding:10px; margin-bottom:12px;">
+      <div style="font-size:0.76rem; font-weight:900; color:#92400E; margin-bottom:6px;">⚡ HIZLI KURULUM MODU</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-sm" style="flex:1; justify-content:center; background:#D97706; color:#fff; font-size:0.76rem; padding:6px 8px;" onclick="setQuickDetectiveOnlyMode()" title="Yalnızca Olay Yeri Kanıt Avı oyun aşamasından oluşan pratik ders">🎯 Sadece Oyun (1 Aşama)</button>
+        <button type="button" class="btn btn-outline btn-sm" style="flex:1; justify-content:center; font-size:0.76rem; padding:6px 8px;" onclick="openModal('detectiveTemplateModal')" title="8 aşamalı tam sezdirme şablonları">📚 Tam Ders (8 Aşama)</button>
+      </div>
+    </div>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <strong style="font-size:0.9rem; color:#134E4A;">🔍 Sezdirme Akışı (Tümevarım)</strong>
+      <strong style="font-size:0.9rem; color:#134E4A;">🔍 Ders Aşamaları</strong>
       <span id="stepCount" class="badge" style="background:#CCFBF1; color:#0F766E;">0 Aşama</span>
     </div>
     <div id="stepList"></div>
@@ -115,7 +161,7 @@
       <label class="form-label" style="font-size:0.8rem;">➕ Yeni Aşama Ekle:</label>
       <div style="display:flex; gap:6px;">
         <select id="newStepType" class="form-control" style="padding:8px; font-size:0.85rem;">
-          <option value="dedektif">🕵️ Dedektiflik Vakası (Telsiz &amp; Şüpheli)</option>
+          <option value="dedektif">🕵️ Olay Yeri Kanıt Avı (Dedektif)</option>
           <option value="hazirlik">💭 Merak Uyandırma</option>
           <option value="gozlem">👀 Gözlem (Örnekler)</option>
           <option value="karsilastir">⚖️ Karşılaştırma</option>
@@ -132,22 +178,29 @@
 
   <!-- SAĞ: AŞAMA DÜZENLEYİCİ -->
   <div class="sz-main-editor">
-    <div class="sz-pedagogy-banner">
-      <strong>💡 MEB Sezdirme İlkesi:</strong> Kuralı veya terimi dersin başında söylemeyin. Önce <em>Merak Uyandırma, Gözlem, Karşılaştırma ve Yönlendirici Sorular</em> ile öğrencilerin örüntüyü fark etmesini sağlayın; <em>Çıkarım</em> aşamasında kendi kurallarını yazdırın, en sonda <em>Kuralın Keşfi</em> perdesini açın.
-    </div>
-
-    <div class="sz-card" style="padding:16px 20px;">
-      <div class="grid-2" style="gap:12px;">
+    <details class="sz-card" style="padding:14px 18px; margin-bottom:16px;">
+      <summary style="cursor:pointer; font-weight:800; font-size:0.9rem; color:#0F766E;">
+        ⚙️ Ders Açıklaması, Tema ve Kazanım Ayarları (İsteğe Bağlı)
+      </summary>
+      <div class="grid-2" style="gap:12px; margin-top:12px;">
         <div>
           <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">Kısa Açıklama (Kartta görünür)</label>
-          <input type="text" id="activityDesc" class="form-control" style="padding:8px 12px;" placeholder="Örn: Kuralı söylemeden örneklerden keşfettiren ders akışı..." oninput="markDirty()" />
+          <input type="text" id="activityDesc" class="form-control" style="padding:8px 12px;" placeholder="Örn: Olay yerindeki kanıtlarla sıfat tamlamalarını keşfet..." oninput="markDirty()" />
         </div>
         <div>
-          <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">👩‍🏫 Öğretmen İçin Ders Hedefi (Öğrenciye gösterilmez)</label>
-          <input type="text" id="activityObjective" class="form-control" style="padding:8px 12px;" placeholder="Örn: Öğrenciler ünsüz benzeşmesi kuralını kendileri bulur." oninput="markDirty()" />
+          <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">👩‍🏫 Öğretmen İçin Ders Hedefi</label>
+          <input type="text" id="activityObjective" class="form-control" style="padding:8px 12px;" placeholder="Örn: Öğrenciler sıfat tamlamalarının işlevini keşfeder." oninput="markDirty()" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">Tema</label>
+          <input type="text" id="activityTheme" class="form-control" placeholder="Tema (örn: Dilimizin Zenginliği)" style="padding:8px 12px;" oninput="markDirty()" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">Kazanım Kodu</label>
+          <input type="text" id="activityOutcome" class="form-control" placeholder="Kazanım (örn: T.D.5.2)" style="padding:8px 12px;" oninput="markDirty()" />
         </div>
       </div>
-    </div>
+    </details>
 
     <div class="sz-card" id="stepEditor"></div>
   </div>
@@ -195,6 +248,8 @@
   let activity = null;
   let currentIdx = 0;
   let isDirty = false;
+  let dedEditorTab = 'scene';
+  let activeScenePinIdx = 0;
 
   function init() {
     const id = new URLSearchParams(location.search).get('id');
@@ -306,126 +361,195 @@
       const dlgs = s.dialogues || (s.dialogues = []);
       const sus = s.suspects || (s.suspects = []);
       const sceneItems = s.sceneItems || (s.sceneItems = []);
+      if (activeScenePinIdx >= sceneItems.length) activeScenePinIdx = Math.max(0, sceneItems.length - 1);
+
+      const presetList = (typeof DETECTIVE_CLUE_PRESETS !== 'undefined' && Array.isArray(DETECTIVE_CLUE_PRESETS))
+        ? DETECTIVE_CLUE_PRESETS
+        : [];
+      const presetChipsHtml = presetList.map(p => `
+        <button type="button" class="preset-chip ${p.isClue ? '' : 'decoy'}" onclick="addPresetDedSceneItem('${p.key}')" title="${p.isClue ? 'Aranan kanıt olarak ekle' : 'Çeldirici nesne olarak ekle'}">
+          <span>+ ${p.icon}</span><span>${escHtml(p.label)}</span>
+        </button>
+      `).join('');
+
+      const scenePinsHtml = sceneItems.map((ci, i) => {
+        const px = Math.min(92, Math.max(8, Number(ci.x ?? 50)));
+        const py = Math.min(88, Math.max(12, Number(ci.y ?? 50)));
+        const bg = ci.isClue !== false ? '#16A34A' : '#64748B';
+        return `
+          <div class="editor-scene-pin ${i === activeScenePinIdx ? 'active-pin' : ''}"
+            style="left:${px}%; top:${py}%; background:${bg}; color:#fff;"
+            onclick="event.stopPropagation(); selectEditorScenePin(${i});"
+            title="Seçmek için tıklayın, ardından sahnede istediğiniz yere tıklayarak taşıyın">
+            <span>${escHtml(ci.icon || '🔍')}</span>
+            <span>${escHtml(ci.label || `${i + 1}`)}</span>
+          </div>
+        `;
+      }).join('');
 
       const sceneItemRows = sceneItems.map((ci, i) => `
-        <div class="row-box" style="border-left:4px solid ${ci.isClue !== false ? '#F59E0B' : '#94A3B8'};">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-            <strong>${ci.isClue !== false ? '🎯' : '🎭'} ${i + 1}. Olay Yeri Nesnesi</strong>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <select class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem; font-weight:700;" onchange="updDedSceneItem(${i},'isClue',this.value==='true'); renderStepEditor();">
-                <option value="true" ${ci.isClue !== false ? 'selected' : ''}>🎯 Aranan Delil (Sıfat Tamlaması)</option>
-                <option value="false" ${ci.isClue === false ? 'selected' : ''}>🎭 Çeldirici Nesne</option>
-              </select>
-              <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedSceneItem(${i})">✕</button>
-            </div>
-          </div>
-          <div style="display:grid; grid-template-columns:72px minmax(0, 1.5fr) 78px 78px; gap:8px; margin-bottom:8px;">
-            <input type="text" class="form-control" placeholder="Simge" value="${escHtml(ci.icon || '🔍')}" oninput="updDedSceneItem(${i},'icon',this.value)" title="Emoji" />
-            <input type="text" class="form-control" placeholder="Sıfat tamlaması / Nesne (örn: Kırmızı gömlek)" value="${escHtml(ci.label || '')}" oninput="updDedSceneItem(${i},'label',this.value)" />
-            <input type="number" class="form-control" min="8" max="92" value="${Number(ci.x ?? 50)}" oninput="updDedSceneItem(${i},'x',Number(this.value))" title="Sahnedeki Yatay Konum (X%)" placeholder="X%" />
-            <input type="number" class="form-control" min="12" max="88" value="${Number(ci.y ?? 50)}" oninput="updDedSceneItem(${i},'y',Number(this.value))" title="Sahnedeki Dikey Konum (Y%)" placeholder="Y%" />
-          </div>
-          <input type="text" class="form-control mb-16" style="margin-bottom:8px;" placeholder="💡 Delil bulunduğunda gösterilecek dil bilgisi / vaka notu..." value="${escHtml(ci.clueNote || '')}" oninput="updDedSceneItem(${i},'clueNote',this.value)" />
-          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <label class="btn btn-outline btn-sm" style="cursor:pointer;">
-              🖼️ Nesne Görseli Yükle
+        <div class="row-box" style="padding:10px 12px; border-left:4px solid ${ci.isClue !== false ? '#F59E0B' : '#94A3B8'}; ${i === activeScenePinIdx ? 'background:#FFFBEB; border-color:#F59E0B;' : ''}" onclick="activeScenePinIdx=${i}">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            ${ci.image
+              ? `<img src="${escHtml(ci.image)}" alt="" style="width:38px; height:38px; object-fit:contain; border-radius:8px; background:#fff; border:1px solid var(--border); padding:2px; cursor:zoom-in;" onclick="openLightbox(this.src)" />`
+              : `<span style="font-size:1.5rem;">${escHtml(ci.icon || '🔍')}</span>`}
+            <input type="text" class="form-control" style="flex:1; min-width:170px; font-weight:800;" placeholder="Sıfat tamlaması (örn: Kırmızı gömlek)" value="${escHtml(ci.label || '')}" oninput="updDedSceneItem(${i},'label',this.value)" />
+            <select class="form-control" style="width:auto; padding:6px 10px; font-size:0.82rem; font-weight:800;" onchange="updDedSceneItem(${i},'isClue',this.value==='true'); renderStepEditor();">
+              <option value="true" ${ci.isClue !== false ? 'selected' : ''}>🎯 Aranan Kanıt</option>
+              <option value="false" ${ci.isClue === false ? 'selected' : ''}>🎭 Çeldirici</option>
+            </select>
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;" title="Bilgisayardan görsel yükle">
+              🖼️ Görsel
               <input type="file" accept="image/*" style="display:none;" onchange="handleDedSceneItemImageUpload(${i}, this)" />
             </label>
-            <input type="text" class="form-control" style="flex:1; min-width:160px; padding:6px 10px; font-size:0.82rem;" placeholder="veya nesne görseli bağlantısı (https://...)" value="${escHtml(ci.image && !ci.image.startsWith('data:') ? ci.image : '')}" oninput="setDedSceneItemImageUrl(${i}, this.value)" onchange="renderStepEditor()" />
-            ${ci.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSceneItemImage(${i})">🗑️ Kaldır</button>` : ''}
+            <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedSceneItem(${i})" title="Sil">🗑️</button>
           </div>
-          ${ci.image ? `<img src="${escHtml(ci.image)}" alt="${escHtml(ci.label || 'Delil')} Görseli" style="max-height:84px; max-width:100%; border-radius:8px; margin-top:8px; display:block; object-fit:contain; cursor:zoom-in; border:1px solid var(--border); background:#fff; padding:4px;" onclick="openLightbox(this.src)" />` : ''}
-        </div>
-      `).join('');
-      const dlgRows = dlgs.map((d, i) => `
-        <div class="row-box">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-            <strong>📻 ${i + 1}. Telsiz Mesajı</strong>
-            <div style="display:flex; gap:6px; align-items:center;">
-              <select class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem;" onchange="updDedDlg(${i},'speaker',this.value)">
-                <option value="dedektif" ${d.speaker !== 'merkez' ? 'selected' : ''}>📻 Sahadaki Memur</option>
-                <option value="merkez" ${d.speaker === 'merkez' ? 'selected' : ''}>👮 Merkez Dedektifi</option>
-              </select>
-              <button type="button" class="btn btn-outline btn-sm" onclick="moveDedDlg(${i},-1)" title="Yukarı">▲</button>
-              <button type="button" class="btn btn-outline btn-sm" onclick="moveDedDlg(${i},1)" title="Aşağı">▼</button>
-              <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedDlg(${i})">✕</button>
+          <details style="margin-top:6px;">
+            <summary style="cursor:pointer; font-size:0.76rem; font-weight:700; color:var(--text-muted);">⚙️ İpucu Notu, Görsel Linki &amp; Konum Ayarı (İsteğe Bağlı)</summary>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              <input type="text" class="form-control" style="font-size:0.82rem;" placeholder="💡 Özel açıklama notu (boş bırakılırsa otomatik oluşturulur)..." value="${escHtml(ci.clueNote || '')}" oninput="updDedSceneItem(${i},'clueNote',this.value)" />
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                <input type="text" class="form-control" style="width:70px; font-size:0.82rem;" placeholder="Simge" value="${escHtml(ci.icon || '🔍')}" oninput="updDedSceneItem(${i},'icon',this.value)" title="Emoji" />
+                <input type="text" class="form-control" style="flex:1; min-width:140px; font-size:0.82rem;" placeholder="Görsel bağlantısı (https://...)" value="${escHtml(ci.image && !ci.image.startsWith('data:') ? ci.image : '')}" oninput="setDedSceneItemImageUrl(${i}, this.value)" onchange="renderStepEditor()" />
+                <input type="number" class="form-control" style="width:74px; font-size:0.82rem;" min="8" max="92" value="${Number(ci.x ?? 50)}" oninput="updDedSceneItem(${i},'x',Number(this.value))" title="Yatay X%" />
+                <input type="number" class="form-control" style="width:74px; font-size:0.82rem;" min="12" max="88" value="${Number(ci.y ?? 50)}" oninput="updDedSceneItem(${i},'y',Number(this.value))" title="Dikey Y%" />
+                ${ci.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSceneItemImage(${i})">Görseli Kaldır</button>` : ''}
+              </div>
             </div>
-          </div>
-          <div class="grid-2" style="gap:8px; margin-bottom:8px;">
-            <input type="text" class="form-control" placeholder="Konuşmacı adı (örn: Sahadaki Memur)" value="${escHtml(d.speakerName || '')}" oninput="updDedDlg(${i},'speakerName',this.value)" />
-            <input type="text" class="form-control" placeholder="💡 İpucu notu (vurgular açılınca görünür)" value="${escHtml(d.clueNote || '')}" oninput="updDedDlg(${i},'clueNote',this.value)" />
-          </div>
-          <input type="text" class="form-control" placeholder="Mesaj metni ([köşeli parantez] vurgulu sözcükler desteklenir)..." value="${escHtml(d.text || '')}" oninput="updDedDlg(${i},'text',this.value)" />
+          </details>
         </div>
       `).join('');
 
       const susRows = sus.map((sp, i) => `
-        <div class="row-box">
+        <div class="row-box" style="border:2px solid ${sp.isCulprit ? '#16A34A' : 'var(--border)'}; background:${sp.isCulprit ? '#F0FDF4' : '#F8FAFC'};">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-            <strong>🚨 ${i + 1}. Şüpheli</strong>
-            <div style="display:flex; gap:10px; align-items:center;">
-              <label style="display:flex; align-items:center; gap:5px; font-weight:800; font-size:0.82rem; color:#15803D; cursor:pointer;">
-                <input type="radio" name="dedCulprit" ${sp.isCulprit ? 'checked' : ''} onchange="setDedCulprit(${i})" />
-                Gerçek Şüpheli (Doğru Eşkâl)
-              </label>
-              <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedSus(${i})">✕</button>
+            <label style="display:flex; align-items:center; gap:6px; font-weight:900; font-size:0.88rem; color:${sp.isCulprit ? '#15803D' : '#0F172A'}; cursor:pointer;">
+              <input type="radio" name="dedCulprit" ${sp.isCulprit ? 'checked' : ''} onchange="setDedCulprit(${i}); renderStepEditor();" />
+              ${sp.isCulprit ? '🚔 GERÇEK SUÇLU (Doğru Eşkâl)' : `${i + 1}. Şüpheli (Suçlu yapmak için seçin)`}
+            </label>
+            <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedSus(${i})">✕</button>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+            ${sp.image ? `<img src="${escHtml(sp.image)}" alt="${escHtml(sp.name || 'Şüpheli')} Görseli" style="width:78px; height:78px; border-radius:10px; object-fit:contain; cursor:zoom-in; border:1px solid var(--border); background:#fff; padding:3px;" onclick="openLightbox(this.src)" />` : ''}
+            <div style="flex:1; min-width:200px; display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; gap:6px;">
+                <input type="text" class="form-control" style="width:62px;" placeholder="Simge" value="${escHtml(sp.avatar || '🕵️')}" oninput="updDedSus(${i},'avatar',this.value)" />
+                <input type="text" class="form-control" style="flex:1; font-weight:800;" placeholder="Şüpheli adı" value="${escHtml(sp.name || '')}" oninput="updDedSus(${i},'name',this.value)" />
+              </div>
+              <input type="text" class="form-control" placeholder="Eşkâl özellikleri (örn: Kırmızı gömlekli, yırtık ayakkabılı...)" value="${escHtml(sp.traits || '')}" oninput="updDedSus(${i},'traits',this.value)" />
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                  🖼️ Şüpheli Görseli Yükle
+                  <input type="file" accept="image/*" style="display:none;" onchange="handleDedSusImageUpload(${i}, this)" />
+                </label>
+                <input type="text" class="form-control" style="flex:1; min-width:140px; padding:5px 10px; font-size:0.8rem;" placeholder="veya görsel linki (https://...)" value="${escHtml(sp.image && !sp.image.startsWith('data:') ? sp.image : '')}" oninput="setDedSusImageUrl(${i}, this.value)" onchange="renderStepEditor()" />
+                ${sp.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSusImage(${i})">🗑️</button>` : ''}
+              </div>
             </div>
           </div>
-          <div style="display:grid; grid-template-columns:80px minmax(0, 1fr) minmax(0, 2fr); gap:8px; margin-bottom:8px;">
-            <input type="text" class="form-control" placeholder="Simge" value="${escHtml(sp.avatar || '🕵️')}" oninput="updDedSus(${i},'avatar',this.value)" title="Emoji/Simge" />
-            <input type="text" class="form-control" placeholder="Şüpheli adı" value="${escHtml(sp.name || '')}" oninput="updDedSus(${i},'name',this.value)" />
-            <input type="text" class="form-control" placeholder="Eşkâl / özellikleri..." value="${escHtml(sp.traits || '')}" oninput="updDedSus(${i},'traits',this.value)" />
-          </div>
-          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <label class="btn btn-outline btn-sm" style="cursor:pointer;">
-              🖼️ Şüpheli Görseli Yükle
-              <input type="file" accept="image/*" style="display:none;" onchange="handleDedSusImageUpload(${i}, this)" />
-            </label>
-            <input type="text" class="form-control" style="flex:1; min-width:160px; padding:6px 10px; font-size:0.82rem;" placeholder="veya şüpheli görseli bağlantısı (https://...)" value="${escHtml(sp.image && !sp.image.startsWith('data:') ? sp.image : '')}" oninput="setDedSusImageUrl(${i}, this.value)" onchange="renderStepEditor()" />
-            ${sp.image ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSusImage(${i})">🗑️ Görseli Kaldır</button>` : ''}
-          </div>
-          ${sp.image ? `<img src="${escHtml(sp.image)}" alt="${escHtml(sp.name || 'Şüpheli')} Görseli" style="max-height:115px; max-width:100%; border-radius:8px; margin-top:8px; display:block; object-fit:contain; cursor:zoom-in; border:1px solid var(--border); background:#fff; padding:4px;" onclick="openLightbox(this.src)" title="Büyütmek için tıklayın" />` : ''}
         </div>
       `).join('');
 
-      fields = `
-        <div class="form-group">
-          <label class="form-label">🕵️ Vaka Dosyası Giriş Özeti</label>
-          <textarea class="form-control" rows="2" oninput="upd('caseBrief', this.value)">${escHtml(s.caseBrief || '')}</textarea>
-        </div>
-        <div class="form-group" style="background:#FFFBEB; border:2px dashed #F59E0B; border-radius:12px; padding:14px 16px;">
-          <label class="form-label" style="color:#92400E;">🔍 Olay Yeri Kanıt Avı Sahnesi &amp; Arka Planı</label>
-          <input type="text" class="form-control mb-16" style="margin-bottom:10px;" placeholder="Olay yeri başlığı (örn: Eski Müze Çalışma Odası)" value="${escHtml(s.sceneTitle || '')}" oninput="upd('sceneTitle', this.value)" />
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-            <label class="btn btn-outline btn-sm" style="cursor:pointer; border-color:#D97706; color:#92400E; background:#fff;">
-              🖼️ Özel Olay Yeri Arka Planı Yükle
-              <input type="file" accept="image/*" style="display:none;" onchange="handleDedSceneBgUpload(this)" />
-            </label>
-            <input type="text" class="form-control" style="flex:1; min-width:180px; padding:6px 10px; font-size:0.82rem;" placeholder="veya arka plan görseli bağlantısı (boşsa hazır dedektif odası kullanılır)..." value="${escHtml(s.sceneImage && !s.sceneImage.startsWith('data:') ? s.sceneImage : '')}" oninput="setDedSceneBgUrl(this.value)" onchange="renderStepEditor()" />
-            ${s.sceneImage ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSceneBg()">🗑️ Arka Planı Kaldır</button>` : ''}
+      const dlgRows = dlgs.map((d, i) => `
+        <div class="row-box" style="padding:10px 12px;">
+          <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-wrap:wrap;">
+            <select class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem; font-weight:800;" onchange="updDedDlg(${i},'speaker',this.value)">
+              <option value="dedektif" ${d.speaker !== 'merkez' ? 'selected' : ''}>📻 Sahadaki Dedektif</option>
+              <option value="merkez" ${d.speaker === 'merkez' ? 'selected' : ''}>👮 Merkez Komiseri</option>
+            </select>
+            <input type="text" class="form-control" style="flex:1; min-width:180px;" placeholder="Mesaj ([köşeli parantez] içine alınan kanıtlar vurgulanır)..." value="${escHtml(d.text || '')}" oninput="updDedDlg(${i},'text',this.value)" />
+            <button type="button" class="btn btn-outline btn-sm" onclick="moveDedDlg(${i},-1)" title="Yukarı">▲</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="moveDedDlg(${i},1)" title="Aşağı">▼</button>
+            <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="delDedDlg(${i})">✕</button>
           </div>
-          ${s.sceneImage ? `<img src="${escHtml(s.sceneImage)}" alt="Olay Yeri Arka Planı" style="max-height:130px; max-width:100%; border-radius:8px; margin-bottom:12px; display:block; object-fit:contain; border:1px solid #FCD34D; background:#fff; padding:4px;" onclick="openLightbox(this.src)" />` : ''}
+          <input type="text" class="form-control" style="font-size:0.8rem; padding:5px 10px;" placeholder="💡 İsteğe bağlı ipucu notu..." value="${escHtml(d.clueNote || '')}" oninput="updDedDlg(${i},'clueNote',this.value)" />
+        </div>
+      `).join('');
 
-          <label class="form-label" style="color:#92400E; margin-top:6px;">🎯 Olay Yerindeki Deliller (Sıfat Tamlamaları) ve Çeldiriciler</label>
-          ${sceneItemRows}
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-            <button type="button" class="btn btn-primary btn-sm" style="background:#D97706;" onclick="addDedSceneItem()">➕ Olay Yerine Delil / Nesne Ekle</button>
-            ${sceneItems.length ? `<button type="button" class="btn btn-outline btn-sm" onclick="randomizeDedScenePositions()">🎲 Konumları Dağıt</button>` : ''}
+      const activeItemName = sceneItems[activeScenePinIdx]?.label || 'Seçili nesne';
+
+      fields = `
+        <div class="ded-subtabs">
+          <button type="button" class="ded-subtab-btn ${dedEditorTab === 'scene' ? 'active' : ''}" onclick="setDedEditorTab('scene')">
+            1️⃣ 🔍 Olay Yeri Kanıtları (${sceneItems.length})
+          </button>
+          <button type="button" class="ded-subtab-btn ${dedEditorTab === 'suspects' ? 'active' : ''}" onclick="setDedEditorTab('suspects')">
+            2️⃣ 🚨 Şüpheliler (${sus.length})
+          </button>
+          <button type="button" class="ded-subtab-btn ${dedEditorTab === 'story' ? 'active' : ''}" onclick="setDedEditorTab('story')">
+            3️⃣ 📻 Vaka Özeti &amp; Telsiz (${dlgs.length})
+          </button>
+        </div>
+
+        <div style="display:${dedEditorTab === 'scene' ? 'block' : 'none'};">
+          <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:12px; padding:12px 14px; margin-bottom:14px;">
+            <div style="font-size:0.82rem; font-weight:900; color:#92400E; margin-bottom:6px;">⚡ Tek Tıkla Hazır Görselli Kanıt / Çeldirici Ekle:</div>
+            <div class="preset-chip-bar">${presetChipsHtml}</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <button type="button" class="btn btn-primary btn-sm" style="background:#D97706;" onclick="addDedSceneItem()">➕ Özel Kanıt / Sıfat Tamlaması Ekle</button>
+              ${sceneItems.length ? `<button type="button" class="btn btn-outline btn-sm" onclick="randomizeDedScenePositions()">🎲 Konumları Otomatik Dağıt</button>` : ''}
+              <button type="button" class="btn btn-outline btn-sm" style="margin-left:auto; border-color:#0F766E; color:#0F766E;" onclick="autoFillSuspectsFromClues(); setDedEditorTab('suspects');">✨ Kanıtlardan Şüphelileri Otomatik Oluştur →</button>
+            </div>
           </div>
+
+          ${sceneItems.length ? `
+            <div style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:0.82rem; font-weight:800; color:#0F172A;">🗺️ Olay Yeri Önizlemesi — <span style="color:#D97706;">"${escHtml(activeItemName)}"</span> seçili (Taşımak için sahnede istediğiniz yere tıklayın)</span>
+              </div>
+              <div class="editor-scene-preview" onclick="handleEditorSceneCanvasClick(event)">
+                ${s.sceneImage ? `<img src="${escHtml(s.sceneImage)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />` : ''}
+                ${scenePinsHtml}
+              </div>
+            </div>
+          ` : ''}
+
+          ${sceneItemRows}
+
+          <details class="row-box" style="margin-top:12px;">
+            <summary style="cursor:pointer; font-weight:800; font-size:0.84rem; color:#92400E;">🖼️ Olay Yeri Başlığı ve Özel Oda Arka Plan Görseli (İsteğe Bağlı)</summary>
+            <div style="margin-top:10px;">
+              <input type="text" class="form-control" style="margin-bottom:8px;" placeholder="Olay yeri başlığı (örn: Eski Müze Çalışma Odası)" value="${escHtml(s.sceneTitle || '')}" oninput="upd('sceneTitle', this.value)" />
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                  🖼️ Özel Arka Plan Yükle
+                  <input type="file" accept="image/*" style="display:none;" onchange="handleDedSceneBgUpload(this)" />
+                </label>
+                <input type="text" class="form-control" style="flex:1; min-width:180px; font-size:0.82rem;" placeholder="veya arka plan görseli bağlantısı (boşsa hazır dedektif odası kullanılır)..." value="${escHtml(s.sceneImage && !s.sceneImage.startsWith('data:') ? s.sceneImage : '')}" oninput="setDedSceneBgUrl(this.value)" onchange="renderStepEditor()" />
+                ${s.sceneImage ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="removeDedSceneBg()">🗑️ Kaldır</button>` : ''}
+              </div>
+            </div>
+          </details>
         </div>
-        <div class="form-group">
-          <label class="form-label">📻 Telsiz Diyalog Satırları <small style="color:#0D9488;">(Vurgulamak istediğiniz sözcükleri <strong>[köşeli parantez]</strong> içine yazın)</small></label>
-          ${dlgRows}
-          <button type="button" class="btn btn-outline btn-sm" onclick="addDedDlg()">➕ Telsiz Mesajı Ekle</button>
-        </div>
-        <div class="form-group">
-          <label class="form-label">🚨 Şüpheli Teşhis Kartları (Öğrencilerin eleyerek yakalayacağı kişiler)</label>
+
+        <div style="display:${dedEditorTab === 'suspects' ? 'block' : 'none'};">
+          <div style="background:#ECFDF5; border:1px solid #6EE7B7; border-radius:12px; padding:12px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="font-size:0.84rem; font-weight:700; color:#065F46;">
+              💡 Olay yerindeki kanıtları ekledikten sonra tek tıkla suçlunun ve diğer şüphelilerin eşkâllerini otomatik doldurabilirsiniz:
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" style="background:#059669;" onclick="autoFillSuspectsFromClues()">✨ Kanıtlardan Otomatik Eşkâl Doldur</button>
+          </div>
           ${susRows}
-          <button type="button" class="btn btn-outline btn-sm" onclick="addDedSus()">➕ Şüpheli Ekle</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addDedSus()">➕ Yeni Şüpheli Ekle</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">🔎 Vaka Sonu Keşif / Tartışma Sorusu</label>
-          <input type="text" class="form-control" value="${escHtml(s.question || '')}" oninput="upd('question', this.value)" />
+
+        <div style="display:${dedEditorTab === 'story' ? 'block' : 'none'};">
+          <div class="form-group">
+            <label class="form-label">🕵️ Vaka Dosyası Giriş Özeti</label>
+            <textarea class="form-control" rows="2" oninput="upd('caseBrief', this.value)">${escHtml(s.caseBrief || '')}</textarea>
+          </div>
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+              <label class="form-label" style="margin:0;">📻 Telsiz Diyalogları <small style="color:#0D9488;">([köşeli parantez] içindeki sözcükler vurgulanır)</small></label>
+              <button type="button" class="btn btn-outline btn-sm" style="border-color:#0D9488; color:#0F766E;" onclick="autoFillDialoguesFromClues()">✨ Kanıtlardan Otomatik Diyalog Yaz</button>
+            </div>
+            ${dlgRows}
+            <button type="button" class="btn btn-outline btn-sm" onclick="addDedDlg()">➕ Telsiz Mesajı Ekle</button>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🔎 Vaka Sonu Keşif / Tartışma Sorusu</label>
+            <input type="text" class="form-control" value="${escHtml(s.question || '')}" oninput="upd('question', this.value)" />
+          </div>
         </div>
       `;
     } else if (s.type === 'hazirlik') {
@@ -620,10 +744,10 @@
       `;
     }
 
-    const imageBoxHtml = `
-      <div class="form-group" style="background:#F0FDFA; border:2px dashed #5EEAD4; border-radius:12px; padding:14px 16px; margin-bottom:18px;">
-        <label class="form-label" style="color:#0F766E; margin-bottom:8px;">🖼️ Bu Aşama İçin Görsel Ekle <small style="font-weight:600; color:var(--text-muted);">(Karikatür, afiş, tablo, kavram haritası veya fotoğraf)</small></label>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    const imageBoxHtml = s.type === 'dedektif' ? '' : `
+      <details class="form-group" ${s.image ? 'open' : ''} style="background:#F0FDFA; border:1px dashed #5EEAD4; border-radius:10px; padding:10px 14px; margin-bottom:14px;">
+        <summary style="cursor:pointer; font-weight:800; font-size:0.85rem; color:#0F766E;">🖼️ Bu Aşamaya Görsel Ekle (İsteğe Bağlı)</summary>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;">
           <label class="btn btn-primary btn-sm" style="background:#0D9488; cursor:pointer;">
             📁 Bilgisayardan Görsel Seç
             <input type="file" accept="image/*" style="display:none;" onchange="handleStepImageUpload(this)" />
@@ -640,28 +764,31 @@
             </div>
           </div>
         ` : ''}
-      </div>
+      </details>
     `;
 
     document.getElementById('stepEditor').innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-        <div>
-          <span style="font-size:0.78rem; font-weight:900; color:${meta.color}; text-transform:uppercase;">${currentIdx + 1}. AŞAMA TÜRÜ</span>
-          <div style="font-size:0.85rem; color:var(--text-muted);">${escHtml(meta.desc)}</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="font-size:0.82rem; font-weight:900; background:${meta.color}; color:#fff; padding:4px 10px; border-radius:999px;">${currentIdx + 1}. Aşama: ${meta.icon} ${escHtml(meta.label)}</span>
+          <span style="font-size:0.82rem; color:var(--text-muted);">${escHtml(meta.desc)}</span>
         </div>
-        <button class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="deleteCurrentStep()">🗑️ Bu Aşamayı Sil</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="deleteCurrentStep()">🗑️ Aşamayı Sil</button>
       </div>
-      <div class="stage-type-grid">${typeButtons}</div>
+      <details style="margin-bottom:14px;">
+        <summary style="cursor:pointer; font-size:0.8rem; font-weight:800; color:var(--text-muted);">🔄 Aşama Türünü Değiştir (${meta.icon} ${escHtml(meta.label)})</summary>
+        <div class="stage-type-grid" style="margin-top:8px;">${typeButtons}</div>
+      </details>
       <div class="form-group">
         <label class="form-label">Aşama Başlığı</label>
         <input type="text" class="form-control" value="${escHtml(s.title || '')}" oninput="upd('title', this.value)" />
       </div>
       ${imageBoxHtml}
       ${fields}
-      <div class="form-group" style="margin-top:16px; margin-bottom:0;">
-        <label class="form-label">👩‍🏫 Bu Aşama İçin Öğretmen Notu (Yalnızca öğretmen modunda görünür)</label>
-        <input type="text" class="form-control" value="${escHtml(s.note || '')}" placeholder="Örn: Bu aşamada henüz terimin adını söylemeyin, öğrencilerin örnekleri karşılaştırmasını bekleyin..." oninput="upd('note', this.value)" />
-      </div>
+      <details style="margin-top:14px;">
+        <summary style="cursor:pointer; font-size:0.82rem; font-weight:800; color:var(--text-muted);">👩‍🏫 Öğretmen Notu Ekle (Yalnızca öğretmen modunda görünür)</summary>
+        <input type="text" class="form-control" style="margin-top:8px;" value="${escHtml(s.note || '')}" placeholder="Örn: Bu aşamada henüz terimin adını söylemeyin..." oninput="upd('note', this.value)" />
+      </details>
     `;
   }
 
@@ -850,6 +977,12 @@
     const items = activity.steps[currentIdx].sceneItems || [];
     if (items[i]) {
       items[i][k] = v;
+      if ((k === 'label' || k === 'isClue') && typeof buildAutoClueNote === 'function') {
+        const curNote = String(items[i].clueNote || '').trim();
+        if (!curNote || curNote.startsWith('BULUNDU:') || curNote.startsWith('Bu "') || curNote.startsWith('Niteleyen')) {
+          items[i].clueNote = buildAutoClueNote(items[i].label, items[i].isClue !== false);
+        }
+      }
       markDirty();
     }
   }
@@ -907,6 +1040,114 @@
     markDirty();
     renderStepEditor();
     showToast('Delil görseli kaldırıldı.', 'info');
+  }
+  function setDedEditorTab(tab) {
+    dedEditorTab = tab;
+    renderStepEditor();
+  }
+  function selectEditorScenePin(i) {
+    activeScenePinIdx = i;
+    renderStepEditor();
+  }
+  function handleEditorSceneCanvasClick(event) {
+    const items = activity.steps[currentIdx].sceneItems || [];
+    if (!items.length) return;
+    if (activeScenePinIdx < 0 || activeScenePinIdx >= items.length) activeScenePinIdx = 0;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const xPct = Math.round(((event.clientX - rect.left) / rect.width) * 100);
+    const yPct = Math.round(((event.clientY - rect.top) / rect.height) * 100);
+    items[activeScenePinIdx].x = Math.min(92, Math.max(8, xPct));
+    items[activeScenePinIdx].y = Math.min(88, Math.max(12, yPct));
+    markDirty();
+    renderStepEditor();
+  }
+  function addPresetDedSceneItem(presetKey) {
+    const presets = (typeof DETECTIVE_CLUE_PRESETS !== 'undefined' && Array.isArray(DETECTIVE_CLUE_PRESETS))
+      ? DETECTIVE_CLUE_PRESETS
+      : [];
+    const found = presets.find(p => p.key === presetKey);
+    if (!found) return;
+    const items = activity.steps[currentIdx].sceneItems ||= [];
+    const idx = items.length;
+    items.push({
+      id: generateId(),
+      label: found.label,
+      icon: found.icon,
+      image: typeof buildClueSvgDataUrl === 'function' ? buildClueSvgDataUrl(found.key) : '',
+      x: 14 + ((idx * 19) % 74),
+      y: 26 + ((idx * 23) % 56),
+      isClue: found.isClue !== false,
+      clueNote: typeof buildAutoClueNote === 'function' ? buildAutoClueNote(found.label, found.isClue !== false) : ''
+    });
+    activeScenePinIdx = items.length - 1;
+    markDirty();
+    renderStepEditor();
+    showToast(`"${found.label}" olay yerine eklendi!`, 'success');
+  }
+  function autoFillSuspectsFromClues() {
+    const s = activity.steps[currentIdx];
+    const clues = (s.sceneItems || []).filter(it => it && it.isClue !== false && String(it.label || '').trim());
+    if (!clues.length) {
+      showToast('Önce en az 1 aranan kanıt ekleyin!', 'warning');
+      return;
+    }
+    const labels = clues.map(c => String(c.label).trim());
+    const sus = s.suspects && s.suspects.length >= 2 ? s.suspects : (s.suspects = [
+      { name: '1. Şüpheli: Demir', avatar: '🧢', image: typeof buildSuspectSvgDataUrl === 'function' ? buildSuspectSvgDataUrl({ shirt: '#2563EB', hatColor: '#0F172A' }) : '', traits: '', isCulprit: false },
+      { name: '2. Şüpheli: Poyraz', avatar: '🕵️', image: typeof buildSuspectSvgDataUrl === 'function' ? buildSuspectSvgDataUrl({ shirt: '#DC2626', brokenGlasses: true, muddyHands: true, tornShoe: true }) : '', traits: '', isCulprit: true },
+      { name: '3. Şüpheli: Kaan', avatar: '👓', image: typeof buildSuspectSvgDataUrl === 'function' ? buildSuspectSvgDataUrl({ shirt: '#16A34A', glasses: true }) : '', traits: '', isCulprit: false },
+      { name: '4. Şüpheli: Mert', avatar: '🧥', image: typeof buildSuspectSvgDataUrl === 'function' ? buildSuspectSvgDataUrl({ shirt: '#EAB308', hatColor: '#15803D' }) : '', traits: '', isCulprit: false }
+    ]);
+    let culpritIdx = sus.findIndex(sp => sp.isCulprit);
+    if (culpritIdx < 0) {
+      culpritIdx = 0;
+      sus[0].isCulprit = true;
+    }
+    sus.forEach((sp, i) => {
+      if (i === culpritIdx) {
+        sp.traits = labels.join(', ') + ' (Tüm olay yeri kanıtlarıyla eşleşiyor)';
+      } else {
+        const subset = labels.slice(0, Math.max(1, labels.length - 1 - (i % 2)));
+        const fakeExtras = ['mavi ceketli', 'beyaz spor ayakkabılı', 'yeşil şapkalı', 'eldivensiz'];
+        sp.traits = subset.concat([fakeExtras[i % fakeExtras.length]]).join(', ');
+      }
+    });
+    markDirty();
+    renderStepEditor();
+    showToast('Şüpheli eşkâlleri kanıtlara göre otomatik oluşturuldu!', 'success');
+  }
+  function autoFillDialoguesFromClues() {
+    const s = activity.steps[currentIdx];
+    const clues = (s.sceneItems || []).filter(it => it && it.isClue !== false && String(it.label || '').trim());
+    if (!clues.length) {
+      showToast('Önce olay yerine kanıt ekleyin!', 'warning');
+      return;
+    }
+    const bracketed = clues.map(c => `[${String(c.label).trim()}]`);
+    const firstHalf = bracketed.slice(0, Math.ceil(bracketed.length / 2)).join(', ');
+    const secondHalf = bracketed.slice(Math.ceil(bracketed.length / 2)).join(', ');
+    s.dialogues = [
+      { speaker: 'dedektif', speakerName: 'Olay Yeri Dedektifi', text: `Merkez! Olay yerinde ilk incelemede ${firstHalf} bulduk!`, clueNote: 'Bulunan kanıtlar varlıkları özellikleriyle birlikte tarif ediyor.' },
+      { speaker: 'merkez', speakerName: 'Merkez Komiseri', text: 'Anlaşıldı! Başka ayırt edici kanıt var mı?', clueNote: '' },
+      ...(secondHalf ? [{ speaker: 'dedektif', speakerName: 'Olay Yeri Dedektifi', text: `Evet şefim! Ayrıca ${secondHalf} kanıtlarını da delil çantasına ekledik.`, clueNote: 'Tüm kanıtlar "Nasıl?" sorusuna cevap veren sıfat tamlamalarından oluşuyor.' }] : []),
+      { speaker: 'merkez', speakerName: 'Merkez Komiseri', text: 'Harika! Şimdi kanıt dosyasına göre gerçek suçluyu tutuklayın!', clueNote: '' }
+    ];
+    markDirty();
+    renderStepEditor();
+    showToast('Telsiz diyaloğu kanıtlardan otomatik oluşturuldu!', 'success');
+  }
+  function setQuickDetectiveOnlyMode() {
+    const fullSteps = createDetectiveSezdirmeSteps('criminal_case');
+    activity.steps = [fullSteps[0]];
+    if (!activity.title || activity.title === 'Yeni Sezdirme Dersi') {
+      activity.title = 'Olay Yeri Kanıt Avı';
+      document.getElementById('activityTitle').value = activity.title;
+    }
+    currentIdx = 0;
+    dedEditorTab = 'scene';
+    markDirty();
+    renderAll();
+    showToast('Sadece Olay Yeri Kanıt Avı (1 Aşamalı Hızlı Oyun) modu yüklendi!', 'success');
   }
 
   function loadDetectivePreset(preset) {

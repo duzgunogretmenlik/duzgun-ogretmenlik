@@ -212,36 +212,35 @@
       box-shadow: 0 0 10px rgba(34,197,94,.28);
     }
     .sz-scene-canvas {
-      position: relative; width: 100%; height: 420px; overflow: hidden;
-      background: #1E293B; user-select: none;
+      position: relative; width: 100%; height: 440px; overflow: hidden;
+      background: #1E293B; user-select: none; cursor: crosshair;
     }
     .sz-scene-bg, .sz-scene-svg-bg {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
     }
     .sz-scene-item {
       position: absolute; transform: translate(-50%, -50%);
-      background: rgba(255,255,255,.16); border: 2px solid rgba(255,255,255,.35);
-      border-radius: 16px; padding: 6px; cursor: pointer;
+      background: rgba(15,23,42,.08); border: 2px solid transparent;
+      border-radius: 16px; padding: 5px; cursor: zoom-in;
       display: flex; flex-direction: column; align-items: center; gap: 3px;
       transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
-      backdrop-filter: blur(2px);
       z-index: 2;
     }
     .sz-scene-item:hover {
-      transform: translate(-50%, -50%) scale(1.12);
-      border-color: #FACC15;
-      background: rgba(250,204,21,.22);
-      box-shadow: 0 0 18px rgba(250,204,21,.55);
+      transform: translate(-50%, -50%) scale(1.16);
+      border-color: rgba(250,204,21,.85);
+      background: rgba(250,204,21,.18);
+      box-shadow: 0 0 20px rgba(250,204,21,.55);
       z-index: 5;
     }
     .sz-scene-item img {
       width: 68px; height: 68px; object-fit: contain; display: block;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,.45));
+      filter: drop-shadow(0 5px 9px rgba(0,0,0,.6));
       border-radius: 10px;
     }
     .sz-scene-item .sz-scene-emoji {
-      font-size: 2.3rem; line-height: 1; padding: 6px;
-      filter: drop-shadow(0 3px 6px rgba(0,0,0,.45));
+      font-size: 2.35rem; line-height: 1; padding: 6px;
+      filter: drop-shadow(0 4px 7px rgba(0,0,0,.6));
     }
     .sz-scene-item.found {
       border-color: #22C55E;
@@ -251,22 +250,23 @@
     .sz-scene-item.distractor-wrong {
       border-color: #EF4444;
       background: rgba(239,68,68,.26);
-      opacity: .68;
+      opacity: .62;
       animation: shake .38s;
     }
     @keyframes hintPulse {
-      0%, 100% { box-shadow: 0 0 0 4px rgba(250,204,21,.85), 0 0 24px #FACC15; transform: translate(-50%, -50%) scale(1.12); }
-      50% { box-shadow: 0 0 0 10px rgba(250,204,21,.25), 0 0 30px #F59E0B; transform: translate(-50%, -50%) scale(1.22); }
+      0%, 100% { box-shadow: 0 0 0 4px rgba(250,204,21,.85), 0 0 24px #FACC15; transform: translate(-50%, -50%) scale(1.14); }
+      50% { box-shadow: 0 0 0 12px rgba(250,204,21,.25), 0 0 32px #F59E0B; transform: translate(-50%, -50%) scale(1.24); }
     }
     .sz-scene-item.hint-pulse {
       border-color: #FACC15;
+      background: rgba(250,204,21,.24);
       animation: hintPulse 1.1s infinite;
       z-index: 6;
     }
     .sz-scene-item-badge {
       background: #16A34A; color: #fff; font-size: .74rem; font-weight: 900;
       padding: 2px 8px; border-radius: 999px; white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+      box-shadow: 0 2px 6px rgba(0,0,0,.35);
     }
     .sz-evidence-toast {
       padding: 12px 16px; font-size: .95rem; font-weight: 700; line-height: 1.45;
@@ -278,6 +278,45 @@
       background: linear-gradient(135deg, #059669 0%, #0D9488 100%);
       color: #fff; padding: 12px 16px; font-weight: 900; font-size: .98rem;
       display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    .sz-case-tabs {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+      background: #0F172A; padding: 8px; border-radius: 14px; border: 2px solid #334155;
+    }
+    .sz-case-tab {
+      flex: 1; min-width: 150px; padding: 10px 14px; border-radius: 10px;
+      border: 1px solid #334155; background: #1E293B; color: #CBD5E1;
+      font-family: var(--font); font-weight: 900; font-size: .88rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: var(--transition);
+    }
+    .sz-case-tab:hover { border-color: #F59E0B; color: #fff; }
+    .sz-case-tab.active {
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      color: #0F172A; border-color: #FBBF24;
+      box-shadow: 0 4px 14px rgba(245,158,11,.35);
+    }
+    .sz-lab-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      gap: 12px; margin-bottom: 16px;
+    }
+    .sz-lab-card {
+      background: #fff; border: 2px solid #CBD5E1; border-radius: 14px; padding: 14px;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
+    }
+    .sz-lab-card.analyzed {
+      border-color: #0D9488; background: #F0FDFA;
+      box-shadow: 0 4px 14px rgba(13,148,136,.14);
+    }
+    .sz-star-bar {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: #0F172A; border: 1px solid #475569; padding: 4px 10px;
+      border-radius: 999px; font-size: .95rem;
+    }
+    .sz-combo-pill {
+      background: linear-gradient(135deg, #EF4444, #F97316); color: #fff;
+      padding: 4px 10px; border-radius: 999px; font-weight: 900; font-size: .82rem;
+      animation: stageIn .25s ease;
     }
     @media (max-width: 720px) {
       .sz-scene-canvas { height: 320px; }
@@ -553,45 +592,79 @@
       wrongIdx: null,
       foundClues: {},
       wrongItems: {},
+      analyzedClues: {},
       hintItemIdx: null,
       lastClueMsg: null,
-      score: 0
+      score: 0,
+      combo: 0,
+      subTab: 'all'
     });
     if (!st.foundClues) st.foundClues = {};
     if (!st.wrongItems) st.wrongItems = {};
+    if (!st.analyzedClues) st.analyzedClues = {};
+    if (!st.subTab) st.subTab = 'all';
 
     const clueTargets = sceneItems
       .map((item, idx) => ({ item, idx }))
       .filter(entry => entry.item && entry.item.isClue !== false);
     const foundCount = clueTargets.filter(entry => !!st.foundClues[entry.idx]).length;
+    const analyzedCount = clueTargets.filter(entry => !!st.analyzedClues[entry.idx]).length;
     const allCluesFound = clueTargets.length > 0 && foundCount >= clueTargets.length;
 
-    const sceneHtml = sceneItems.length ? `
+    const starCount = (st.caughtIdx !== null && allCluesFound)
+      ? 3
+      : (allCluesFound ? 2 : (foundCount > 0 ? 1 : 0));
+    const starsHtml = [1, 2, 3].map(n => `<span style="opacity:${n <= starCount ? '1' : '.28'};">⭐</span>`).join('');
+
+    const caseTabsHtml = sceneItems.length ? `
+      <div class="sz-case-tabs">
+        <button type="button" class="sz-case-tab ${st.subTab === 'all' ? 'active' : ''}" onclick="dedektifSetSubTab('${s.id}','all')">
+          📋 Tüm Vaka Ekranı
+        </button>
+        <button type="button" class="sz-case-tab ${st.subTab === 'scene' ? 'active' : ''}" onclick="dedektifSetSubTab('${s.id}','scene')">
+          1️⃣ 🔎 Olay Yeri (${foundCount}/${clueTargets.length})
+        </button>
+        <button type="button" class="sz-case-tab ${st.subTab === 'lab' ? 'active' : ''}" onclick="dedektifSetSubTab('${s.id}','lab')">
+          2️⃣ 🔬 Adli Tıp &amp; Telsiz (${analyzedCount}/${foundCount || clueTargets.length})
+        </button>
+        <button type="button" class="sz-case-tab ${st.subTab === 'suspects' ? 'active' : ''}" onclick="dedektifSetSubTab('${s.id}','suspects')">
+          3️⃣ 🚨 Şüpheli Sorgu (${suspects.length})
+        </button>
+      </div>
+    ` : '';
+
+    const showScene = !sceneItems.length || st.subTab === 'all' || st.subTab === 'scene';
+    const showLab = !sceneItems.length || st.subTab === 'all' || st.subTab === 'lab';
+    const showSuspects = !sceneItems.length || st.subTab === 'all' || st.subTab === 'suspects';
+
+    const sceneHtml = (sceneItems.length && showScene) ? `
       <div class="sz-crime-scene">
         <div class="sz-crime-tape"></div>
         <div class="sz-crime-header">
           <div>
             <div style="font-size:.76rem; font-weight:900; color:#FBBF24; letter-spacing:.6px; text-transform:uppercase;">🔍 OLAY YERİ KANIT AVI · OLAY YERİ İNCELEME</div>
-            <div style="font-size:1.06rem; font-weight:900;">${escHtml(s.sceneTitle || 'Olay Yerindeki Sıfat Tamlaması Delillerini Bulun')}</div>
+            <div style="font-size:1.06rem; font-weight:900;">${escHtml(s.sceneTitle || 'Olay Yerindeki Sıfat Tamlaması Kanıtlarını Bulun')}</div>
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="sz-star-bar" title="Dedektif Yıldızları">${starsHtml}</span>
+            ${(st.combo || 0) >= 2 ? `<span class="sz-combo-pill">🔥 ${st.combo}x KOMBO!</span>` : ''}
             <span style="background:#0F172A; border:1px solid #475569; padding:5px 12px; border-radius:999px; font-weight:900; font-size:.86rem;">
-              🎯 Delil: ${foundCount} / ${clueTargets.length}
+              🎯 Kanıt: ${foundCount} / ${clueTargets.length}
             </span>
             <span style="background:#78350F; color:#FEF3C7; padding:5px 12px; border-radius:999px; font-weight:900; font-size:.86rem;">
               ⭐ ${st.score || 0} Puan
             </span>
-            ${!allCluesFound ? `<button type="button" class="btn btn-sm" style="background:#F59E0B; color:#0F172A; font-weight:900;" onclick="dedektifHintClue('${s.id}')">💡 İpucu Göster</button>` : ''}
+            ${!allCluesFound ? `<button type="button" class="btn btn-sm" style="background:#F59E0B; color:#0F172A; font-weight:900;" onclick="dedektifHintClue('${s.id}')">💡 Büyüteç İpucu</button>` : ''}
             ${!allCluesFound ? `<button type="button" class="btn btn-outline btn-sm" style="color:#E2E8F0; border-color:#64748B;" onclick="dedektifRevealAllClues('${s.id}')">✅ Tümünü Bul</button>` : ''}
             <button type="button" class="btn btn-outline btn-sm" style="color:#E2E8F0; border-color:#64748B;" onclick="dedektifResetScene('${s.id}')">↺ Sıfırla</button>
           </div>
         </div>
 
         <div class="sz-clue-target-bar">
-          <span style="font-size:.82rem; font-weight:800; color:#94A3B8; margin-right:4px;">📋 Aranan Deliller:</span>
+          <span style="font-size:.82rem; font-weight:800; color:#94A3B8; margin-right:4px;">📋 Aranan Kanıtlar (Sıfat Tamlamaları):</span>
           ${clueTargets.map(entry => {
             const isFound = !!st.foundClues[entry.idx];
-            return `<span class="sz-clue-pill ${isFound ? 'found' : ''}">${isFound ? '✅' : '🔎'} ${escHtml(entry.item.label || 'Delil')}</span>`;
+            return `<span class="sz-clue-pill ${isFound ? 'found' : ''}">${isFound ? '✅' : '🔎'} ${escHtml(entry.item.label || 'Kanıt')}</span>`;
           }).join('')}
         </div>
 
@@ -607,9 +680,9 @@
             const posY = Math.min(88, Math.max(12, Number(it.y ?? 50)));
             const cls = isFound ? 'found' : (isHint ? 'hint-pulse' : (isWrong ? 'distractor-wrong' : ''));
             return `
-              <button type="button" class="sz-scene-item ${cls}" style="left:${posX}%; top:${posY}%;" onclick="dedektifInspectItem('${s.id}', ${i})" title="${isFound ? escHtml(it.label || '') : 'Delil olup olmadığını incele'}">
+              <button type="button" class="sz-scene-item ${cls}" style="left:${posX}%; top:${posY}%;" onclick="dedektifInspectItem('${s.id}', ${i})" title="${isFound ? escHtml(it.label || '') : 'Kanıt olup olmadığını incele'}">
                 ${it.image
-                  ? `<img src="${escHtml(it.image)}" alt="${isFound ? escHtml(it.label || 'Delil') : 'Nesne'}" />`
+                  ? `<img src="${escHtml(it.image)}" alt="${isFound ? escHtml(it.label || 'Kanıt') : 'Nesne'}" />`
                   : `<span class="sz-scene-emoji">${escHtml(it.icon || '🔍')}</span>`}
                 ${isFound ? `<span class="sz-scene-item-badge">✔ ${escHtml(it.label || '')}</span>` : ''}
               </button>
@@ -619,22 +692,84 @@
 
         ${st.lastClueMsg ? `
           <div class="sz-evidence-toast ${st.lastClueMsg.ok ? 'ok' : 'warn'}">
-            ${st.lastClueMsg.ok ? '🔍 <strong>DELİL ÇANTASINA EKLENDİ:</strong>' : '⚠️ <strong>DİKKAT:</strong>'}
+            ${st.lastClueMsg.ok ? '🔍 <strong>KANIT ÇANTASINA EKLENDİ:</strong>' : '⚠️ <strong>DİKKAT:</strong>'}
             <strong>${escHtml(st.lastClueMsg.label || '')}</strong>
             ${st.lastClueMsg.note ? ` — ${escHtml(st.lastClueMsg.note)}` : ''}
           </div>
         ` : `
           <div class="sz-evidence-toast" style="background:#1E293B; color:#CBD5E1;">
-            👆 Yukarıdaki olay yerinde listedeki <strong>sıfat tamlamalarını</strong> (örn: kırmızı gömlek, yırtık ayakkabı) temsil eden görsellere tıklayıp toplayın!
+            👆 Yukarıdaki olay yerinde listedeki <strong>sıfat tamlamalarını</strong> (örn: kırmızı gömlek, yırtık ayakkabı) temsil eden görsellere tıklayıp toplayın! Ardışık doğru kanıtlar <strong>🔥 Kombo Puanı</strong> kazandırır!
           </div>
         `}
 
         ${allCluesFound ? `
           <div class="sz-ready-banner">
-            <span>🎉 TÜM DELİLLER TOPLANDI! Delil çantasındaki sıfat tamlamalarına göre aşağıdan gerçek şüpheliyi yakalayın!</span>
-            <button type="button" class="btn btn-sm" style="background:#fff; color:#065F46; font-weight:900;" onclick="document.getElementById('szSuspectPanel_${s.id}')?.scrollIntoView({behavior:'smooth'})">🚨 Şüphelilere Git ↓</button>
+            <span>🎉 TÜM OLAY YERİ KANITLARI TOPLANDI! Şimdi kanıtları laboratuvarda inceleyin veya doğrudan şüpheliyi tutuklayın!</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-sm" style="background:#FEF3C7; color:#92400E; font-weight:900;" onclick="dedektifSetSubTab('${s.id}','lab')">🔬 Adli Tıp Laboratuvarı →</button>
+              <button type="button" class="btn btn-sm" style="background:#fff; color:#065F46; font-weight:900;" onclick="dedektifSetSubTab('${s.id}','suspects'); setTimeout(()=>document.getElementById('szSuspectPanel_${s.id}')?.scrollIntoView({behavior:'smooth'}),60)">🚨 Şüpheliyi Tutukla →</button>
+            </div>
           </div>
         ` : ''}
+      </div>
+    ` : '';
+
+    const foundClueEntries = clueTargets.filter(entry => !!st.foundClues[entry.idx]);
+    const labSectionHtml = (sceneItems.length && showLab) ? `
+      <div style="background:#F0FDFA; border:2px solid #5EEAD4; border-radius:16px; padding:16px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+          <div>
+            <h4 style="font-size:1.05rem; font-weight:900; color:#0F766E; margin:0;">🔬 Adli Tıp Dil Laboratuvarı (Kanıt Çözümleme)</h4>
+            <div style="font-size:.84rem; color:#134E4A; font-weight:700;">Olay yerinden toplanan her kanıtın hangi <strong>sıfat (nasıl?)</strong> ve hangi <strong>isim (varlık)</strong> birleşiminden oluştuğunu analiz edin!</div>
+          </div>
+          ${foundClueEntries.length > 0 && analyzedCount < foundClueEntries.length
+            ? `<button type="button" class="btn btn-primary btn-sm" style="background:#0D9488;" onclick="dedektifAnalyzeAllClues('${s.id}')">🔬 Tüm Kanıtları Analiz Et</button>`
+            : ''}
+        </div>
+        ${foundClueEntries.length ? `
+          <div class="sz-lab-grid">
+            ${foundClueEntries.map(entry => {
+              const it = entry.item;
+              const isAnalyzed = !!st.analyzedClues[entry.idx];
+              const words = String(it.label || '').trim().split(/\s+/);
+              const nounPart = words.length >= 2 ? words[words.length - 1] : (it.label || 'İsim');
+              const adjPart = words.length >= 2 ? words.slice(0, words.length - 1).join(' ') : 'Özellik';
+              return `
+                <div class="sz-lab-card ${isAnalyzed ? 'analyzed' : ''}">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    ${it.image
+                      ? `<img src="${escHtml(it.image)}" alt="${escHtml(it.label)}" style="width:52px; height:52px; object-fit:contain; border-radius:10px; background:#F8FAFC; border:1px solid #E2E8F0; padding:3px;" />`
+                      : `<span style="font-size:2rem;">${escHtml(it.icon || '🔍')}</span>`}
+                    <div>
+                      <div style="font-weight:900; color:#0F172A; font-size:1rem;">${escHtml(it.label || 'Kanıt')}</div>
+                      <span style="font-size:.75rem; font-weight:800; color:${isAnalyzed ? '#0F766E' : '#64748B'};">
+                        ${isAnalyzed ? '✅ Laboratuvar Analizi Tamam' : '⏳ Analiz Bekliyor'}
+                      </span>
+                    </div>
+                  </div>
+                  ${isAnalyzed ? `
+                    <div style="background:#fff; border:1px solid #99F6E4; border-radius:10px; padding:10px; font-size:.86rem;">
+                      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">
+                        <span style="background:#FEF3C7; color:#92400E; padding:3px 8px; border-radius:6px; font-weight:900;">Sıfat (Nasıl?): ${escHtml(adjPart)}</span>
+                        <span style="font-weight:900;">+</span>
+                        <span style="background:#DBEAFE; color:#1E40AF; padding:3px 8px; border-radius:6px; font-weight:900;">İsim (Varlık): ${escHtml(nounPart)}</span>
+                      </div>
+                      <div style="color:#134E4A; font-weight:700; font-size:.82rem;">💡 ${escHtml(it.clueNote || buildAutoClueNote(it.label, true))}</div>
+                    </div>
+                  ` : `
+                    <button type="button" class="btn btn-outline btn-sm" style="width:100%; justify-content:center; border-color:#0D9488; color:#0F766E;" onclick="dedektifAnalyzeClue('${s.id}', ${entry.idx})">
+                      🔬 Laboratuvarda İncele (+15 Puan)
+                    </button>
+                  `}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : `
+          <div style="background:#fff; border:1px dashed #94A3B8; border-radius:12px; padding:16px; text-align:center; color:#475569; font-weight:700;">
+            🔎 Henüz olay yerinden kanıt toplanmadı. Önce <strong>Olay Yeri</strong> sahnesindeki nesnelere tıklayarak kanıtları toplayın!
+          </div>
+        `}
       </div>
     ` : '';
 
@@ -655,20 +790,38 @@
       `;
     }).join('');
 
+    const radioSectionHtml = (showLab && dialogues.length) ? `
+      <div class="sz-radio-log" id="szRadioLog">
+        ${bubblesHtml}
+      </div>
+      <div class="sz-actions">
+        ${st.openCount < dialogues.length
+          ? `<button class="btn btn-primary btn-sm" style="background:#0F172A;" onclick="dedektifAct('${s.id}','next')">📻 Sonraki Telsiz Mesajı (${st.openCount}/${dialogues.length})</button>`
+          : `<span style="font-weight:800; color:#0F766E;">📡 Tüm telsiz kayıtları dinlendi ✔</span>`}
+        ${st.openCount < dialogues.length
+          ? `<button class="btn btn-outline btn-sm" onclick="dedektifAct('${s.id}','all')">⏩ Tümünü Aç</button>`
+          : `<button class="btn btn-outline btn-sm" onclick="dedektifAct('${s.id}','reset')">↺ Diyaloğu Sıfırla</button>`}
+        <button class="btn btn-primary btn-sm" style="background:#D97706;" onclick="dedektifAct('${s.id}','marks')">
+          ${st.marks ? '🙈 İpuçlarını Gizle' : '🔦 İpucu Sözcüklerini Vurgula'}
+        </button>
+        ${thinkBtn()}
+      </div>
+    ` : '';
+
     const foundBagTags = clueTargets
       .filter(entry => !!st.foundClues[entry.idx])
       .map(entry => `<span style="background:#DCFCE7; color:#166534; border:1px solid #86EFAC; padding:3px 10px; border-radius:999px; font-size:.8rem; font-weight:800;">✔ ${escHtml(entry.item.label || '')}</span>`)
       .join('');
 
-    const suspectsHtml = suspects.length ? `
+    const suspectsHtml = (suspects.length && showSuspects) ? `
       <div class="sz-suspect-panel" id="szSuspectPanel_${s.id}">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <h4 style="font-size:1.08rem; font-weight:900; color:#0F172A; margin:0;">🚨 Şüpheli Teşhis Panosu (${suspects.length} Kişi)</h4>
-          <span style="font-size:.85rem; color:#475569; font-weight:700;">Olay yeri delillerine ve telsiz ipuçlarına uymayanları eleyin, doğru şüpheliyi yakalayın!</span>
+          <h4 style="font-size:1.08rem; font-weight:900; color:#0F172A; margin:0;">🚨 Şüpheli Sorgu &amp; Tutuklama Odası (${suspects.length} Şüpheli)</h4>
+          <span style="font-size:.85rem; color:#475569; font-weight:700;">Olay yeri kanıtlarına uymayanları eleyin, eşkâle tam uyan suçluyu tutuklayın!</span>
         </div>
         ${foundBagTags ? `
           <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:10px; padding:8px 10px; background:#fff; border:1px solid #CBD5E1; border-radius:10px;">
-            <span style="font-size:.8rem; font-weight:900; color:#0F172A;">🧰 Delil Çantanız:</span>
+            <span style="font-size:.8rem; font-weight:900; color:#0F172A;">🧰 Doğrulanan Kanıt Dosyası:</span>
             ${foundBagTags}
           </div>
         ` : ''}
@@ -686,7 +839,7 @@
                     <span style="font-size:2rem;">${escHtml(sp.avatar || '🕵️')}</span>
                     <div>
                       <div style="font-weight:900; color:#0F172A;">${escHtml(sp.name || `${i + 1}. Şüpheli`)}</div>
-                      ${isCaught ? `<span style="font-size:.75rem; background:#16A34A; color:#fff; padding:2px 8px; border-radius:999px; font-weight:800;">🚔 YAKALANDI!</span>` : ''}
+                      ${isCaught ? `<span style="font-size:.75rem; background:#16A34A; color:#fff; padding:2px 8px; border-radius:999px; font-weight:800;">🚔 TUTUKLANDI!</span>` : ''}
                     </div>
                   </div>
                   <div class="sz-suspect-traits" style="font-size:.95rem; font-weight:700; color:#334155; line-height:1.45;">
@@ -698,37 +851,69 @@
                     ${isElim ? '↩️ Geri Al' : '❌ Ele'}
                   </button>
                   <button type="button" class="btn btn-primary btn-sm" style="flex:1; justify-content:center; background:${isCaught ? '#16A34A' : '#0F172A'};" onclick="dedektifCatch('${s.id}', ${i})" ${st.caughtIdx !== null ? 'disabled' : ''}>
-                    ${isCaught ? '✅ Yakalandı' : '🚨 Yakala!'}
+                    ${isCaught ? '✅ Tutuklandı' : '🚔 Tutukla!'}
                   </button>
                 </div>
               </div>
             `;
           }).join('')}
         </div>
+        ${st.caughtIdx !== null ? `
+          <div style="margin-top:14px; background:linear-gradient(135deg,#065F46,#0D9488); color:#fff; border-radius:14px; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div style="font-size:.78rem; font-weight:900; color:#A7F3D0; text-transform:uppercase;">🏆 VAKA DOSYASI KAPANDI · ${starsHtml}</div>
+              <div style="font-size:1.15rem; font-weight:900; margin-top:2px;">Tebrikler Başdedektif! Suçlu ${escHtml((suspects[st.caughtIdx] || {}).name || '')} kanıtlarla yakalandı!</div>
+              <div style="font-size:.88rem; opacity:.92; margin-top:2px;">Toplam Dedektif Puanı: <strong>${st.score || 0} Puan</strong> · Bulunan Kanıt: <strong>${foundCount}/${clueTargets.length}</strong></div>
+            </div>
+            ${idx < (activity.steps || []).length - 1 ? `<button type="button" class="btn" style="background:#fff; color:#065F46; font-weight:900;" onclick="next()">Sonraki Aşamaya Geç →</button>` : ''}
+          </div>
+        ` : ''}
       </div>
     ` : '';
 
     return `
       ${s.caseBrief ? `<div class="sz-detective-banner">🕵️ <strong>Vaka Dosyası:</strong> ${escHtml(s.caseBrief)}</div>` : ''}
+      ${caseTabsHtml}
       ${sceneHtml}
-      <div class="sz-radio-log" id="szRadioLog">
-        ${bubblesHtml || '<div style="color:#64748B; font-weight:700; text-align:center; padding:18px;">Telsiz kaydı yok.</div>'}
-      </div>
-      <div class="sz-actions">
-        ${st.openCount < dialogues.length
-          ? `<button class="btn btn-primary btn-sm" style="background:#0F172A;" onclick="dedektifAct('${s.id}','next')">📻 Sonraki Telsiz Mesajı (${st.openCount}/${dialogues.length})</button>`
-          : `<span style="font-weight:800; color:#0F766E;">📡 Tüm telsiz kayıtları dinlendi ✔</span>`}
-        ${st.openCount < dialogues.length
-          ? `<button class="btn btn-outline btn-sm" onclick="dedektifAct('${s.id}','all')">⏩ Tümünü Aç</button>`
-          : `<button class="btn btn-outline btn-sm" onclick="dedektifAct('${s.id}','reset')">↺ Diyaloğu Sıfırla</button>`}
-        <button class="btn btn-primary btn-sm" style="background:#D97706;" onclick="dedektifAct('${s.id}','marks')">
-          ${st.marks ? '🙈 İpuçlarını Gizle' : '🔦 İpucu Sözcüklerini Vurgula'}
-        </button>
-        ${thinkBtn()}
-      </div>
+      ${labSectionHtml}
+      ${radioSectionHtml}
       ${suspectsHtml}
       ${s.question ? `<div class="sz-question-box">🔎 ${escHtml(s.question)}</div>` : ''}
     `;
+  }
+  function dedektifSetSubTab(id, tab) {
+    const st = state[id];
+    if (!st) return;
+    st.subTab = tab;
+    SoundEffects.click();
+    render();
+  }
+  function dedektifAnalyzeClue(id, itemIdx) {
+    const st = state[id];
+    if (!st) return;
+    st.analyzedClues ||= {};
+    if (!st.analyzedClues[itemIdx]) {
+      st.analyzedClues[itemIdx] = true;
+      st.score = (st.score || 0) + 15;
+      SoundEffects.correct();
+      showToast('Adli Tıp analizi tamamlandı! (+15 Puan)', 'success');
+    }
+    render();
+  }
+  function dedektifAnalyzeAllClues(id) {
+    const st = state[id];
+    const s = activity.steps[idx];
+    if (!st || !s) return;
+    st.analyzedClues ||= {};
+    (s.sceneItems || []).forEach((it, i) => {
+      if (it && it.isClue !== false && st.foundClues?.[i] && !st.analyzedClues[i]) {
+        st.analyzedClues[i] = true;
+        st.score = (st.score || 0) + 15;
+      }
+    });
+    SoundEffects.correct();
+    showToast('Toplanan tüm kanıtlar laboratuvarda çözümlendi!', 'success');
+    render();
   }
   function dedektifInspectItem(id, itemIdx) {
     const st = state[id];
@@ -743,9 +928,12 @@
       st.foundClues[itemIdx] = true;
       if (st.hintItemIdx === itemIdx) st.hintItemIdx = null;
       if (!wasFound) {
-        st.score = (st.score || 0) + 20;
+        st.combo = (st.combo || 0) + 1;
+        const mult = Math.min(st.combo, 4);
+        st.score = (st.score || 0) + (20 * mult);
       }
-      st.lastClueMsg = { ok: true, label: item.label || 'Delil', note: item.clueNote || '' };
+      const autoNote = typeof buildAutoClueNote === 'function' ? buildAutoClueNote(item.label, true) : '';
+      st.lastClueMsg = { ok: true, label: item.label || 'Kanıt', note: item.clueNote || autoNote };
       const targets = (s.sceneItems || [])
         .map((it, i) => ({ it, i }))
         .filter(e => e.it && e.it.isClue !== false);
@@ -753,18 +941,22 @@
       if (!wasFound && targets.length > 0 && foundNow >= targets.length) {
         SoundEffects.win();
         launchConfetti();
-        showToast('Harika dedektif! Tüm olay yeri delilleri toplandı, şimdi şüpheliyi yakalayın!', 'success');
+        showToast('Harika dedektif! Tüm olay yeri kanıtları toplandı!', 'success');
       } else {
         SoundEffects.correct();
-        if (!wasFound) showToast(`Delil bulundu: ${item.label}`, 'success');
+        if (!wasFound) {
+          const comboTxt = st.combo >= 2 ? ` (${st.combo}x Kombo!)` : '';
+          showToast(`Kanıt bulundu: ${item.label}${comboTxt}`, 'success');
+        }
       }
     } else {
       st.wrongItems[itemIdx] = true;
+      st.combo = 0;
       st.score = Math.max(0, (st.score || 0) - 5);
       st.lastClueMsg = {
         ok: false,
         label: item.label || 'Nesne',
-        note: item.clueNote || 'Bu nesne aranan delillerden biri değil, aramaya devam!'
+        note: item.clueNote || 'Bu nesne aranan kanıtlardan biri değil, aramaya devam!'
       };
       SoundEffects.wrong();
       showToast(`"${item.label}" olayla ilgisiz görünüyor.`, 'warning');
@@ -781,8 +973,9 @@
       .filter(e => e.it && e.it.isClue !== false && !st.foundClues[e.i]);
     if (!remaining.length) return;
     st.hintItemIdx = remaining[0].i;
+    st.combo = 0;
     SoundEffects.flip();
-    showToast(`İpucu parlatıldı: "${remaining[0].it.label}"`, 'info');
+    showToast(`Büyüteç ipucu parlatıldı: "${remaining[0].it.label}"`, 'info');
     render();
   }
   function dedektifRevealAllClues(id) {
@@ -797,7 +990,7 @@
       }
     });
     st.hintItemIdx = null;
-    st.lastClueMsg = { ok: true, label: 'Tüm Deliller', note: 'Tüm olay yeri delilleri Delil Çantasına eklendi! Şimdi şüphelileri eleyin.' };
+    st.lastClueMsg = { ok: true, label: 'Tüm Kanıtlar', note: 'Tüm olay yeri kanıtları Kanıt Çantasına eklendi! Şimdi şüphelileri eleyin.' };
     SoundEffects.win();
     render();
   }
@@ -806,9 +999,11 @@
     if (!st) return;
     st.foundClues = {};
     st.wrongItems = {};
+    st.analyzedClues = {};
     st.hintItemIdx = null;
     st.lastClueMsg = null;
     st.score = 0;
+    st.combo = 0;
     SoundEffects.click();
     render();
   }
@@ -829,9 +1024,11 @@
       st.wrongIdx = null;
       st.foundClues = {};
       st.wrongItems = {};
+      st.analyzedClues = {};
       st.hintItemIdx = null;
       st.lastClueMsg = null;
       st.score = 0;
+      st.combo = 0;
       SoundEffects.click();
     } else if (action === 'marks') {
       st.marks = !st.marks;

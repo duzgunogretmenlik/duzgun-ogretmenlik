@@ -2022,12 +2022,52 @@ function buildClueSvgDataUrl(kind) {
     temiz_fincan: `<circle cx="60" cy="60" r="54" fill="#F8FAFC" stroke="#94A3B8" stroke-width="3"/><ellipse cx="58" cy="86" rx="34" ry="7" fill="#CBD5E1"/><path d="M34 46 L82 46 L76 82 L40 82 Z" fill="#FFFFFF" stroke="#475569" stroke-width="3"/><path d="M81 52 C94 52, 94 72, 78 72" fill="none" stroke="#475569" stroke-width="4"/><ellipse cx="58" cy="46" rx="22" ry="4" fill="#78350F"/>`,
     yeni_saat: `<circle cx="60" cy="60" r="54" fill="#F0FDF4" stroke="#10B981" stroke-width="3"/><rect x="49" y="16" width="22" height="88" rx="6" fill="#334155"/><circle cx="60" cy="60" r="24" fill="#FFFFFF" stroke="#0F172A" stroke-width="4"/><line x1="60" y1="60" x2="60" y2="44" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/><line x1="60" y1="60" x2="72" y2="62" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round"/>`,
     kirmizi_araba: `<circle cx="60" cy="60" r="54" fill="#FEF2F2" stroke="#EF4444" stroke-width="4"/><path d="M18 68 L26 48 L46 38 L78 38 L94 52 L102 58 L102 74 L18 74 Z" fill="#DC2626" stroke="#7F1D1D" stroke-width="3"/><rect x="46" y="43" width="28" height="12" rx="3" fill="#BFDBFE"/><circle cx="38" cy="76" r="10" fill="#0F172A"/><circle cx="84" cy="76" r="10" fill="#0F172A"/><circle cx="38" cy="76" r="4" fill="#CBD5E1"/><circle cx="84" cy="76" r="4" fill="#CBD5E1"/>`,
-    lacivert_maske: `<circle cx="60" cy="60" r="54" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="4"/><path d="M18 52 C34 38, 86 38, 102 52 L96 74 C76 66, 66 64, 60 72 C54 64, 44 66, 24 74 Z" fill="#1E3A8A" stroke="#0F172A" stroke-width="3"/><ellipse cx="42" cy="56" rx="9" ry="5" fill="#fff"/><ellipse cx="78" cy="56" rx="9" ry="5" fill="#fff"/>`
+    lacivert_maske: `<circle cx="60" cy="60" r="54" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="4"/><path d="M18 52 C34 38, 86 38, 102 52 L96 74 C76 66, 66 64, 60 72 C54 64, 44 66, 24 74 Z" fill="#1E3A8A" stroke="#0F172A" stroke-width="3"/><ellipse cx="42" cy="56" rx="9" ry="5" fill="#fff"/><ellipse cx="78" cy="56" rx="9" ry="5" fill="#fff"/>`,
+    eski_canta: `<circle cx="60" cy="60" r="54" fill="#FEF3C7" stroke="#B45309" stroke-width="4"/><rect x="24" y="44" width="72" height="50" rx="10" fill="#92400E" stroke="#451A03" stroke-width="3"/><path d="M44 44 L44 34 C44 26, 76 26, 76 34 L76 44" fill="none" stroke="#451A03" stroke-width="5"/><path d="M24 62 L96 62" stroke="#451A03" stroke-width="3"/><rect x="54" y="56" width="12" height="14" rx="3" fill="#FBBF24" stroke="#451A03" stroke-width="2"/><path d="M34 78 L46 84 M74 50 L84 56" stroke="#FDE68A" stroke-width="2.5" stroke-linecap="round"/>`,
+    pasli_anahtar: `<circle cx="60" cy="60" r="54" fill="#FFF7ED" stroke="#C2410C" stroke-width="4"/><circle cx="38" cy="60" r="16" fill="none" stroke="#9A3412" stroke-width="7"/><circle cx="38" cy="60" r="6" fill="#FFF7ED"/><path d="M54 60 L96 60 L96 74 M82 60 L82 72" fill="none" stroke="#9A3412" stroke-width="7" stroke-linecap="round"/><circle cx="68" cy="58" r="3" fill="#EA580C"/><circle cx="44" cy="48" r="3.5" fill="#EA580C"/>`,
+    burusuk_mektup: `<circle cx="60" cy="60" r="54" fill="#FEFCE8" stroke="#CA8A04" stroke-width="4"/><polygon points="28,26 84,22 94,88 32,96 22,58" fill="#FEF08A" stroke="#854D0E" stroke-width="3"/><path d="M36 44 L78 42 M38 58 L82 55 M36 72 L70 70" stroke="#713F12" stroke-width="3" stroke-linecap="round"/><path d="M28 56 L54 48 L88 64" fill="none" stroke="#A16207" stroke-width="2" stroke-dasharray="4 3"/>`,
+    yesil_atki: `<circle cx="60" cy="60" r="54" fill="#ECFDF5" stroke="#10B981" stroke-width="4"/><path d="M24 46 C42 36, 78 36, 96 46 C88 60, 44 60, 24 46 Z" fill="#059669" stroke="#064E3B" stroke-width="3"/><path d="M64 50 L74 92 L54 92 L50 52 Z" fill="#10B981" stroke="#064E3B" stroke-width="3"/><line x1="56" y1="92" x2="54" y2="100" stroke="#064E3B" stroke-width="3"/><line x1="64" y1="92" x2="64" y2="100" stroke="#064E3B" stroke-width="3"/><line x1="72" y1="92" x2="74" y2="100" stroke="#064E3B" stroke-width="3"/>`,
+    sari_kalem: `<circle cx="60" cy="60" r="54" fill="#FEFCE8" stroke="#EAB308" stroke-width="3"/><g transform="rotate(-35 60 60)"><rect x="52" y="24" width="16" height="58" fill="#FACC15" stroke="#713F12" stroke-width="3"/><rect x="52" y="14" width="16" height="10" rx="2" fill="#F43F5E" stroke="#713F12" stroke-width="3"/><polygon points="52,82 68,82 60,102" fill="#FDE68A" stroke="#713F12" stroke-width="3"/><polygon points="57,94 63,94 60,102" fill="#0F172A"/></g>`,
+    kirmizi_elma: `<circle cx="60" cy="60" r="54" fill="#FEF2F2" stroke="#F87171" stroke-width="3"/><path d="M60 40 C40 36, 26 54, 32 76 C36 92, 52 96, 60 88 C68 96, 84 92, 88 76 C94 54, 80 36, 60 40 Z" fill="#EF4444" stroke="#7F1D1D" stroke-width="3"/><path d="M60 40 Q62 24 70 22" fill="none" stroke="#78350F" stroke-width="4" stroke-linecap="round"/><ellipse cx="72" cy="28" rx="9" ry="5" transform="rotate(-20 72 28)" fill="#16A34A"/>`
   };
 
   const inner = bodies[kind] || `<circle cx="60" cy="60" r="54" fill="#FEF3C7" stroke="#D97706" stroke-width="4"/><text x="60" y="72" text-anchor="middle" font-size="44" font-family="sans-serif" font-weight="900" fill="#92400E">🔍</text>`;
   const svg = `<svg xmlns="${svgNs}" viewBox="0 0 120 120">${inner}</svg>`;
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+const DETECTIVE_CLUE_PRESETS = [
+  { key: 'kirmizi_gomlek', label: 'Kırmızı gömlek', icon: '👕', isClue: true },
+  { key: 'yirtik_ayakkabi', label: 'Yırtık ayakkabı', icon: '👟', isClue: true },
+  { key: 'kirik_gozluk', label: 'Kırık gözlük', icon: '👓', isClue: true },
+  { key: 'camurlu_eldiven', label: 'Çamurlu eldiven', icon: '🧤', isClue: true },
+  { key: 'siyah_sapka', label: 'Siyah şapka', icon: '🎩', isClue: true },
+  { key: 'eski_canta', label: 'Eski çanta', icon: '👜', isClue: true },
+  { key: 'pasli_anahtar', label: 'Paslı anahtar', icon: '🔑', isClue: true },
+  { key: 'burusuk_mektup', label: 'Buruşuk mektup', icon: '📜', isClue: true },
+  { key: 'yesil_atki', label: 'Yeşil atkı', icon: '🧣', isClue: true },
+  { key: 'kirmizi_araba', label: 'Kırmızı araba', icon: '🚗', isClue: true },
+  { key: 'lacivert_maske', label: 'Lacivert maske', icon: '🎭', isClue: true },
+  { key: 'mavi_semsiye', label: 'Mavi şemsiye', icon: '☂️', isClue: false },
+  { key: 'temiz_fincan', label: 'Temiz fincan', icon: '☕', isClue: false },
+  { key: 'yeni_saat', label: 'Yeni saat', icon: '⌚', isClue: false },
+  { key: 'sari_kalem', label: 'Sarı kalem', icon: '✏️', isClue: false },
+  { key: 'kirmizi_elma', label: 'Kırmızı elma', icon: '🍎', isClue: false }
+];
+
+function buildAutoClueNote(label, isClue = true) {
+  const clean = String(label || '').trim();
+  if (!clean) return '';
+  if (!isClue) {
+    return `Bu "${clean}" olayla ilgisiz bir çeldirici nesnedir; aranan kanıtlara odaklanın!`;
+  }
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    const noun = parts[parts.length - 1];
+    const adj = parts.slice(0, parts.length - 1).join(' ');
+    return `BULUNDU: [${clean}] → "Nasıl ${noun.toLocaleLowerCase('tr-TR')}?" ${clean}! ("${adj}" sıfat + "${noun}" isim = Sıfat Tamlaması)`;
+  }
+  return `BULUNDU: [${clean}] kanıtı Delil Çantasına eklendi!`;
 }
 
 const SEZDIRME_STAGES = {
@@ -2123,7 +2163,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
         title: 'Olay Yeri Kanıt Avı: Olay Yeri İnceleme (Kanıtları Topla)',
         sceneTitle: '🔍 Eski Müze Çalışma Odası — Olay Yeri',
         sceneImage: '',
-        caseBrief: 'Gece müze arşivinden değerli bir el yazması kayboldu! Olay yerinde aranan 5 sıfat tamlaması delilini ve 3 yanıltıcı nesneyi inceleyin. Önce sahnedeki gizli delilleri bulun, telsiz ipuçlarını dinleyin ve eşkâle tam uyan şüpheliyi yakalayın!',
+        caseBrief: 'Gece müze arşivinden değerli bir el yazması kayboldu! Olay yerinde aranan 7 sıfat tamlaması kanıtını ve 5 yanıltıcı nesneyi inceleyin. Önce sahnedeki gizli kanıtları bulun, Adli Tıp Laboratuvarında sıfat + isim yapısını analiz edin ve eşkâle tam uyan şüpheliyi tutuklayın!',
         sceneItems: [
           {
             id: generateId(),
@@ -2141,7 +2181,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             icon: '👟',
             image: buildClueSvgDataUrl('yirtik_ayakkabi'),
             x: 76,
-            y: 80,
+            y: 82,
             isClue: true,
             clueNote: 'BULUNDU: [Yırtık ayakkabı] → "Nasıl ayakkabı?" Yırtık ayakkabı! ("Yırtık" durum bildiren sıfat + "ayakkabı" isim = Sıfat Tamlaması)'
           },
@@ -2150,8 +2190,8 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             label: 'Kırık gözlük',
             icon: '👓',
             image: buildClueSvgDataUrl('kirik_gozluk'),
-            x: 47,
-            y: 58,
+            x: 46,
+            y: 56,
             isClue: true,
             clueNote: 'BULUNDU: [Kırık gözlük] → "Nasıl gözlük?" Kırık gözlük! ("Kırık" biçim/durum sıfatı + "gözlük" isim = Sıfat Tamlaması)'
           },
@@ -2160,8 +2200,8 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             label: 'Çamurlu eldiven',
             icon: '🧤',
             image: buildClueSvgDataUrl('camurlu_eldiven'),
-            x: 31,
-            y: 79,
+            x: 30,
+            y: 81,
             isClue: true,
             clueNote: 'BULUNDU: [Çamurlu eldiven] → "Nasıl eldiven?" Çamurlu eldiven! ("Çamurlu" özellik sıfatı + "eldiven" isim = Sıfat Tamlaması)'
           },
@@ -2170,10 +2210,30 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             label: 'Siyah şapka',
             icon: '🎩',
             image: buildClueSvgDataUrl('siyah_sapka'),
-            x: 83,
-            y: 39,
+            x: 84,
+            y: 38,
             isClue: true,
             clueNote: 'BULUNDU: [Siyah şapka] → "Nasıl şapka?" Siyah şapka! ("Siyah" renk sıfatı + "şapka" isim = Sıfat Tamlaması)'
+          },
+          {
+            id: generateId(),
+            label: 'Eski çanta',
+            icon: '👜',
+            image: buildClueSvgDataUrl('eski_canta'),
+            x: 63,
+            y: 74,
+            isClue: true,
+            clueNote: 'BULUNDU: [Eski çanta] → "Nasıl çanta?" Eski çanta! ("Eski" durum sıfatı + "çanta" isim = Sıfat Tamlaması)'
+          },
+          {
+            id: generateId(),
+            label: 'Paslı anahtar',
+            icon: '🔑',
+            image: buildClueSvgDataUrl('pasli_anahtar'),
+            x: 38,
+            y: 48,
+            isClue: true,
+            clueNote: 'BULUNDU: [Paslı anahtar] → "Nasıl anahtar?" Paslı anahtar! ("Paslı" niteleme sıfatı + "anahtar" isim = Sıfat Tamlaması)'
           },
           {
             id: generateId(),
@@ -2181,7 +2241,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             icon: '☂️',
             image: buildClueSvgDataUrl('mavi_semsiye'),
             x: 11,
-            y: 40,
+            y: 42,
             isClue: false,
             clueNote: 'Bu mavi şemsiye gece bekçisine ait, olayla ilgisi yok!'
           },
@@ -2190,10 +2250,10 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             label: 'Temiz fincan',
             icon: '☕',
             image: buildClueSvgDataUrl('temiz_fincan'),
-            x: 58,
-            y: 55,
+            x: 56,
+            y: 52,
             isClue: false,
-            clueNote: 'Bu temiz fincan müze görevlisine ait; başka deliller ara!'
+            clueNote: 'Bu temiz fincan müze görevlisine ait; başka kanıtlar ara!'
           },
           {
             id: generateId(),
@@ -2201,9 +2261,29 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             icon: '⌚',
             image: buildClueSvgDataUrl('yeni_saat'),
             x: 68,
-            y: 26,
+            y: 25,
             isClue: false,
-            clueNote: 'Masa saati normal yerinde duruyor; aranan delillerden biri değil.'
+            clueNote: 'Masa saati normal yerinde duruyor; aranan kanıtlardan biri değil.'
+          },
+          {
+            id: generateId(),
+            label: 'Sarı kalem',
+            icon: '✏️',
+            image: buildClueSvgDataUrl('sari_kalem'),
+            x: 51,
+            y: 44,
+            isClue: false,
+            clueNote: 'Masanın üzerindeki sarı kalem görevliye ait, kanıt değil.'
+          },
+          {
+            id: generateId(),
+            label: 'Kırmızı elma',
+            icon: '🍎',
+            image: buildClueSvgDataUrl('kirmizi_elma'),
+            x: 88,
+            y: 62,
+            isClue: false,
+            clueNote: 'Raftaki elma olayla ilgisiz bir çeldirici nesne.'
           }
         ],
         dialogues: [
