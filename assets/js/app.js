@@ -2059,15 +2059,16 @@ function buildAutoClueNote(label, isClue = true) {
   const clean = String(label || '').trim();
   if (!clean) return '';
   if (!isClue) {
-    return `Bu "${clean}" olayla ilgisiz bir çeldirici nesnedir; aranan kanıtlara odaklanın!`;
+    return `Bu "${clean}" olayla ilgisiz bir nesne; aranan kanıtlara odaklanın!`;
   }
   const parts = clean.split(/\s+/);
   if (parts.length >= 2) {
     const noun = parts[parts.length - 1];
     const adj = parts.slice(0, parts.length - 1).join(' ');
-    return `BULUNDU: [${clean}] → "Nasıl ${noun.toLocaleLowerCase('tr-TR')}?" ${clean}! ("${adj}" sıfat + "${noun}" isim = Sıfat Tamlaması)`;
+    const nounLower = noun.toLocaleLowerCase('tr-TR');
+    return `Nasıl ${nounLower}? → ${clean} ("${adj}" özellik + "${nounLower}" isim)`;
   }
-  return `BULUNDU: [${clean}] kanıtı Delil Çantasına eklendi!`;
+  return `${clean} kanıtı çantaya eklendi.`;
 }
 
 const SEZDIRME_STAGES = {
@@ -2173,7 +2174,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             x: 18,
             y: 66,
             isClue: true,
-            clueNote: 'BULUNDU: [Kırmızı gömlek] → "Nasıl gömlek?" Kırmızı gömlek! ("Kırmızı" niteleme sıfatı + "gömlek" isim = Sıfat Tamlaması)'
+            clueNote: 'Nasıl gömlek? → Kırmızı gömlek'
           },
           {
             id: generateId(),
@@ -2183,7 +2184,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             x: 76,
             y: 82,
             isClue: true,
-            clueNote: 'BULUNDU: [Yırtık ayakkabı] → "Nasıl ayakkabı?" Yırtık ayakkabı! ("Yırtık" durum bildiren sıfat + "ayakkabı" isim = Sıfat Tamlaması)'
+            clueNote: 'Nasıl ayakkabı? → Yırtık ayakkabı'
           },
           {
             id: generateId(),
@@ -2193,7 +2194,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             x: 46,
             y: 56,
             isClue: true,
-            clueNote: 'BULUNDU: [Kırık gözlük] → "Nasıl gözlük?" Kırık gözlük! ("Kırık" biçim/durum sıfatı + "gözlük" isim = Sıfat Tamlaması)'
+            clueNote: 'Nasıl gözlük? → Kırık gözlük'
           },
           {
             id: generateId(),
@@ -2203,7 +2204,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             x: 30,
             y: 81,
             isClue: true,
-            clueNote: 'BULUNDU: [Çamurlu eldiven] → "Nasıl eldiven?" Çamurlu eldiven! ("Çamurlu" özellik sıfatı + "eldiven" isim = Sıfat Tamlaması)'
+            clueNote: 'Nasıl eldiven? → Çamurlu eldiven'
           },
           {
             id: generateId(),
@@ -2213,7 +2214,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             x: 84,
             y: 38,
             isClue: true,
-            clueNote: 'BULUNDU: [Siyah şapka] → "Nasıl şapka?" Siyah şapka! ("Siyah" renk sıfatı + "şapka" isim = Sıfat Tamlaması)'
+            clueNote: 'Nasıl şapka? → Siyah şapka'
           },
           {
             id: generateId(),
@@ -2223,7 +2224,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             x: 63,
             y: 74,
             isClue: true,
-            clueNote: 'BULUNDU: [Eski çanta] → "Nasıl çanta?" Eski çanta! ("Eski" durum sıfatı + "çanta" isim = Sıfat Tamlaması)'
+            clueNote: 'Nasıl çanta? → Eski çanta'
           },
           {
             id: generateId(),
@@ -2233,7 +2234,7 @@ function createDetectiveSezdirmeSteps(preset = 'soyguncu') {
             x: 38,
             y: 48,
             isClue: true,
-            clueNote: 'BULUNDU: [Paslı anahtar] → "Nasıl anahtar?" Paslı anahtar! ("Paslı" niteleme sıfatı + "anahtar" isim = Sıfat Tamlaması)'
+            clueNote: 'Nasıl anahtar? → Paslı anahtar'
           },
           {
             id: generateId(),

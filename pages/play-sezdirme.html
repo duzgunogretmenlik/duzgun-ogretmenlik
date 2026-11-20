@@ -313,11 +313,6 @@
       background: #0F172A; border: 1px solid #475569; padding: 4px 10px;
       border-radius: 999px; font-size: .95rem;
     }
-    .sz-combo-pill {
-      background: linear-gradient(135deg, #EF4444, #F97316); color: #fff;
-      padding: 4px 10px; border-radius: 999px; font-weight: 900; font-size: .82rem;
-      animation: stageIn .25s ease;
-    }
     @media (max-width: 720px) {
       .sz-scene-canvas { height: 320px; }
       .sz-scene-item img { width: 52px; height: 52px; }
@@ -596,7 +591,6 @@
       hintItemIdx: null,
       lastClueMsg: null,
       score: 0,
-      combo: 0,
       subTab: 'all'
     });
     if (!st.foundClues) st.foundClues = {};
@@ -647,7 +641,6 @@
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span class="sz-star-bar" title="Dedektif Yıldızları">${starsHtml}</span>
-            ${(st.combo || 0) >= 2 ? `<span class="sz-combo-pill">🔥 ${st.combo}x KOMBO!</span>` : ''}
             <span style="background:#0F172A; border:1px solid #475569; padding:5px 12px; border-radius:999px; font-weight:900; font-size:.86rem;">
               🎯 Kanıt: ${foundCount} / ${clueTargets.length}
             </span>
@@ -698,7 +691,7 @@
           </div>
         ` : `
           <div class="sz-evidence-toast" style="background:#1E293B; color:#CBD5E1;">
-            👆 Yukarıdaki olay yerinde listedeki <strong>sıfat tamlamalarını</strong> (örn: kırmızı gömlek, yırtık ayakkabı) temsil eden görsellere tıklayıp toplayın! Ardışık doğru kanıtlar <strong>🔥 Kombo Puanı</strong> kazandırır!
+            👆 Yukarıdaki olay yerinde listedeki <strong>sıfat tamlamalarını</strong> (örn: kırmızı gömlek, yırtık ayakkabı) temsil eden görsellere tıklayıp toplayın!
           </div>
         `}
 
@@ -720,7 +713,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
           <div>
             <h4 style="font-size:1.05rem; font-weight:900; color:#0F766E; margin:0;">🔬 Adli Tıp Dil Laboratuvarı (Kanıt Çözümleme)</h4>
-            <div style="font-size:.84rem; color:#134E4A; font-weight:700;">Olay yerinden toplanan her kanıtın hangi <strong>sıfat (nasıl?)</strong> ve hangi <strong>isim (varlık)</strong> birleşiminden oluştuğunu analiz edin!</div>
+            <div style="font-size:.84rem; color:#134E4A; font-weight:700;">Toplanan kanıtlara tıklayarak kelimelerin görevini inceleyin.</div>
           </div>
           ${foundClueEntries.length > 0 && analyzedCount < foundClueEntries.length
             ? `<button type="button" class="btn btn-primary btn-sm" style="background:#0D9488;" onclick="dedektifAnalyzeAllClues('${s.id}')">🔬 Tüm Kanıtları Analiz Et</button>`
@@ -748,13 +741,13 @@
                     </div>
                   </div>
                   ${isAnalyzed ? `
-                    <div style="background:#fff; border:1px solid #99F6E4; border-radius:10px; padding:10px; font-size:.86rem;">
-                      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:6px;">
-                        <span style="background:#FEF3C7; color:#92400E; padding:3px 8px; border-radius:6px; font-weight:900;">Sıfat (Nasıl?): ${escHtml(adjPart)}</span>
+                    <div style="background:#fff; border:1px solid #99F6E4; border-radius:10px; padding:10px; font-size:.88rem; line-height:1.5;">
+                      <div style="font-weight:900; color:#0F766E; margin-bottom:4px;">❓ Nasıl ${escHtml(nounPart.toLocaleLowerCase('tr-TR'))}? → ${escHtml(it.label)}</div>
+                      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:6px; font-weight:800;">Özellik (Sıfat): ${escHtml(adjPart)}</span>
                         <span style="font-weight:900;">+</span>
-                        <span style="background:#DBEAFE; color:#1E40AF; padding:3px 8px; border-radius:6px; font-weight:900;">İsim (Varlık): ${escHtml(nounPart)}</span>
+                        <span style="background:#DBEAFE; color:#1E40AF; padding:2px 8px; border-radius:6px; font-weight:800;">Varlık (İsim): ${escHtml(nounPart)}</span>
                       </div>
-                      <div style="color:#134E4A; font-weight:700; font-size:.82rem;">💡 ${escHtml(it.clueNote || buildAutoClueNote(it.label, true))}</div>
                     </div>
                   ` : `
                     <button type="button" class="btn btn-outline btn-sm" style="width:100%; justify-content:center; border-color:#0D9488; color:#0F766E;" onclick="dedektifAnalyzeClue('${s.id}', ${entry.idx})">
@@ -928,9 +921,7 @@
       st.foundClues[itemIdx] = true;
       if (st.hintItemIdx === itemIdx) st.hintItemIdx = null;
       if (!wasFound) {
-        st.combo = (st.combo || 0) + 1;
-        const mult = Math.min(st.combo, 4);
-        st.score = (st.score || 0) + (20 * mult);
+        st.score = (st.score || 0) + 20;
       }
       const autoNote = typeof buildAutoClueNote === 'function' ? buildAutoClueNote(item.label, true) : '';
       st.lastClueMsg = { ok: true, label: item.label || 'Kanıt', note: item.clueNote || autoNote };
@@ -945,13 +936,11 @@
       } else {
         SoundEffects.correct();
         if (!wasFound) {
-          const comboTxt = st.combo >= 2 ? ` (${st.combo}x Kombo!)` : '';
-          showToast(`Kanıt bulundu: ${item.label}${comboTxt}`, 'success');
+          showToast(`Kanıt bulundu: ${item.label}`, 'success');
         }
       }
     } else {
       st.wrongItems[itemIdx] = true;
-      st.combo = 0;
       st.score = Math.max(0, (st.score || 0) - 5);
       st.lastClueMsg = {
         ok: false,
@@ -973,7 +962,6 @@
       .filter(e => e.it && e.it.isClue !== false && !st.foundClues[e.i]);
     if (!remaining.length) return;
     st.hintItemIdx = remaining[0].i;
-    st.combo = 0;
     SoundEffects.flip();
     showToast(`Büyüteç ipucu parlatıldı: "${remaining[0].it.label}"`, 'info');
     render();
@@ -1003,7 +991,6 @@
     st.hintItemIdx = null;
     st.lastClueMsg = null;
     st.score = 0;
-    st.combo = 0;
     SoundEffects.click();
     render();
   }
@@ -1028,7 +1015,6 @@
       st.hintItemIdx = null;
       st.lastClueMsg = null;
       st.score = 0;
-      st.combo = 0;
       SoundEffects.click();
     } else if (action === 'marks') {
       st.marks = !st.marks;
