@@ -864,14 +864,15 @@
       </div>
     ` : '';
 
+    const canEdit = typeof AuthStore !== 'undefined' && AuthStore.isLoggedIn();
     return `
-      ${s.caseBrief ? `<div class="sz-detective-banner">🕵️ <strong>Vaka Dosyası:</strong> ${escHtml(s.caseBrief)}</div>` : ''}
+      ${renderDetectiveTextCardInline(s, st, 'caseBrief', canEdit)}
       ${caseTabsHtml}
       ${sceneHtml}
       ${labSectionHtml}
       ${radioSectionHtml}
       ${suspectsHtml}
-      ${s.question ? `<div class="sz-question-box">🔎 ${escHtml(s.question)}</div>` : ''}
+      ${renderDetectiveTextCardInline(s, st, 'question', canEdit)}
     `;
   }
   function dedektifSetSubTab(id, tab) {
@@ -1055,6 +1056,95 @@
       showToast('Bu kişi olay yeri delillerine ve eşkâle uymuyor! İpuçlarını tekrar kontrol edin.', 'warning');
     }
     render();
+  }
+  function renderDetectiveTextCardInline(s, st, field, canEdit) {
+    const isCase = field === 'caseBrief';
+    const value = String(s[field] || '');
+    const cfg = isCase ? {
+      cardClass: 'sz-detective-banner',
+      iconPrefix: '🕵️ <strong>Vaka Dosyası:</strong> ',
+      editorLabel: '🕵️ Vaka Dosyası Metnini Düzenle (Üst Kutu)',
+      editorLabelColor: '#FDE68A',
+      placeholder: 'Vaka özetini yazın (boş bırakıp Gizle derseniz kutu görünmez)...',
+      emptyBtnLabel: '➕ Vaka Dosyası Metni Ekle',
+      editBtnStyle: 'background:rgba(255,255,255,.14); color:#F8FAFC; border:1px solid rgba(255,255,255,.32);',
+      cancelBtnStyle: 'background:transparent; color:#CBD5E1; border:1px solid #475569;'
+    } : {
+      cardClass: 'sz-question-box',
+      iconPrefix: '🔎 ',
+      editorLabel: '🔎 Vaka Sonu Keşif / Tartışma Sorusunu Düzenle (Alt Kutu)',
+      editorLabelColor: '#4C1D95',
+      placeholder: 'Vaka sonu tartışma sorusunu yazın (boş bırakıp Gizle derseniz kutu görünmez)...',
+      emptyBtnLabel: '➕ Vaka Sonu Tartışma Sorusu Ekle',
+      editBtnStyle: 'background:#fff; color:#5B21B6; border:1px solid #C4B5FD;',
+      cancelBtnStyle: 'background:#fff; color:#475569; border:1px solid #CBD5E1;'
+    };
+    if (canEdit && st.inlineEdit === field) {
+      return `
+        <div class="${cfg.cardClass}">
+          <div style="font-size:.86rem; font-weight:900; color:${cfg.editorLabelColor}; margin-bottom:8px;">${cfg.editorLabel}</div>
+          <textarea id="inlineDedText_${field}" class="form-control" rows="2" placeholder="${cfg.placeholder}" style="width:100%; font-size:.98rem;">${escHtml(value)}</textarea>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+            <button type="button" class="btn btn-primary btn-sm" style="background:#059669;" onclick="saveInlineDetectiveText('${s.id}','${field}')">💾 Kaydet</button>
+            <button type="button" class="btn btn-outline btn-sm" style="${cfg.cancelBtnStyle}" onclick="clearInlineDetectiveText('${s.id}','${field}')">🗑️ Gizle (Temizle)</button>
+            <button type="button" class="btn btn-outline btn-sm" style="${cfg.cancelBtnStyle}" onclick="cancelInlineDetectiveText('${s.id}')">İptal</button>
+          </div>
+        </div>
+      `;
+    }
+    if (value.trim()) {
+      const editBtn = canEdit
+        ? '<button type="button" class="btn btn-sm" style="' + cfg.editBtnStyle + ' flex-shrink:0;" onclick="openInlineDetectiveTextEditor(\'' + s.id + '\',\'' + field + '\')">✏️ Düzenle</button>'
+        : '';
+      return `
+        <div class="${cfg.cardClass}" style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:220px;">${cfg.iconPrefix}${escHtml(value)}</div>
+          ${editBtn}
+        </div>
+      `;
+    }
+    if (canEdit) {
+      const mt = isCase ? '0 0 10px' : '12px 0 0';
+      return '<div style="margin:' + mt + '; display:flex; justify-content:flex-end;"><button type="button" class="btn btn-outline btn-sm" style="font-size:.78rem; color:#475569; border-color:#CBD5E1;" onclick="openInlineDetectiveTextEditor(\'' + s.id + '\',\'' + field + '\')">' + cfg.emptyBtnLabel + '</button></div>';
+    }
+    return '';
+  }
+  function openInlineDetectiveTextEditor(stepId, field) {
+    if (typeof AuthStore === 'undefined' || !AuthStore.isLoggedIn()) return;
+    const st = state[stepId] || (state[stepId] = {});
+    st.inlineEdit = field;
+    render();
+    setTimeout(() => {
+      const el = document.getElementById('inlineDedText_' + field);
+      if (el) el.focus();
+    }, 20);
+  }
+  function cancelInlineDetectiveText(stepId) {
+    if (state[stepId]) state[stepId].inlineEdit = null;
+    render();
+  }
+  function saveInlineDetectiveText(stepId, field) {
+    if (typeof AuthStore === 'undefined' || !AuthStore.isLoggedIn()) return;
+    const step = (activity?.steps || []).find(item => item.id === stepId) || activity?.steps?.[idx];
+    const inputEl = document.getElementById('inlineDedText_' + field);
+    if (!step || !inputEl) return;
+    step[field] = inputEl.value.trim();
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    if (state[stepId]) state[stepId].inlineEdit = null;
+    render();
+    showToast(field === 'caseBrief' ? 'Vaka dosyası metni güncellendi!' : 'Vaka sonu sorusu güncellendi!', 'success');
+  }
+  function clearInlineDetectiveText(stepId, field) {
+    if (typeof AuthStore === 'undefined' || !AuthStore.isLoggedIn()) return;
+    const step = (activity?.steps || []).find(item => item.id === stepId) || activity?.steps?.[idx];
+    if (!step) return;
+    step[field] = '';
+    activity.updatedAt = new Date().toISOString();
+    ActivityStore.save(activity);
+    if (state[stepId]) state[stepId].inlineEdit = null;
+    render();
+    showToast(field === 'caseBrief' ? 'Vaka dosyası kutusu gizlendi.' : 'Tartışma sorusu kutusu gizlendi.', 'info');
   }
 
   // 1. MERAK UYANDIRMA
